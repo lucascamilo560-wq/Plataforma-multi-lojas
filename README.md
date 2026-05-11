@@ -1,4 +1,4 @@
-# Plataforma-multi-lojas
+# Plataforma Multi-lojas
 
 Plataforma marketplace multi-lojas para conectar comércios locais, lojistas e clientes finais em um único ambiente digital.
 
