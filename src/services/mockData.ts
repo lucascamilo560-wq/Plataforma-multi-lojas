@@ -151,30 +151,33 @@ export async function getStoreOrders(storeId: string): Promise<Order[]> {
 
 export async function getCartItems(): Promise<CartItem[]> {
   const items = readCartItemsFromStorage()
-  persistCartItems(items)
   return Promise.resolve(items)
 }
 
 export async function addProductToCart(product: Product): Promise<void> {
   const items = readCartItemsFromStorage()
-  const existingItem = items.find(
+  const existingItemIndex = items.findIndex(
     (item) => item.product_id === product.id && item.store_id === product.store_id,
   )
 
-  if (existingItem) {
-    existingItem.quantity += 1
-  } else {
-    items.push({
-      id: crypto.randomUUID(),
-      store_id: product.store_id,
-      product_id: product.id,
-      productName: product.name,
-      quantity: 1,
-      price: product.price,
-    })
-  }
+  const nextItems =
+    existingItemIndex >= 0
+      ? items.map((item, index) =>
+          index === existingItemIndex ? { ...item, quantity: item.quantity + 1 } : item,
+        )
+      : [
+          ...items,
+          {
+            id: crypto.randomUUID(),
+            store_id: product.store_id,
+            product_id: product.id,
+            productName: product.name,
+            quantity: 1,
+            price: product.price,
+          },
+        ]
 
-  persistCartItems(items)
+  persistCartItems(nextItems)
 
   return Promise.resolve()
 }

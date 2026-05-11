@@ -32,6 +32,7 @@ export function LoginPage() {
 
       navigate(roleDestinations[selectedRole])
     } catch (error) {
+      console.error('Erro no login mockado:', error)
       setErrorMessage(error instanceof Error ? error.message : 'Não foi possível iniciar sessão.')
     }
   }

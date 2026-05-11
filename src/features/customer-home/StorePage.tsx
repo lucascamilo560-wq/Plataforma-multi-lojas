@@ -24,7 +24,8 @@ export function StorePage() {
       setErrorMessage('')
       await addProductToCart(product)
       navigate('/cart')
-    } catch {
+    } catch (error) {
+      console.error('Falha ao adicionar item no carrinho:', error)
       setErrorMessage('Não foi possível adicionar o produto ao carrinho. Tente novamente.')
     }
   }

@@ -28,7 +28,7 @@ export function useMockSession() {
   const setStoreId = (nextStoreId: string) => {
     const normalizedStoreId = nextStoreId.trim()
     if (!normalizedStoreId) {
-      throw new Error('Store ID inválido. Informe um valor não vazio.')
+      throw new Error('ID da loja inválido. Informe um valor não vazio (ex: store-1).')
     }
     setStoreIdState(normalizedStoreId)
     window.localStorage.setItem(SESSION_STORE_KEY, normalizedStoreId)
