@@ -255,7 +255,7 @@ create trigger trg_add_store_owner_as_member
 -- Impede que qualquer não-super-admin altere o status de uma loja.
 -- Isso bloqueia a autoaprovação: mesmo que o lojista seja membro da loja,
 -- ele não pode mudar status de 'pending' para 'active' diretamente.
-create or replace function prevent_store_status_change_by_non_admin()
+create or replace function check_store_status_change_permission()
 returns trigger
 language plpgsql
 security definer
@@ -272,7 +272,7 @@ $$;
 create trigger trg_prevent_store_status_change
   before update on stores
   for each row
-  execute function prevent_store_status_change_by_non_admin();
+  execute function check_store_status_change_permission();
 
 -- ============================================================
 -- Políticas de RLS
@@ -326,7 +326,8 @@ create policy "Lojista atualiza a própria loja"
   using (is_store_member(id))
   with check (is_store_member(id));
 
--- Lojista não pode deletar a própria loja (apenas super admin).
+-- Lojista não pode deletar a própria loja (apenas super admin pode).
+-- Como não há policy de delete para lojista, o Postgres nega a operação por padrão.
 
 create policy "Cliente lista lojas ativas"
   on stores for select
