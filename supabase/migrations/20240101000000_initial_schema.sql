@@ -144,10 +144,13 @@ create table orders (
 
 -- ------------------------------------------------------------
 -- Tabela: order_items
+-- store_id é desnormalizado aqui para simplificar RLS/consultas,
+-- garantindo sempre coerência com a loja do pedido pai.
 -- ------------------------------------------------------------
 create table order_items (
   id           uuid primary key default gen_random_uuid(),
   order_id     uuid not null references orders (id) on delete cascade,
+  store_id     uuid not null references stores (id) on delete cascade,
   product_id   uuid references products (id) on delete set null,
   product_name text not null,
   quantity     integer not null check (quantity > 0),
@@ -173,13 +176,14 @@ create table cart_items (
 -- ============================================================
 -- Índices
 -- ============================================================
-create index idx_stores_owner_id      on stores (owner_id);
-create index idx_stores_status        on stores (status);
-create index idx_products_store_id    on products (store_id);
-create index idx_products_is_active   on products (is_active);
-create index idx_orders_store_id      on orders (store_id);
-create index idx_orders_customer_id   on orders (customer_id);
-create index idx_order_items_order_id on order_items (order_id);
+create index idx_stores_owner_id        on stores (owner_id);
+create index idx_stores_status          on stores (status);
+create index idx_products_store_id      on products (store_id);
+create index idx_products_is_active     on products (is_active);
+create index idx_orders_store_id        on orders (store_id);
+create index idx_orders_customer_id     on orders (customer_id);
+create index idx_order_items_order_id   on order_items (order_id);
+create index idx_order_items_store_id   on order_items (store_id);
 create index idx_store_members_user_id  on store_members (user_id);
 create index idx_store_members_store_id on store_members (store_id);
 
@@ -206,6 +210,7 @@ returns user_role
 language sql
 stable
 security definer
+set search_path = public
 as $$
   select role from profiles where id = auth.uid();
 $$;
@@ -216,6 +221,7 @@ returns boolean
 language sql
 stable
 security definer
+set search_path = public
 as $$
   select exists (
     select 1 from store_members
@@ -223,6 +229,28 @@ as $$
       and user_id  = auth.uid()
   );
 $$;
+
+-- Quando uma loja é criada, adiciona automaticamente o owner como store_admin.
+-- Isso é necessário para que as policies "Lojista gerencia a própria loja" já
+-- funcionem logo após o insert, sem passo manual.
+create or replace function add_store_owner_as_member()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into store_members (store_id, user_id, role)
+  values (new.id, new.owner_id, 'store_admin')
+  on conflict (store_id, user_id) do nothing;
+  return new;
+end;
+$$;
+
+create trigger trg_add_store_owner_as_member
+  after insert on stores
+  for each row
+  execute function add_store_owner_as_member();
 
 -- ============================================================
 -- Políticas de RLS
@@ -233,15 +261,36 @@ create policy "Super admin lê todos os perfis"
   on profiles for select
   using (get_user_role() = 'super_admin');
 
-create policy "Usuário lê e edita o próprio perfil"
-  on profiles for all
+-- Cliente lê o próprio perfil
+create policy "Usuário lê o próprio perfil"
+  on profiles for select
+  using (id = auth.uid());
+
+-- Cliente insere o próprio perfil ao registrar (role inicial: customer)
+create policy "Usuário insere o próprio perfil"
+  on profiles for insert
+  with check (id = auth.uid() and role = 'customer');
+
+-- Cliente atualiza campos do próprio perfil, mas não pode alterar o role
+create policy "Usuário atualiza o próprio perfil sem alterar role"
+  on profiles for update
   using (id = auth.uid())
-  with check (id = auth.uid());
+  with check (
+    id = auth.uid()
+    and role = (select p.role from profiles p where p.id = auth.uid())
+  );
 
 -- ---- stores ----
 create policy "Super admin gerencia lojas"
   on stores for all
   using (get_user_role() = 'super_admin');
+
+-- Lojista cria sua própria loja; entra como pending e owner_id = usuário autenticado.
+-- O trigger trg_add_store_owner_as_member adicionará o criador em store_members
+-- automaticamente, habilitando assim as demais policies de store_admin.
+create policy "Lojista cadastra loja própria pendente"
+  on stores for insert
+  with check (owner_id = auth.uid() and status = 'pending');
 
 create policy "Lojista gerencia a própria loja"
   on stores for all
@@ -326,10 +375,19 @@ create policy "Lojista atualiza status de pedidos da própria loja"
   using (is_store_member(store_id))
   with check (is_store_member(store_id));
 
-create policy "Cliente gerencia os próprios pedidos"
-  on orders for all
-  using (customer_id = auth.uid())
-  with check (customer_id = auth.uid());
+-- Cliente cria pedido próprio; status e payment_status devem ser os valores iniciais.
+create policy "Cliente cria pedidos próprios"
+  on orders for insert
+  with check (
+    customer_id    = auth.uid()
+    and status         = 'pending'
+    and payment_status = 'pending'
+  );
+
+-- Cliente lê os próprios pedidos.
+create policy "Cliente lê pedidos próprios"
+  on orders for select
+  using (customer_id = auth.uid());
 
 -- ---- order_items ----
 create policy "Super admin gerencia itens de pedido"
@@ -359,10 +417,21 @@ create policy "Cliente vê itens dos próprios pedidos"
 create policy "Cliente insere itens nos próprios pedidos"
   on order_items for insert
   with check (
+    -- Pedido pertence ao cliente
     exists (
       select 1 from orders
-      where orders.id = order_items.order_id
+      where orders.id        = order_items.order_id
         and orders.customer_id = auth.uid()
+        and orders.store_id    = order_items.store_id
+    )
+    -- Produto (quando informado) pertence à mesma loja
+    and (
+      order_items.product_id is null
+      or exists (
+        select 1 from products
+        where products.id       = order_items.product_id
+          and products.store_id = order_items.store_id
+      )
     )
   );
 
@@ -371,7 +440,31 @@ create policy "Super admin gerencia carrinho"
   on cart_items for all
   using (get_user_role() = 'super_admin');
 
-create policy "Cliente gerencia o próprio carrinho"
-  on cart_items for all
+create policy "Cliente lê o próprio carrinho"
+  on cart_items for select
+  using (user_id = auth.uid());
+
+-- Produto deve pertencer à loja informada, estar ativo e a loja ativa.
+create policy "Cliente insere no próprio carrinho"
+  on cart_items for insert
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1
+      from products
+      join stores on stores.id = products.store_id
+      where products.id       = cart_items.product_id
+        and products.store_id = cart_items.store_id
+        and products.is_active = true
+        and stores.status      = 'active'
+    )
+  );
+
+create policy "Cliente atualiza quantidade no próprio carrinho"
+  on cart_items for update
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
+
+create policy "Cliente remove do próprio carrinho"
+  on cart_items for delete
+  using (user_id = auth.uid());

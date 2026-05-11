@@ -122,6 +122,7 @@ export interface OrderRow {
 export interface OrderItemRow {
   id: string
   order_id: string
+  store_id: string
   product_id: string | null
   product_name: string
   quantity: number
@@ -172,7 +173,7 @@ export type InsertCustomerAddress = InsertPayload<CustomerAddressRow, CustomerAd
 type OrderRequiredKeys = 'store_id' | 'customer_id' | 'subtotal' | 'delivery_fee' | 'total'
 export type InsertOrder = InsertPayload<OrderRow, OrderRequiredKeys>
 
-type OrderItemRequiredKeys = 'order_id' | 'product_name' | 'quantity' | 'unit_price' | 'total_price'
+type OrderItemRequiredKeys = 'order_id' | 'store_id' | 'product_name' | 'quantity' | 'unit_price' | 'total_price'
 export type InsertOrderItem = InsertPayload<OrderItemRow, OrderItemRequiredKeys>
 
 type CartItemRequiredKeys = 'store_id' | 'user_id' | 'product_id'
