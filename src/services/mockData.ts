@@ -1,5 +1,7 @@
 import type { AdminSummary, CartItem, Order, Product, Store } from '../types'
 
+const CART_STORAGE_KEY = 'marketplace:cart-items'
+
 const stores: Store[] = [
   {
     id: 'store-1',
@@ -93,7 +95,7 @@ const orders: Order[] = [
   },
 ]
 
-const cartItems: CartItem[] = [
+const defaultCartItems: CartItem[] = [
   {
     id: 'cart-1',
     store_id: 'store-1',
@@ -112,6 +114,25 @@ const cartItems: CartItem[] = [
   },
 ]
 
+function readCartItemsFromStorage(): CartItem[] {
+  const rawValue = window.localStorage.getItem(CART_STORAGE_KEY)
+
+  if (!rawValue) {
+    return [...defaultCartItems]
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue) as CartItem[]
+    return Array.isArray(parsedValue) ? parsedValue : [...defaultCartItems]
+  } catch {
+    return [...defaultCartItems]
+  }
+}
+
+function persistCartItems(items: CartItem[]) {
+  window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items))
+}
+
 export async function getStores(): Promise<Store[]> {
   return Promise.resolve(stores)
 }
@@ -129,7 +150,33 @@ export async function getStoreOrders(storeId: string): Promise<Order[]> {
 }
 
 export async function getCartItems(): Promise<CartItem[]> {
-  return Promise.resolve(cartItems)
+  const items = readCartItemsFromStorage()
+  persistCartItems(items)
+  return Promise.resolve(items)
+}
+
+export async function addProductToCart(product: Product): Promise<void> {
+  const items = readCartItemsFromStorage()
+  const existingItem = items.find(
+    (item) => item.product_id === product.id && item.store_id === product.store_id,
+  )
+
+  if (existingItem) {
+    existingItem.quantity += 1
+  } else {
+    items.push({
+      id: `cart-${Date.now()}`,
+      store_id: product.store_id,
+      product_id: product.id,
+      productName: product.name,
+      quantity: 1,
+      price: product.price,
+    })
+  }
+
+  persistCartItems(items)
+
+  return Promise.resolve()
 }
 
 export async function getAdminSummary(): Promise<AdminSummary> {

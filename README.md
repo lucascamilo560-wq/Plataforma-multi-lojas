@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# Plataforma-multi-lojas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Plataforma marketplace multi-lojas para conectar comércios locais, lojistas e clientes finais em um único ambiente digital.
 
-Currently, two official plugins are available:
+## Objetivo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Permitir que pequenos e médios negócios criem sua própria vitrine digital, cadastrem produtos, recebam pedidos, gerenciem clientes e acompanhem vendas, enquanto a plataforma central administra lojas, planos, suporte e configurações globais.
 
-## React Compiler
+## Perfis do sistema
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Super Admin
+- Lojista / Dono da loja
+- Funcionário da loja
+- Cliente final
 
-## Expanding the ESLint configuration
+## Módulos principais
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Super Admin
+- Dashboard geral
+- Gestão de lojas
+- Planos e assinaturas
+- Financeiro
+- Suporte e moderação
+- Configurações globais
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Lojista
+- Dashboard da loja
+- Cadastro de produtos
+- Gestão de pedidos
+- Clientes
+- Cupons e promoções
+- Perfil da loja
+- Relatórios
+- Configurações de entrega
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Cliente
+- Explorar lojas
+- Ver produtos
+- Carrinho
+- Checkout
+- Meus pedidos
+- Avaliações
+- Perfil
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Stack prevista
+
+- React
+- TypeScript
+- Vite
+- Supabase
+- PostgreSQL
+- Supabase Auth
+- Supabase Storage
+- PWA
+
+## Setup local
+
+1. Instale dependências:
+
+```bash
+npm ci
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. Crie seu arquivo de ambiente:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env
 ```
+
+3. Preencha as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+
+4. Inicie o projeto:
+
+```bash
+npm run dev
+```
+
+## Qualidade mínima
+
+Comandos de verificação da base:
+
+```bash
+npm run lint
+npm run build
+```
+
+## Deploy SPA (evitar 404 em refresh)
+
+Este repositório inclui `vercel.json` com rewrite para `index.html`, evitando erro 404 ao atualizar rotas como `/admin` e `/dashboard`.

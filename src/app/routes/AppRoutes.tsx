@@ -11,6 +11,7 @@ import { StoreProductsPage } from '../../features/products/StoreProductsPage'
 import { AdminDashboardPage } from '../../features/super-admin/AdminDashboardPage'
 import { AdminStoresPage } from '../../features/super-admin/AdminStoresPage'
 import { StoreDashboardPage } from '../../features/store-dashboard/StoreDashboardPage'
+import { ProtectedRoute } from './ProtectedRoute'
 
 export function AppRoutes() {
   return (
@@ -24,12 +25,47 @@ export function AppRoutes() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
 
-        <Route path="/dashboard" element={<StoreDashboardPage />} />
-        <Route path="/dashboard/products" element={<StoreProductsPage />} />
-        <Route path="/dashboard/orders" element={<StoreOrdersPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={['store_admin']}>
+              <StoreDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/products"
+          element={
+            <ProtectedRoute allowedRoles={['store_admin']}>
+              <StoreProductsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/orders"
+          element={
+            <ProtectedRoute allowedRoles={['store_admin']}>
+              <StoreOrdersPage />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/admin" element={<AdminDashboardPage />} />
-        <Route path="/admin/stores" element={<AdminStoresPage />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin']}>
+              <AdminDashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/stores"
+          element={
+            <ProtectedRoute allowedRoles={['super_admin']}>
+              <AdminStoresPage />
+            </ProtectedRoute>
+          }
+        />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

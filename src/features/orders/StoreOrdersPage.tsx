@@ -1,24 +1,24 @@
 import { useEffect, useState } from 'react'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
+import { useMockSession } from '../../hooks/useMockSession'
 import { getStoreOrders } from '../../services/mockData'
 import type { Order } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 
-const STORE_ID = 'store-1'
-
 export function StoreOrdersPage() {
+  const { storeId } = useMockSession()
   const [orders, setOrders] = useState<Order[]>([])
 
   useEffect(() => {
-    getStoreOrders(STORE_ID).then(setOrders)
-  }, [])
+    getStoreOrders(storeId).then(setOrders)
+  }, [storeId])
 
   return (
     <section className="stack-lg">
       <PageHeader
         title="Pedidos do lojista"
-        description="Pipeline de pedidos mockado para evoluir com status em tempo real."
+        description={`Pipeline de pedidos mockado da loja ${storeId} para evoluir com status em tempo real.`}
       />
 
       <div className="grid">

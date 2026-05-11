@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
-import { getProductsByStore, getStoreById } from '../../services/mockData'
+import { addProductToCart, getProductsByStore, getStoreById } from '../../services/mockData'
 import type { Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 
 export function StorePage() {
   const { storeId = '' } = useParams()
+  const navigate = useNavigate()
   const [store, setStore] = useState<Store | undefined>()
   const [products, setProducts] = useState<Product[]>([])
 
@@ -15,6 +17,11 @@ export function StorePage() {
     getStoreById(storeId).then(setStore)
     getProductsByStore(storeId).then(setProducts)
   }, [storeId])
+
+  const handleAddToCart = async (product: Product) => {
+    await addProductToCart(product)
+    navigate('/cart')
+  }
 
   if (!store) {
     return (
@@ -33,6 +40,7 @@ export function StorePage() {
   return (
     <section className="stack-lg">
       <PageHeader title={store.name} description={store.description} />
+      <p className="muted">MVP inicial: adição direta no carrinho sem variações e sem cálculo de frete.</p>
 
       <div className="grid">
         {products.map((product) => (
@@ -44,9 +52,9 @@ export function StorePage() {
             <p>{product.description}</p>
             <div className="inline-info">
               <strong>{formatCurrency(product.price)}</strong>
-              <Link className="btn btn-secondary" to="/cart">
+              <Button type="button" variant="secondary" onClick={() => void handleAddToCart(product)}>
                 Adicionar ao carrinho
-              </Link>
+              </Button>
             </div>
           </Card>
         ))}

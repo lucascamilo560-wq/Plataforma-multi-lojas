@@ -14,12 +14,18 @@ const roleDestinations: Record<UserRole, string> = {
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { setRole } = useMockSession()
+  const { setRole, setStoreId } = useMockSession()
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
+  const [selectedStoreId, setSelectedStoreId] = useState('store-1')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setRole(selectedRole)
+
+    if (selectedRole === 'store_admin') {
+      setStoreId(selectedStoreId)
+    }
+
     navigate(roleDestinations[selectedRole])
   }
 
@@ -54,6 +60,22 @@ export function LoginPage() {
             <option value="store_admin">Lojista</option>
             <option value="super_admin">Super Admin</option>
           </select>
+
+          {selectedRole === 'store_admin' && (
+            <>
+              <label htmlFor="store-id" className="field-label">
+                Store ID (mock)
+              </label>
+              <input
+                id="store-id"
+                className="input"
+                value={selectedStoreId}
+                onChange={(event) => setSelectedStoreId(event.target.value)}
+                placeholder="store-1"
+                required
+              />
+            </>
+          )}
 
           <Button type="submit">Entrar</Button>
         </form>
