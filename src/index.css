@@ -227,6 +227,11 @@ a {
   text-align: right;
 }
 
+.error-text {
+  margin: 0;
+  color: #b91c1c;
+}
+
 @media (min-width: 740px) {
   .grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

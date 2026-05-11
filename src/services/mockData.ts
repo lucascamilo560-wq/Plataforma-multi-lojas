@@ -165,7 +165,7 @@ export async function addProductToCart(product: Product): Promise<void> {
     existingItem.quantity += 1
   } else {
     items.push({
-      id: `cart-${Date.now()}`,
+      id: crypto.randomUUID(),
       store_id: product.store_id,
       product_id: product.id,
       productName: product.name,

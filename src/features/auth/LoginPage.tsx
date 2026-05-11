@@ -17,16 +17,23 @@ export function LoginPage() {
   const { setRole, setStoreId } = useMockSession()
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
   const [selectedStoreId, setSelectedStoreId] = useState('store-1')
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setRole(selectedRole)
+    setErrorMessage('')
 
-    if (selectedRole === 'store_admin') {
-      setStoreId(selectedStoreId)
+    try {
+      setRole(selectedRole)
+
+      if (selectedRole === 'store_admin') {
+        setStoreId(selectedStoreId)
+      }
+
+      navigate(roleDestinations[selectedRole])
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Não foi possível iniciar sessão.')
     }
-
-    navigate(roleDestinations[selectedRole])
   }
 
   return (
@@ -78,6 +85,7 @@ export function LoginPage() {
           )}
 
           <Button type="submit">Entrar</Button>
+          {errorMessage && <p className="error-text">{errorMessage}</p>}
         </form>
       </Card>
     </main>

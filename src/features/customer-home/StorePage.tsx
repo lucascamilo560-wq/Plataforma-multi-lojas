@@ -12,6 +12,7 @@ export function StorePage() {
   const navigate = useNavigate()
   const [store, setStore] = useState<Store | undefined>()
   const [products, setProducts] = useState<Product[]>([])
+  const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     getStoreById(storeId).then(setStore)
@@ -19,8 +20,13 @@ export function StorePage() {
   }, [storeId])
 
   const handleAddToCart = async (product: Product) => {
-    await addProductToCart(product)
-    navigate('/cart')
+    try {
+      setErrorMessage('')
+      await addProductToCart(product)
+      navigate('/cart')
+    } catch {
+      setErrorMessage('Não foi possível adicionar o produto ao carrinho. Tente novamente.')
+    }
   }
 
   if (!store) {
@@ -41,6 +47,7 @@ export function StorePage() {
     <section className="stack-lg">
       <PageHeader title={store.name} description={store.description} />
       <p className="muted">MVP inicial: adição direta no carrinho sem variações e sem cálculo de frete.</p>
+      {errorMessage && <p className="error-text">{errorMessage}</p>}
 
       <div className="grid">
         {products.map((product) => (
@@ -52,7 +59,7 @@ export function StorePage() {
             <p>{product.description}</p>
             <div className="inline-info">
               <strong>{formatCurrency(product.price)}</strong>
-              <Button type="button" variant="secondary" onClick={() => void handleAddToCart(product)}>
+              <Button type="button" variant="secondary" onClick={() => handleAddToCart(product)}>
                 Adicionar ao carrinho
               </Button>
             </div>
