@@ -1,4 +1,4 @@
-# Plataforma-multi-lojas
+# Plataforma Multi-lojas
 
 Plataforma marketplace multi-lojas para conectar comércios locais, lojistas e clientes finais em um único ambiente digital.
 
@@ -52,3 +52,38 @@ Permitir que pequenos e médios negócios criem sua própria vitrine digital, ca
 - Supabase Auth
 - Supabase Storage
 - PWA
+
+## Setup local
+
+1. Instale dependências:
+
+```bash
+npm ci
+```
+
+2. Crie seu arquivo de ambiente:
+
+```bash
+cp .env.example .env
+```
+
+3. Preencha as variáveis `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
+
+4. Inicie o projeto:
+
+```bash
+npm run dev
+```
+
+## Qualidade mínima
+
+Comandos de verificação da base:
+
+```bash
+npm run lint
+npm run build
+```
+
+## Deploy SPA (evitar 404 em refresh)
+
+Este repositório inclui `vercel.json` com rewrite para `index.html`, evitando erro 404 ao atualizar rotas como `/admin` e `/dashboard`.
