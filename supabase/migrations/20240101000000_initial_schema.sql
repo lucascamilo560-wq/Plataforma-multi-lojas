@@ -252,6 +252,28 @@ create trigger trg_add_store_owner_as_member
   for each row
   execute function add_store_owner_as_member();
 
+-- Impede que qualquer não-super-admin altere o status de uma loja.
+-- Isso bloqueia a autoaprovação: mesmo que o lojista seja membro da loja,
+-- ele não pode mudar status de 'pending' para 'active' diretamente.
+create or replace function prevent_store_status_change_by_non_admin()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.status <> old.status and get_user_role() <> 'super_admin' then
+    raise exception 'Apenas super_admin pode alterar o status da loja.';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_prevent_store_status_change
+  before update on stores
+  for each row
+  execute function prevent_store_status_change_by_non_admin();
+
 -- ============================================================
 -- Políticas de RLS
 -- ============================================================
@@ -292,10 +314,19 @@ create policy "Lojista cadastra loja própria pendente"
   on stores for insert
   with check (owner_id = auth.uid() and status = 'pending');
 
-create policy "Lojista gerencia a própria loja"
-  on stores for all
+-- Lojista vê a própria loja (independentemente do status).
+create policy "Lojista vê a própria loja"
+  on stores for select
+  using (is_store_member(id));
+
+-- Lojista atualiza campos da própria loja, mas NÃO pode alterar status.
+-- A proteção de status é garantida pelo trigger trg_prevent_store_status_change.
+create policy "Lojista atualiza a própria loja"
+  on stores for update
   using (is_store_member(id))
   with check (is_store_member(id));
+
+-- Lojista não pode deletar a própria loja (apenas super admin).
 
 create policy "Cliente lista lojas ativas"
   on stores for select
@@ -460,10 +491,23 @@ create policy "Cliente insere no próprio carrinho"
     )
   );
 
+-- Atualização (ex: quantidade) re-valida produto ativo e loja ativa para evitar
+-- que um item inválido seja mantido no carrinho via update de campos laterais.
 create policy "Cliente atualiza quantidade no próprio carrinho"
   on cart_items for update
   using (user_id = auth.uid())
-  with check (user_id = auth.uid());
+  with check (
+    user_id = auth.uid()
+    and exists (
+      select 1
+      from products
+      join stores on stores.id = products.store_id
+      where products.id        = cart_items.product_id
+        and products.store_id  = cart_items.store_id
+        and products.is_active = true
+        and stores.status      = 'active'
+    )
+  );
 
 create policy "Cliente remove do próprio carrinho"
   on cart_items for delete
