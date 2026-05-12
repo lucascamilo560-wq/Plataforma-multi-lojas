@@ -21,7 +21,7 @@ export function StoreDashboardPage() {
 
   useEffect(() => {
     getStoreOrders(storeId).then(setOrders)
-    getProductsByStore(storeId).then(setProducts)
+    getProductsByStore(storeId, { includeInactive: true }).then(setProducts)
     getStoreById(storeId).then(setStore)
   }, [storeId])
 

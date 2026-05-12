@@ -102,6 +102,10 @@ export function StorePage() {
         ))}
       </div>
 
+      {products.length === 0 && (
+        <p className="empty-state">Nenhum produto ativo no momento. Volte em breve para novas ofertas.</p>
+      )}
+
       <Card variant="layered" title="Compra contínua" subtitle="Finalize quando quiser, sem perder itens">
         <Link to="/cliente/carrinho">
           <Button variant="store" size="lg" storeColor={storeTheme.primaryColor}>
