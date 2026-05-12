@@ -11,21 +11,23 @@ interface HeaderNavItem {
 
 interface AppHeaderProps {
   navigation: HeaderNavItem[]
+  brandKicker: string
+  brandTitle: string
 }
 
-export function AppHeader({ navigation }: AppHeaderProps) {
+export function AppHeader({ navigation, brandKicker, brandTitle }: AppHeaderProps) {
   return (
     <header className="app-header">
       <div className="container">
         <div className="header-content">
           <div className="header-brand">
-            <p className="brand-kicker">Plataforma Multi-lojas</p>
-            <h1 className="brand-title">Hub comercial para vender mais todos os dias</h1>
+            <p className="brand-kicker">{brandKicker}</p>
+            <h1 className="brand-title">{brandTitle}</h1>
           </div>
           <NavLink to="/login">
             <Button variant="secondary" className="header-login">
               <Icon name="user" className="icon-sm" />
-              Entrar
+              Trocar perfil
             </Button>
           </NavLink>
         </div>

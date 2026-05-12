@@ -38,7 +38,7 @@ export function StoreCard({ store, ctaLabel = 'Visitar loja' }: StoreCardProps) 
         <Badge variant={store.isActive ? 'success' : 'muted'}>
           {store.isActive ? 'Entrega ativa' : 'Voltamos em breve'}
         </Badge>
-        <Link to={`/stores/${store.id}`}>
+        <Link to={`/cliente/loja/${store.slug}`}>
           <Button variant="store" storeColor={theme.primaryColor}>
             {ctaLabel}
           </Button>

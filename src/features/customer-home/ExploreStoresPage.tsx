@@ -29,7 +29,7 @@ export function ExploreStoresPage() {
   return (
     <section className="stack-xl">
       <SectionHeader
-        kicker="Descobrir"
+        kicker="Explorar"
         icon="search"
         title="Encontre a loja certa para cada momento"
         description="Busque por categoria, cidade ou nome e navegue por vitrines com personalidade própria."

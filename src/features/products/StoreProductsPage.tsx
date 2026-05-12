@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Icon } from '../../components/ui/Icon'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { useMockSession } from '../../hooks/useMockSession'
 import { getProductsByStore, getStoreById } from '../../services/mockData'
@@ -19,11 +22,17 @@ export function StoreProductsPage() {
   return (
     <section className="stack-lg">
       <PageHeader
-        kicker="Catálogo"
+        kicker="Produtos"
         icon="package"
-        title="Produtos da loja"
-        description={`Organize o catálogo de ${store?.name ?? 'sua loja'} com foco em conversão e giro rápido.`}
+        title="Produtos da sua loja"
+        description={`Organize o catálogo de ${store?.name ?? 'sua loja'} com foco em vendas e reposição rápida.`}
       />
+      <Link to="/lojista/produtos/novo">
+        <Button variant="accent">
+          <Icon name="arrowRight" className="icon-sm" />
+          Cadastrar produto
+        </Button>
+      </Link>
       <div className="grid">
         {products.map((product) => (
           <Card

@@ -23,7 +23,7 @@ export function CartPage() {
   return (
     <section className="stack-xl">
       <SectionHeader
-        kicker="Checkout"
+        kicker="Carrinho"
         icon="cart"
         title="Seu pedido está quase pronto"
         description="Revise seus itens, confira o total e avance para finalizar sua compra com segurança."
@@ -55,7 +55,7 @@ export function CartPage() {
           </div>
           <footer className="card-footer">
             <strong>Total estimado: {formatCurrency(total)}</strong>
-            <Link to="/checkout">
+            <Link to="/cliente/checkout">
               <Button variant="accent" size="lg">
                 <Icon name="check" className="icon-sm" />
                 Finalizar pedido

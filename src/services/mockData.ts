@@ -156,6 +156,10 @@ export async function getStoreById(storeId: string): Promise<Store | undefined> 
   return Promise.resolve(stores.find((store) => store.id === storeId))
 }
 
+export async function getStoreBySlug(slug: string): Promise<Store | undefined> {
+  return Promise.resolve(stores.find((store) => store.slug === slug))
+}
+
 export async function getProductsByStore(storeId: string): Promise<Product[]> {
   return Promise.resolve(products.filter((product) => product.store_id === storeId))
 }
