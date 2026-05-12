@@ -36,7 +36,7 @@ export function CartPage() {
           ) : (
             <div className="stack">
               {items.map((item) => (
-                <CartItemRow key={item.id} item={item} />
+                <CartLineItem key={item.id} item={item} />
               ))}
             </div>
           )}
@@ -68,7 +68,7 @@ export function CartPage() {
   )
 }
 
-function CartItemRow({ item }: { item: CartItem }) {
+function CartLineItem({ item }: { item: CartItem }) {
   const [storeName, setStoreName] = useState('Loja parceira')
 
   useEffect(() => {

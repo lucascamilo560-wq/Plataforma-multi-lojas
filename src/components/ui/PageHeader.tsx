@@ -8,6 +8,6 @@ interface PageHeaderProps {
   icon?: Parameters<typeof Icon>[0]['name']
 }
 
-export function PageHeader({ title, description, kicker, icon = 'sparkles' }: PageHeaderProps) {
+export function PageHeader({ title, description, kicker, icon }: PageHeaderProps) {
   return <SectionHeader title={title} description={description} kicker={kicker} icon={icon} />
 }

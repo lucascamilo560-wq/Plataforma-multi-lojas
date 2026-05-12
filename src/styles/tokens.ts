@@ -19,6 +19,7 @@ export const designTokens = {
     success: '#16A34A',
     warning: '#F59E0B',
     danger: '#DC2626',
+    info: '#0284C7',
   },
   radius: {
     sm: '14px',

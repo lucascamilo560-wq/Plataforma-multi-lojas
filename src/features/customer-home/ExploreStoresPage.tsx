@@ -35,7 +35,7 @@ export function ExploreStoresPage() {
         description="Busque por categoria, cidade ou nome e navegue por vitrines com personalidade própria."
       />
 
-      <CardSearch query={query} onChange={setQuery} categories={categories} />
+      <StoreSearchCard query={query} onChange={setQuery} categories={categories} />
 
       <div className="grid">
         {filteredStores.map((store) => (
@@ -46,7 +46,7 @@ export function ExploreStoresPage() {
   )
 }
 
-function CardSearch({
+function StoreSearchCard({
   query,
   onChange,
   categories,
