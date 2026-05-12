@@ -25,9 +25,10 @@ export interface Product {
   stock: number
   category: string
   imageUrl: string
+  isActive: boolean
 }
 
-export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered'
+export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
 
 export interface Order {
   id: string
