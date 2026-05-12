@@ -11,6 +11,7 @@ interface MockQrCodeProps {
 }
 
 const CELLS = 11
+const UNIT = 10 // cada célula ocupa 10 unidades no viewBox fixo
 
 // Pré-definição de células preenchidas (padrão visual de QR Code, não funcional)
 const FILLED = new Set([
@@ -42,38 +43,34 @@ const FILLED = new Set([
   '3,7','5,7','7,7','9,7','10,7',
 ])
 
-export function MockQrCode({ size = 120 }: MockQrCodeProps) {
-  const cellSize = size / CELLS
-
-  const cells: ReactElement[] = []
+// Pre-compute a single SVG path string at module level to avoid per-render work
+const VIEWBOX_SIZE = CELLS * UNIT
+const CELL_PATH = (() => {
+  const parts: string[] = []
   for (let row = 0; row < CELLS; row++) {
     for (let col = 0; col < CELLS; col++) {
       if (FILLED.has(`${col},${row}`)) {
-        cells.push(
-          <rect
-            key={`${col}-${row}`}
-            x={col * cellSize}
-            y={row * cellSize}
-            width={cellSize}
-            height={cellSize}
-            fill="currentColor"
-          />,
-        )
+        const x = col * UNIT
+        const y = row * UNIT
+        parts.push(`M${x},${y}h${UNIT}v${UNIT}h-${UNIT}Z`)
       }
     }
   }
+  return parts.join(' ')
+})()
 
+export function MockQrCode({ size = 120 }: MockQrCodeProps): ReactElement {
   return (
     <svg
       width={size}
       height={size}
-      viewBox={`0 0 ${size} ${size}`}
+      viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
       aria-label="QR Code da loja (visual representativo)"
       role="img"
       style={{ display: 'block' }}
     >
-      <rect width={size} height={size} fill="white" />
-      <g>{cells}</g>
+      <rect width={VIEWBOX_SIZE} height={VIEWBOX_SIZE} fill="white" />
+      <path d={CELL_PATH} fill="currentColor" />
     </svg>
   )
 }

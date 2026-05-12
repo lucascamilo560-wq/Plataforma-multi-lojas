@@ -17,11 +17,17 @@ export function SellerStorefrontPage() {
   const [copyMessage, setCopyMessage] = useState('')
 
   useEffect(() => {
-    getStoreById(storeId).then((found) => {
-      if (found?.slug) {
-        getPublicStorefront(found.slug).then(setStore)
-      }
-    })
+    let cancelled = false
+
+    async function load() {
+      const found = await getStoreById(storeId)
+      if (cancelled || !found?.slug) return
+      const storefront = await getPublicStorefront(found.slug)
+      if (!cancelled) setStore(storefront)
+    }
+
+    load()
+    return () => { cancelled = true }
   }, [storeId])
 
   const storefrontPath = store?.slug ? `/loja/${store.slug}` : null
@@ -34,7 +40,8 @@ export function SellerStorefrontPage() {
       setCopyMessage('')
       await window.navigator.clipboard.writeText(storefrontUrl)
       setCopyMessage('Link copiado! Compartilhe com seus clientes.')
-    } catch {
+    } catch (error) {
+      console.warn('Falha ao copiar link da vitrine:', error)
       setCopyMessage('Não foi possível copiar automaticamente. Copie o link acima manualmente.')
     }
   }
