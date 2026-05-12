@@ -15,12 +15,21 @@ import {
 import type { Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 
+function compareProducts(a: Product, b: Product) {
+  if (a.isActive !== b.isActive) {
+    return a.isActive ? -1 : 1
+  }
+
+  return a.name.localeCompare(b.name)
+}
+
 export function StoreProductsPage() {
   const { storeId } = useMockSession()
   const [products, setProducts] = useState<Product[]>([])
   const [store, setStore] = useState<Store | undefined>()
   const [errorMessage, setErrorMessage] = useState('')
   const [stockInputs, setStockInputs] = useState<Record<string, string>>({})
+  const [pendingDeleteProductId, setPendingDeleteProductId] = useState<string | null>(null)
 
   const refreshProducts = useCallback(() => {
     getProductsByStore(storeId, { includeInactive: true }).then((nextProducts) => {
@@ -39,20 +48,17 @@ export function StoreProductsPage() {
     getStoreById(storeId).then(setStore)
   }, [refreshProducts, storeId])
 
-  const sortedProducts = useMemo(
-    () => [...products].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name)),
-    [products],
-  )
+  const sortedProducts = useMemo(() => [...products].sort(compareProducts), [products])
 
   const handleDelete = async (product: Product) => {
-    const shouldDelete = window.confirm(`Deseja excluir o produto "${product.name}"?`)
-
-    if (!shouldDelete) {
+    if (pendingDeleteProductId !== product.id) {
+      setPendingDeleteProductId(product.id)
       return
     }
 
     setErrorMessage('')
     await deleteProduct(product.id)
+    setPendingDeleteProductId(null)
     refreshProducts()
   }
 
@@ -136,7 +142,7 @@ export function StoreProductsPage() {
                 {product.isActive ? 'Pausar' : 'Ativar'}
               </Button>
               <Button type="button" variant="danger" onClick={() => handleDelete(product)}>
-                Excluir
+                {pendingDeleteProductId === product.id ? 'Confirmar exclusão' : 'Excluir'}
               </Button>
             </div>
           </Card>

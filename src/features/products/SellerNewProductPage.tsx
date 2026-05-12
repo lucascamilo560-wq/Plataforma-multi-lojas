@@ -59,7 +59,7 @@ export function SellerNewProductPage() {
       const product = products.find((item) => item.id === editingProductId)
 
       if (!product) {
-        setErrorMessage('Produto não encontrado para edição.')
+        setErrorMessage('Produto não encontrado. Ele pode ter sido excluído ou o link está inválido.')
         return
       }
 

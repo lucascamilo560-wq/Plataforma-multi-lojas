@@ -215,7 +215,7 @@ function readCollection<T>(key: string, fallback: T[], normalize: (value: T[]) =
   try {
     const parsedValue = JSON.parse(rawValue)
     if (!Array.isArray(parsedValue)) {
-      throw new Error('Formato inválido de coleção')
+      throw new Error(`Esperado array na chave ${key}, recebido ${typeof parsedValue}`)
     }
 
     const nextValue = normalize(parsedValue as T[])
@@ -280,6 +280,10 @@ function setCouponsCollection(coupons: Coupon[]) {
   persistCollection(STORAGE_KEYS.coupons, coupons)
 }
 
+function getPromotionsCollection() {
+  return readCollection(STORAGE_KEYS.promotions, defaultPromotions)
+}
+
 function getPaymentMethodsCollection() {
   return readCollection(STORAGE_KEYS.paymentMethods, defaultPaymentMethods)
 }
@@ -308,6 +312,7 @@ function normalizeSlug(value: string) {
   return value
     .toLowerCase()
     .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\w\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
@@ -546,7 +551,7 @@ export async function getCouponsByStore(storeId: string): Promise<Coupon[]> {
 }
 
 export async function getPromotionsByStore(storeId: string): Promise<Promotion[]> {
-  return Promise.resolve(readCollection(STORAGE_KEYS.promotions, defaultPromotions).filter((promo) => promo.store_id === storeId))
+  return Promise.resolve(getPromotionsCollection().filter((promo) => promo.store_id === storeId))
 }
 
 export async function getPaymentSettings(storeId: string): Promise<PaymentMethod[]> {
