@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
+import { Icon } from '../../components/ui/Icon'
 import { Input } from '../../components/ui/Input'
 import { Select } from '../../components/ui/Select'
 import { SectionHeader } from '../../components/ui/SectionHeader'
@@ -16,9 +17,9 @@ const roleDestinations: Record<UserRole, string> = {
 }
 
 const roleTabs = [
-  { key: 'customer', label: 'Cliente' },
-  { key: 'store_admin', label: 'Lojista' },
-  { key: 'super_admin', label: 'Super Admin' },
+  { key: 'customer', label: 'Cliente', icon: 'cart' as const },
+  { key: 'store_admin', label: 'Lojista', icon: 'storefront' as const },
+  { key: 'super_admin', label: 'Gestão', icon: 'shield' as const },
 ]
 
 export function LoginPage() {
@@ -41,25 +42,30 @@ export function LoginPage() {
 
       navigate(roleDestinations[selectedRole])
     } catch (error) {
-      console.error('Erro no login mockado:', error)
-      setErrorMessage(error instanceof Error ? error.message : 'Não foi possível iniciar sessão.')
+      console.error('Erro ao entrar:', error)
+      setErrorMessage(error instanceof Error ? error.message : 'Não foi possível entrar agora.')
     }
   }
 
   return (
-    <main className="container app-main">
-      <section className="stack-lg">
+    <main className="container login-shell">
+      <section className="stack-lg login-card">
         <SectionHeader
-          kicker="Acesso"
-          title="Entrar na Plataforma"
-          description="Experiência de login com seleção de perfil para navegar entre cliente, lojista e super admin."
+          kicker="Entrada"
+          icon="sparkles"
+          title="Acesse seu painel comercial"
+          description="Entre para gerenciar pedidos, atualizar catálogo e acompanhar vendas em um ambiente de produto completo."
         />
 
-        <Card
-          title="Acessar plataforma"
-          subtitle="Auth real será conectado ao Supabase sem alterar o fluxo atual neste PR."
-          variant="accentCorner"
-        >
+        <Card title="Continuar" subtitle="Escolha seu perfil e entre em segundos." variant="accentCorner">
+          <div className="login-banner">
+            <div className="stack" style={{ gap: '0.45rem' }}>
+              <strong>Experiência premium para cada perfil</strong>
+              <p>Cliente, lojista e gestão em uma navegação fluida.</p>
+            </div>
+            <Icon name="sparkles" className="icon-md" />
+          </div>
+
           <form className="stack" onSubmit={handleSubmit}>
             <Tabs
               items={roleTabs}
@@ -67,24 +73,24 @@ export function LoginPage() {
               onChange={(role) => setSelectedRole(role as UserRole)}
             />
 
-            <Input id="email" type="email" label="E-mail" placeholder="seu@email.com" required />
+            <Input id="email" type="email" label="E-mail" placeholder="voce@empresa.com" required />
             <Input id="password" type="password" label="Senha" placeholder="••••••••" required />
 
             <Select
               id="role"
-              label="Perfil para demonstração"
+              label="Perfil"
               value={selectedRole}
               onChange={(event) => setSelectedRole(event.target.value as UserRole)}
             >
-              <option value="customer">Cliente final</option>
+              <option value="customer">Cliente</option>
               <option value="store_admin">Lojista</option>
-              <option value="super_admin">Super Admin</option>
+              <option value="super_admin">Equipe de gestão</option>
             </Select>
 
             {selectedRole === 'store_admin' && (
               <Input
                 id="store-id"
-                label="Store ID (mock)"
+                label="Código da loja"
                 value={selectedStoreId}
                 onChange={(event) => setSelectedStoreId(event.target.value)}
                 placeholder="store-1"
@@ -92,8 +98,9 @@ export function LoginPage() {
               />
             )}
 
-            <Button type="submit" variant="accent">
-              Entrar
+            <Button type="submit" variant="accent" size="lg">
+              <Icon name="arrowRight" className="icon-sm" />
+              Entrar no app
             </Button>
             {errorMessage && <p className="error-text">{errorMessage}</p>}
           </form>

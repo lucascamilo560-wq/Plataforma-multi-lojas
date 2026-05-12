@@ -1,8 +1,10 @@
 import { NavLink } from 'react-router-dom'
+import { Icon } from './Icon'
 
 interface TabItem {
   key: string
   label: string
+  icon?: Parameters<typeof Icon>[0]['name']
 }
 
 interface TabsProps {
@@ -21,6 +23,7 @@ export function Tabs({ items, activeKey, onChange }: TabsProps) {
           className={`tab-button ${item.key === activeKey ? 'tab-button-active' : ''}`}
           onClick={() => onChange(item.key)}
         >
+          {item.icon && <Icon name={item.icon} className="icon-sm" />}
           {item.label}
         </button>
       ))}
@@ -31,6 +34,7 @@ export function Tabs({ items, activeKey, onChange }: TabsProps) {
 interface NavPill {
   to: string
   label: string
+  icon?: Parameters<typeof Icon>[0]['name']
 }
 
 interface NavPillsProps {
@@ -46,6 +50,7 @@ export function NavPills({ items }: NavPillsProps) {
           to={item.to}
           className={({ isActive }) => `tab-pill ${isActive ? 'tab-pill-active' : ''}`}
         >
+          {item.icon && <Icon name={item.icon} className="icon-sm" />}
           {item.label}
         </NavLink>
       ))}

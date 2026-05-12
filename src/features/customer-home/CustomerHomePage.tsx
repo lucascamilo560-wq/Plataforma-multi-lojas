@@ -1,4 +1,8 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Button } from '../../components/ui/Button'
+import { Card } from '../../components/ui/Card'
+import { Icon } from '../../components/ui/Icon'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { StoreCard } from '../../components/ui/StoreCard'
 import { getStores } from '../../services/mockData'
@@ -14,10 +18,23 @@ export function CustomerHomePage() {
   return (
     <section className="stack-xl">
       <SectionHeader
-        kicker="Vitrine"
-        title="Descubra lojas com experiência premium"
-        description="Escolha sua loja, mantenha identidade de marca por seller e compre em um fluxo único mobile-first."
+        kicker="Vitrine premium"
+        icon="sparkles"
+        title="Compre em lojas com identidade própria"
+        description="Descubra marcas, acompanhe ofertas e finalize pedidos em uma experiência fluida para mobile."
       />
+
+      <Card variant="layered" title="Comece agora" subtitle="Explore vitrines e encontre o que você precisa">
+        <div className="inline-info">
+          <span className="muted">Navegação rápida para entrar nas lojas mais ativas.</span>
+          <Link to="/stores">
+            <Button variant="accent" size="lg">
+              <Icon name="arrowRight" className="icon-sm" />
+              Explorar lojas
+            </Button>
+          </Link>
+        </div>
+      </Card>
 
       <div className="grid">
         {featuredStores.map((store) => (

@@ -34,7 +34,7 @@ function safeImage(value: string | undefined, fallback: string): string {
 
   try {
     const url = new URL(value)
-    return url.href
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : fallback
   } catch {
     return fallback
   }
