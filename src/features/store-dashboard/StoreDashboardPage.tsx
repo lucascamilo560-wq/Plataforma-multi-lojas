@@ -111,6 +111,7 @@ export function StoreDashboardPage() {
         <ActionTile title="Pagamentos" description="Formas aceitas" icon="wallet" to="/lojista/pagamentos" />
         <ActionTile title="Entrega/Retirada" description="Defina logística" icon="clock" to="/lojista/entrega" />
         <ActionTile title="Minha marca" description="Visual da loja" icon="palette" to="/lojista/marca" />
+        <ActionTile title="Minha vitrine" description="Link, QR Code e prévia" icon="storefront" to="/lojista/minha-vitrine" />
         <ActionTile title="Relatórios" description="Análises da loja" icon="chart" to="/lojista/relatorios" />
         <ActionTile title="Ajuda" description="Suporte e orientações" icon="check" to="/lojista/ajuda" />
       </div>

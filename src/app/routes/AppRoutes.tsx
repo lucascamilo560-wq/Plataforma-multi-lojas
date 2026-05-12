@@ -36,6 +36,7 @@ import { SellerPaymentsPage } from '../../features/store-dashboard/SellerPayment
 import { SellerPromotionsPage } from '../../features/store-dashboard/SellerPromotionsPage'
 import { SellerReportsPage } from '../../features/store-dashboard/SellerReportsPage'
 import { SellerStorePage } from '../../features/store-dashboard/SellerStorePage'
+import { SellerStorefrontPage } from '../../features/store-dashboard/SellerStorefrontPage'
 import { useMockSession } from '../../hooks/useMockSession'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -96,6 +97,7 @@ export function AppRoutes() {
       >
         <Route index element={<StoreDashboardPage />} />
         <Route path="minha-loja" element={<SellerStorePage />} />
+        <Route path="minha-vitrine" element={<SellerStorefrontPage />} />
         <Route path="produtos" element={<StoreProductsPage />} />
         <Route path="produtos/novo" element={<SellerNewProductPage />} />
         <Route path="pedidos" element={<StoreOrdersPage />} />
