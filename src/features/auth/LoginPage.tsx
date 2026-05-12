@@ -2,7 +2,10 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { PageHeader } from '../../components/ui/PageHeader'
+import { Input } from '../../components/ui/Input'
+import { Select } from '../../components/ui/Select'
+import { SectionHeader } from '../../components/ui/SectionHeader'
+import { Tabs } from '../../components/ui/Tabs'
 import { useMockSession } from '../../hooks/useMockSession'
 import type { UserRole } from '../../types'
 
@@ -11,6 +14,12 @@ const roleDestinations: Record<UserRole, string> = {
   store_admin: '/dashboard',
   super_admin: '/admin',
 }
+
+const roleTabs = [
+  { key: 'customer', label: 'Cliente' },
+  { key: 'store_admin', label: 'Lojista' },
+  { key: 'super_admin', label: 'Super Admin' },
+]
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -39,56 +48,57 @@ export function LoginPage() {
 
   return (
     <main className="container app-main">
-      <PageHeader
-        title="Login"
-        description="Fluxo inicial mockado para acessar as áreas de cliente, lojista e super admin."
-      />
-      <Card title="Acessar plataforma" subtitle="Autenticação real será conectada ao Supabase Auth.">
-        <form className="stack" onSubmit={handleSubmit}>
-          <label htmlFor="email" className="field-label">
-            E-mail
-          </label>
-          <input id="email" type="email" placeholder="seu@email.com" className="input" required />
+      <section className="stack-lg">
+        <SectionHeader
+          kicker="Acesso"
+          title="Entrar na Plataforma"
+          description="Experiência de login com seleção de perfil para navegar entre cliente, lojista e super admin."
+        />
 
-          <label htmlFor="password" className="field-label">
-            Senha
-          </label>
-          <input id="password" type="password" placeholder="••••••••" className="input" required />
+        <Card
+          title="Acessar plataforma"
+          subtitle="Auth real será conectado ao Supabase sem alterar o fluxo atual neste PR."
+          variant="accentCorner"
+        >
+          <form className="stack" onSubmit={handleSubmit}>
+            <Tabs
+              items={roleTabs}
+              activeKey={selectedRole}
+              onChange={(role) => setSelectedRole(role as UserRole)}
+            />
 
-          <label htmlFor="role" className="field-label">
-            Perfil para demonstração
-          </label>
-          <select
-            id="role"
-            className="input"
-            value={selectedRole}
-            onChange={(event) => setSelectedRole(event.target.value as UserRole)}
-          >
-            <option value="customer">Cliente final</option>
-            <option value="store_admin">Lojista</option>
-            <option value="super_admin">Super Admin</option>
-          </select>
+            <Input id="email" type="email" label="E-mail" placeholder="seu@email.com" required />
+            <Input id="password" type="password" label="Senha" placeholder="••••••••" required />
 
-          {selectedRole === 'store_admin' && (
-            <>
-              <label htmlFor="store-id" className="field-label">
-                Store ID (mock)
-              </label>
-              <input
+            <Select
+              id="role"
+              label="Perfil para demonstração"
+              value={selectedRole}
+              onChange={(event) => setSelectedRole(event.target.value as UserRole)}
+            >
+              <option value="customer">Cliente final</option>
+              <option value="store_admin">Lojista</option>
+              <option value="super_admin">Super Admin</option>
+            </Select>
+
+            {selectedRole === 'store_admin' && (
+              <Input
                 id="store-id"
-                className="input"
+                label="Store ID (mock)"
                 value={selectedStoreId}
                 onChange={(event) => setSelectedStoreId(event.target.value)}
                 placeholder="store-1"
                 required
               />
-            </>
-          )}
+            )}
 
-          <Button type="submit">Entrar</Button>
-          {errorMessage && <p className="error-text">{errorMessage}</p>}
-        </form>
-      </Card>
+            <Button type="submit" variant="accent">
+              Entrar
+            </Button>
+            {errorMessage && <p className="error-text">{errorMessage}</p>}
+          </form>
+        </Card>
+      </section>
     </main>
   )
 }
