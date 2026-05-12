@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -22,7 +22,7 @@ export function StoreProductsPage() {
   const [errorMessage, setErrorMessage] = useState('')
   const [stockInputs, setStockInputs] = useState<Record<string, string>>({})
 
-  const refreshProducts = () => {
+  const refreshProducts = useCallback(() => {
     getProductsByStore(storeId, { includeInactive: true }).then((nextProducts) => {
       setProducts(nextProducts)
       setStockInputs(
@@ -32,12 +32,12 @@ export function StoreProductsPage() {
         }, {}),
       )
     })
-  }
+  }, [storeId])
 
   useEffect(() => {
     refreshProducts()
     getStoreById(storeId).then(setStore)
-  }, [storeId])
+  }, [refreshProducts, storeId])
 
   const sortedProducts = useMemo(
     () => [...products].sort((a, b) => Number(b.isActive) - Number(a.isActive) || a.name.localeCompare(b.name)),

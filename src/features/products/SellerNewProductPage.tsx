@@ -52,7 +52,6 @@ export function SellerNewProductPage() {
 
   useEffect(() => {
     if (!editingProductId) {
-      setFormState(initialFormState)
       return
     }
 

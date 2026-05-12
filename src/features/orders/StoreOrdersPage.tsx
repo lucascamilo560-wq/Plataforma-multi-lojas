@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -44,14 +44,14 @@ export function StoreOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [store, setStore] = useState<Store | undefined>()
 
-  const refreshOrders = () => {
+  const refreshOrders = useCallback(() => {
     getStoreOrders(storeId).then(setOrders)
-  }
+  }, [storeId])
 
   useEffect(() => {
     refreshOrders()
     getStoreById(storeId).then(setStore)
-  }, [storeId])
+  }, [refreshOrders, storeId])
 
   const sortedOrders = useMemo(
     () => [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
