@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
-import { PageHeader } from '../../components/ui/PageHeader'
+import { ProductCard } from '../../components/ui/ProductCard'
+import { SectionHeader } from '../../components/ui/SectionHeader'
 import { addProductToCart, getProductsByStore, getStoreById } from '../../services/mockData'
+import { getStoreTheme } from '../../styles/storeTheme'
 import type { Product, Store } from '../../types'
-import { formatCurrency } from '../../utils/currency'
 
 export function StorePage() {
   const { storeId = '' } = useParams()
@@ -32,39 +34,46 @@ export function StorePage() {
 
   if (!store) {
     return (
-      <section className="stack">
-        <PageHeader
+      <section className="stack-lg">
+        <SectionHeader
+          kicker="Loja"
           title="Loja não encontrada"
-          description="Verifique o link ou explore outras lojas disponíveis."
+          description="Verifique o link ou volte para explorar outras lojas da plataforma."
         />
-        <Link className="btn btn-secondary" to="/stores">
-          Voltar para explorar
+        <Link to="/stores">
+          <Button variant="secondary">Voltar para explorar</Button>
         </Link>
       </section>
     )
   }
 
+  const storeTheme = getStoreTheme(store)
+
   return (
-    <section className="stack-lg">
-      <PageHeader title={store.name} description={store.description} />
-      <p className="muted">MVP inicial: adição direta no carrinho sem variações e sem cálculo de frete.</p>
+    <section className="stack-xl">
+      <SectionHeader kicker="Loja" title={store.name} description={store.description} />
+
+      <Card variant="layered" title="Identidade da loja" subtitle={`${store.category} · ${store.city}`}>
+        <div className="inline-info">
+          <Badge variant={store.isActive ? 'success' : 'muted'}>
+            {store.isActive ? 'Loja ativa' : 'Loja em pausa'}
+          </Badge>
+          <Button variant="store" storeColor={storeTheme.primaryColor}>
+            Seguir loja
+          </Button>
+        </div>
+      </Card>
+
       {errorMessage && <p className="error-text">{errorMessage}</p>}
 
       <div className="grid">
         {products.map((product) => (
-          <Card
+          <ProductCard
             key={product.id}
-            title={product.name}
-            subtitle={`${product.category} · Estoque ${product.stock}`}
-          >
-            <p>{product.description}</p>
-            <div className="inline-info">
-              <strong>{formatCurrency(product.price)}</strong>
-              <Button type="button" variant="secondary" onClick={() => handleAddToCart(product)}>
-                Adicionar ao carrinho
-              </Button>
-            </div>
-          </Card>
+            product={product}
+            store={store}
+            onAction={() => handleAddToCart(product)}
+          />
         ))}
       </div>
     </section>

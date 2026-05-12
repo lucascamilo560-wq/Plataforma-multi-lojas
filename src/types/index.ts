@@ -9,6 +9,11 @@ export interface Store {
   isActive: boolean
   rating: number
   city: string
+  logoUrl?: string
+  coverUrl?: string
+  primaryColor?: string
+  secondaryColor?: string
+  accentColor?: string
 }
 
 export interface Product {

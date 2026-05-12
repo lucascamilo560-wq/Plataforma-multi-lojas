@@ -12,6 +12,11 @@ const stores: Store[] = [
     isActive: true,
     rating: 4.8,
     city: 'São Paulo',
+    logoUrl: 'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=160',
+    coverUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200',
+    primaryColor: '#14213D',
+    secondaryColor: '#E8EEF9',
+    accentColor: '#3A86FF',
   },
   {
     id: 'store-2',
@@ -22,6 +27,11 @@ const stores: Store[] = [
     isActive: true,
     rating: 4.7,
     city: 'Campinas',
+    logoUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=160',
+    coverUrl: 'https://images.unsplash.com/photo-1498804103079-a6351b050096?w=1200',
+    primaryColor: '#4A2C2A',
+    secondaryColor: '#F4ECE4',
+    accentColor: '#FF7A59',
   },
   {
     id: 'store-3',
@@ -32,6 +42,11 @@ const stores: Store[] = [
     isActive: false,
     rating: 4.4,
     city: 'Rio de Janeiro',
+    logoUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=160',
+    coverUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=1200',
+    primaryColor: '#1F2937',
+    secondaryColor: '#EEF2FF',
+    accentColor: '#6C63FF',
   },
 ]
 

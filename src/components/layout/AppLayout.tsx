@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
+import { NavPills } from '../ui/Tabs'
 
 const navigation = [
   { to: '/', label: 'Início' },
@@ -16,25 +17,13 @@ export function AppLayout() {
           <div className="header-content">
             <div>
               <p className="brand-kicker">Marketplace Multi-lojas</p>
-              <h1 className="brand-title">Plataforma de Vendas</h1>
+              <h1 className="brand-title">Plataforma de Vendas Premium</h1>
             </div>
             <NavLink to="/login" className="btn btn-secondary">
               Login
             </NavLink>
           </div>
-          <nav className="top-nav" aria-label="Navegação principal">
-            {navigation.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `nav-link ${isActive ? 'nav-link-active' : ''}`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          <NavPills items={navigation} />
         </div>
       </header>
       <main className="container app-main">

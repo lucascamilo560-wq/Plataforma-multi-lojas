@@ -1,9 +1,8 @@
-import { Link } from 'react-router-dom'
-import { Card } from '../../components/ui/Card'
-import { PageHeader } from '../../components/ui/PageHeader'
+import { useEffect, useState } from 'react'
+import { SectionHeader } from '../../components/ui/SectionHeader'
+import { StoreCard } from '../../components/ui/StoreCard'
 import { getStores } from '../../services/mockData'
 import type { Store } from '../../types'
-import { useEffect, useState } from 'react'
 
 export function CustomerHomePage() {
   const [featuredStores, setFeaturedStores] = useState<Store[]>([])
@@ -13,20 +12,16 @@ export function CustomerHomePage() {
   }, [])
 
   return (
-    <section className="stack-lg">
-      <PageHeader
-        title="Home do cliente"
-        description="Descubra lojas locais, navegue por categorias e finalize pedidos no mesmo app."
+    <section className="stack-xl">
+      <SectionHeader
+        kicker="Vitrine"
+        title="Descubra lojas com experiência premium"
+        description="Escolha sua loja, mantenha identidade de marca por seller e compre em um fluxo único mobile-first."
       />
 
       <div className="grid">
         {featuredStores.map((store) => (
-          <Card key={store.id} title={store.name} subtitle={`${store.category} · ${store.city}`}>
-            <p>{store.description}</p>
-            <Link className="btn btn-secondary" to={`/stores/${store.id}`}>
-              Ver loja
-            </Link>
-          </Card>
+          <StoreCard key={store.id} store={store} ctaLabel="Comprar agora" />
         ))}
       </div>
     </section>
