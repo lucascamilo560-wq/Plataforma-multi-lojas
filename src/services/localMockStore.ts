@@ -40,6 +40,9 @@ const STORAGE_KEYS = {
   paymentMethods: 'marketplace:payment-methods',
   deliverySettings: 'marketplace:delivery-settings',
   cartItems: 'marketplace:cart-items',
+  followedStores: 'marketplace:followed-stores',
+  lastVisitedStoreSlug: 'marketplace:last-visited-store-slug',
+  invitedStoreSlug: 'marketplace:invited-store-slug',
 } as const
 
 const defaultStores: Store[] = [
@@ -103,6 +106,8 @@ const defaultProducts: Product[] = [
     category: 'Hortifruti',
     imageUrl: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=600',
     isActive: true,
+    productType: 'physical',
+    ctaLabel: 'Adicionar ao carrinho',
   },
   {
     id: 'prod-2',
@@ -114,6 +119,8 @@ const defaultProducts: Product[] = [
     category: 'Café',
     imageUrl: 'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600',
     isActive: true,
+    productType: 'physical',
+    ctaLabel: 'Adicionar ao carrinho',
   },
   {
     id: 'prod-3',
@@ -125,6 +132,8 @@ const defaultProducts: Product[] = [
     category: 'Laticínios',
     imageUrl: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=600',
     isActive: true,
+    productType: 'physical',
+    ctaLabel: 'Adicionar ao carrinho',
   },
 ]
 
@@ -200,6 +209,50 @@ const defaultCartItems: CartItem[] = [
 ]
 
 const validOrderStatus: OrderStatus[] = ['pending', 'paid', 'preparing', 'delivered', 'cancelled']
+const validProductTypes = ['physical', 'service', 'external_link', 'affiliate'] as const
+
+function getDefaultCtaLabel(productType: Product['productType']) {
+  switch (productType) {
+    case 'service':
+      return 'Solicitar'
+    case 'external_link':
+      return 'Ver oferta'
+    case 'affiliate':
+      return 'Ver oferta externa'
+    case 'physical':
+    default:
+      return 'Adicionar ao carrinho'
+  }
+}
+
+function normalizeExternalUrl(value?: string) {
+  const trimmedValue = value?.trim()
+  return trimmedValue ? trimmedValue : undefined
+}
+
+function normalizeProduct(product: Product): Product {
+  const productType: Product['productType'] = validProductTypes.includes(product.productType)
+    ? product.productType
+    : 'physical'
+  const normalizedExternalUrl = normalizeExternalUrl(product.externalUrl)
+  const hasRequiredExternalUrl = productType === 'external_link' || productType === 'affiliate'
+
+  if (hasRequiredExternalUrl && !normalizedExternalUrl) {
+    throw new Error('Produtos por link externo precisam de uma URL externa.')
+  }
+
+  return {
+    ...product,
+    stock: Number.isFinite(product.stock) ? Math.max(0, product.stock) : 0,
+    price: Number.isFinite(product.price) ? Math.max(0, product.price) : 0,
+    isActive: product.isActive ?? true,
+    productType,
+    externalUrl: normalizedExternalUrl,
+    ctaLabel: product.ctaLabel?.trim() ? product.ctaLabel.trim() : getDefaultCtaLabel(productType),
+    sponsoredLabel: product.sponsoredLabel?.trim() ? product.sponsoredLabel.trim() : undefined,
+    affiliateDisclaimer: product.affiliateDisclaimer?.trim() ? product.affiliateDisclaimer.trim() : undefined,
+  }
+}
 
 function deepCopy<T>(value: T): T {
   return structuredClone(value)
@@ -235,12 +288,7 @@ function persistCollection<T>(key: string, value: T[]) {
 }
 
 function normalizeProducts(products: Product[]): Product[] {
-  return products.map((product) => ({
-    ...product,
-    stock: Number.isFinite(product.stock) ? Math.max(0, product.stock) : 0,
-    price: Number.isFinite(product.price) ? Math.max(0, product.price) : 0,
-    isActive: product.isActive ?? true,
-  }))
+  return products.map(normalizeProduct)
 }
 
 function normalizeOrders(orders: Order[]): Order[] {
@@ -310,6 +358,35 @@ function setCartItemsCollection(items: CartItem[]) {
   persistCollection(STORAGE_KEYS.cartItems, items)
 }
 
+function getFollowedStoresCollection() {
+  return readCollection<string>(STORAGE_KEYS.followedStores, []).filter(Boolean)
+}
+
+function setFollowedStoresCollection(storeIds: string[]) {
+  const deduplicatedStoreIds = Array.from(new Set(storeIds.map((storeId) => storeId.trim()).filter(Boolean)))
+  persistCollection(STORAGE_KEYS.followedStores, deduplicatedStoreIds)
+}
+
+function readStoredSlug(key: string) {
+  const value = window.localStorage.getItem(key)?.trim()
+  return value || null
+}
+
+function setStoredSlug(key: string, slug: string | null) {
+  if (!slug) {
+    window.localStorage.removeItem(key)
+    return
+  }
+
+  const normalizedValue = slug.trim()
+  if (!normalizedValue) {
+    window.localStorage.removeItem(key)
+    return
+  }
+
+  window.localStorage.setItem(key, normalizedValue)
+}
+
 function normalizeSlug(value: string) {
   return value
     .toLowerCase()
@@ -354,7 +431,62 @@ export async function getCartItems(): Promise<CartItem[]> {
   return Promise.resolve(getCartItemsCollection())
 }
 
+export async function followStore(storeId: string): Promise<void> {
+  const normalizedStoreId = storeId.trim()
+
+  if (!normalizedStoreId) {
+    throw new Error('Informe uma loja válida para seguir.')
+  }
+
+  const followedStores = getFollowedStoresCollection()
+  if (followedStores.includes(normalizedStoreId)) {
+    return Promise.resolve()
+  }
+
+  setFollowedStoresCollection([...followedStores, normalizedStoreId])
+  return Promise.resolve()
+}
+
+export async function unfollowStore(storeId: string): Promise<void> {
+  const normalizedStoreId = storeId.trim()
+  const followedStores = getFollowedStoresCollection()
+  setFollowedStoresCollection(followedStores.filter((id) => id !== normalizedStoreId))
+  return Promise.resolve()
+}
+
+export async function isStoreFollowed(storeId: string): Promise<boolean> {
+  const normalizedStoreId = storeId.trim()
+  return Promise.resolve(getFollowedStoresCollection().includes(normalizedStoreId))
+}
+
+export async function getFollowedStores(): Promise<string[]> {
+  return Promise.resolve(getFollowedStoresCollection())
+}
+
+export async function registerStoreVisit(slug: string): Promise<void> {
+  const normalizedSlug = slug.trim()
+  if (!normalizedSlug) {
+    throw new Error('Informe um slug de loja válido para registrar a visita.')
+  }
+
+  setStoredSlug(STORAGE_KEYS.lastVisitedStoreSlug, normalizedSlug)
+  setStoredSlug(STORAGE_KEYS.invitedStoreSlug, normalizedSlug)
+  return Promise.resolve()
+}
+
+export async function getLastVisitedStoreSlug(): Promise<string | null> {
+  return Promise.resolve(readStoredSlug(STORAGE_KEYS.lastVisitedStoreSlug))
+}
+
+export async function getInvitedStoreSlug(): Promise<string | null> {
+  return Promise.resolve(readStoredSlug(STORAGE_KEYS.invitedStoreSlug))
+}
+
 export async function addProductToCart(product: Product): Promise<void> {
+  if (product.productType !== 'physical') {
+    throw new Error('Somente produtos físicos podem ser adicionados ao carrinho.')
+  }
+
   const items = getCartItemsCollection()
   const existingItemIndex = items.findIndex(
     (item) => item.product_id === product.id && item.store_id === product.store_id,
@@ -397,13 +529,11 @@ export async function createProduct(
   payload: Omit<Product, 'id'> & { isActive?: boolean },
 ): Promise<Product> {
   const products = getProductsCollection()
-  const product: Product = {
+  const product = normalizeProduct({
     ...payload,
     id: getNextId('prod'),
-    stock: Math.max(0, payload.stock),
-    price: Math.max(0, payload.price),
     isActive: payload.isActive ?? true,
-  }
+  })
 
   setProductsCollection([...products, product])
   return Promise.resolve(product)
@@ -420,13 +550,13 @@ export async function updateProduct(
       return product
     }
 
-    updatedProduct = {
+    updatedProduct = normalizeProduct({
       ...product,
       ...updates,
       stock: updates.stock === undefined ? product.stock : Math.max(0, updates.stock),
       price: updates.price === undefined ? product.price : Math.max(0, updates.price),
       isActive: updates.isActive ?? product.isActive,
-    }
+    })
 
     return updatedProduct
   })

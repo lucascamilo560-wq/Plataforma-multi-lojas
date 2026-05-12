@@ -6,6 +6,7 @@ const sellerNavigation = [
   { to: '/lojista/produtos', label: 'Produtos', icon: 'package' as const },
   { to: '/lojista/pedidos', label: 'Pedidos', icon: 'cart' as const },
   { to: '/lojista/promocoes', label: 'Promoções', icon: 'tag' as const },
+  { to: '/lojista/minha-loja', label: 'Minha loja', icon: 'storefront' as const },
   { to: '/lojista/minha-vitrine', label: 'Minha vitrine', icon: 'storefront' as const },
   { to: '/lojista/relatorios', label: 'Mais', icon: 'sparkles' as const },
 ]

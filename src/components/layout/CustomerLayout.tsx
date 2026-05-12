@@ -3,6 +3,7 @@ import { AppHeader } from '../ui/AppHeader'
 
 const customerNavigation = [
   { to: '/cliente', label: 'Início', icon: 'sparkles' as const },
+  { to: '/cliente/minhas-lojas', label: 'Minhas lojas', icon: 'storefront' as const },
   { to: '/cliente/explorar', label: 'Explorar', icon: 'search' as const },
   { to: '/cliente/carrinho', label: 'Carrinho', icon: 'cart' as const },
   { to: '/cliente/pedidos', label: 'Pedidos', icon: 'clock' as const },

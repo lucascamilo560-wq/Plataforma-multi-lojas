@@ -16,6 +16,11 @@ interface ProductFormState {
   stock: string
   category: string
   imageUrl: string
+  productType: Product['productType']
+  externalUrl: string
+  ctaLabel: string
+  sponsoredLabel: string
+  affiliateDisclaimer: string
   isActive: 'active' | 'paused'
 }
 
@@ -26,6 +31,11 @@ const initialFormState: ProductFormState = {
   stock: '',
   category: '',
   imageUrl: '',
+  productType: 'physical',
+  externalUrl: '',
+  ctaLabel: '',
+  sponsoredLabel: '',
+  affiliateDisclaimer: '',
   isActive: 'active',
 }
 
@@ -37,6 +47,11 @@ function toFormState(product: Product): ProductFormState {
     stock: String(product.stock),
     category: product.category,
     imageUrl: product.imageUrl,
+    productType: product.productType,
+    externalUrl: product.externalUrl ?? '',
+    ctaLabel: product.ctaLabel ?? '',
+    sponsoredLabel: product.sponsoredLabel ?? '',
+    affiliateDisclaimer: product.affiliateDisclaimer ?? '',
     isActive: product.isActive ? 'active' : 'paused',
   }
 }
@@ -76,16 +91,35 @@ export function SellerNewProductPage() {
     event.preventDefault()
     setErrorMessage('')
 
-    const price = Number(formState.price)
-    const stock = Number(formState.stock)
+    const isPhysical = formState.productType === 'physical'
+    const isService = formState.productType === 'service'
+    const requiresExternalUrl = formState.productType === 'external_link' || formState.productType === 'affiliate'
 
-    if (!Number.isFinite(price) || price < 0) {
+    const parsedPrice = formState.price.trim() ? Number(formState.price) : 0
+    const parsedStock = formState.stock.trim() ? Number(formState.stock) : 0
+
+    if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
       setErrorMessage('Informe um preço válido (0 ou maior).')
       return
     }
 
-    if (!Number.isFinite(stock) || stock < 0) {
+    if ((isPhysical || formState.stock.trim()) && (!Number.isFinite(parsedStock) || parsedStock < 0)) {
       setErrorMessage('Informe um estoque válido (0 ou maior).')
+      return
+    }
+
+    if (isPhysical && !formState.stock.trim()) {
+      setErrorMessage('Informe o estoque do produto físico.')
+      return
+    }
+
+    if (isPhysical && !formState.price.trim()) {
+      setErrorMessage('Informe o preço do produto físico.')
+      return
+    }
+
+    if (!isService && !formState.price.trim()) {
+      setErrorMessage('Informe um preço válido para continuar.')
       return
     }
 
@@ -94,13 +128,23 @@ export function SellerNewProductPage() {
       return
     }
 
+    if (requiresExternalUrl && !formState.externalUrl.trim()) {
+      setErrorMessage('Produtos por link ou afiliado precisam de URL externa.')
+      return
+    }
+
     const updatePayload = {
       name: formState.name.trim(),
       description: formState.description.trim(),
-      price,
-      stock,
+      price: parsedPrice,
+      stock: isPhysical ? parsedStock : 0,
       category: formState.category.trim(),
       imageUrl: formState.imageUrl.trim(),
+      productType: formState.productType,
+      externalUrl: formState.externalUrl.trim() || undefined,
+      ctaLabel: formState.ctaLabel.trim() || undefined,
+      sponsoredLabel: formState.sponsoredLabel.trim() || undefined,
+      affiliateDisclaimer: formState.affiliateDisclaimer.trim() || undefined,
       isActive: formState.isActive === 'active',
     }
 
@@ -144,16 +188,33 @@ export function SellerNewProductPage() {
             />
           </label>
 
+          <Select
+            id="product-type"
+            label="Tipo de produto"
+            value={formState.productType}
+            onChange={(event) =>
+              setFormState((current) => ({
+                ...current,
+                productType: event.target.value as Product['productType'],
+              }))
+            }
+          >
+            <option value="physical">Produto físico</option>
+            <option value="service">Serviço local</option>
+            <option value="external_link">Produto por link</option>
+            <option value="affiliate">Oferta externa / afiliado</option>
+          </Select>
+
           <div className="grid grid-3">
             <Input
               id="product-price"
-              label="Preço"
+              label={formState.productType === 'service' ? 'Preço (opcional)' : 'Preço'}
               type="number"
               min={0}
               step="0.01"
               value={formState.price}
               onChange={(event) => setFormState((current) => ({ ...current, price: event.target.value }))}
-              required
+              required={formState.productType !== 'service'}
             />
             <Input
               id="product-stock"
@@ -162,7 +223,8 @@ export function SellerNewProductPage() {
               min={0}
               value={formState.stock}
               onChange={(event) => setFormState((current) => ({ ...current, stock: event.target.value }))}
-              required
+              required={formState.productType === 'physical'}
+              disabled={formState.productType !== 'physical'}
             />
             <Input
               id="product-category"
@@ -172,6 +234,50 @@ export function SellerNewProductPage() {
               required
             />
           </div>
+
+          {(formState.productType === 'external_link' || formState.productType === 'affiliate') && (
+            <Input
+              id="product-external-url"
+              label="URL externa"
+              value={formState.externalUrl}
+              onChange={(event) => setFormState((current) => ({ ...current, externalUrl: event.target.value }))}
+              required
+            />
+          )}
+
+          {(formState.productType === 'service' ||
+            formState.productType === 'external_link' ||
+            formState.productType === 'affiliate') && (
+            <Input
+              id="product-cta-label"
+              label="Texto do botão (opcional)"
+              value={formState.ctaLabel}
+              onChange={(event) => setFormState((current) => ({ ...current, ctaLabel: event.target.value }))}
+              placeholder="Ex: Falar com a loja / Ver oferta"
+            />
+          )}
+
+          {(formState.productType === 'external_link' || formState.productType === 'affiliate') && (
+            <Input
+              id="product-sponsored-label"
+              label="Aviso curto (opcional)"
+              value={formState.sponsoredLabel}
+              onChange={(event) => setFormState((current) => ({ ...current, sponsoredLabel: event.target.value }))}
+              placeholder="Ex: Conteúdo patrocinado"
+            />
+          )}
+
+          {formState.productType === 'affiliate' && (
+            <Input
+              id="product-affiliate-disclaimer"
+              label="Aviso de afiliado (opcional)"
+              value={formState.affiliateDisclaimer}
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, affiliateDisclaimer: event.target.value }))
+              }
+              placeholder="Ex: Compra fora da plataforma"
+            />
+          )}
 
           <Input
             id="product-image-url"

@@ -41,6 +41,31 @@ export function StorePage() {
     }
   }
 
+  const handleProductAction = async (product: Product) => {
+    if (product.productType === 'physical') {
+      await handleAddToCart(product)
+      return
+    }
+
+    if (product.productType === 'service') {
+      if (!store?.whatsapp) {
+        setErrorMessage('Esta loja ainda não configurou WhatsApp para solicitações.')
+        return
+      }
+
+      const url = `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Olá! Tenho interesse em ${product.name}.`)}`
+      window.open(url, '_blank', 'noopener,noreferrer')
+      return
+    }
+
+    if (!product.externalUrl) {
+      setErrorMessage('Este item ainda não possui link externo disponível.')
+      return
+    }
+
+    window.open(product.externalUrl, '_blank', 'noopener,noreferrer')
+  }
+
   if (!store) {
     return (
       <section className="stack-lg">
@@ -98,7 +123,7 @@ export function StorePage() {
 
       <div className="grid">
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} store={store} onAction={() => handleAddToCart(product)} />
+          <ProductCard key={product.id} product={product} store={store} onAction={() => handleProductAction(product)} />
         ))}
       </div>
 

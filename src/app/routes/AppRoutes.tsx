@@ -7,6 +7,7 @@ import { LoginPage } from '../../features/auth/LoginPage'
 import { CartPage } from '../../features/cart/CartPage'
 import { CheckoutPage } from '../../features/checkout/CheckoutPage'
 import { CustomerHomePage } from '../../features/customer-home/CustomerHomePage'
+import { CustomerMyStoresPage } from '../../features/customer-home/CustomerMyStoresPage'
 import { CustomerOrdersPage } from '../../features/customer-home/CustomerOrdersPage'
 import { CustomerProfilePage } from '../../features/customer-home/CustomerProfilePage'
 import { ExploreStoresPage } from '../../features/customer-home/ExploreStoresPage'
@@ -69,6 +70,7 @@ export function AppRoutes() {
         }
       >
         <Route index element={<CustomerHomePage />} />
+        <Route path="minhas-lojas" element={<CustomerMyStoresPage />} />
         <Route path="explorar" element={<ExploreStoresPage />} />
         <Route path="carrinho" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />

@@ -27,6 +27,11 @@ export interface Product {
   category: string
   imageUrl: string
   isActive: boolean
+  productType: 'physical' | 'service' | 'external_link' | 'affiliate'
+  externalUrl?: string
+  ctaLabel?: string
+  sponsoredLabel?: string
+  affiliateDisclaimer?: string
 }
 
 export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
