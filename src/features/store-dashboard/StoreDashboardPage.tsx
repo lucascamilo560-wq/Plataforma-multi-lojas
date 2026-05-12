@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ActionTile } from '../../components/ui/ActionTile'
+import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { KpiCard } from '../../components/ui/KpiCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
@@ -26,28 +28,74 @@ export function StoreDashboardPage() {
   return (
     <section className="stack-xl">
       <SectionHeader
-        kicker="Painel do lojista"
-        title={`Operação da loja ${storeId}`}
-        description="Métricas-chave e visão rápida da operação sem alterar a lógica atual de dados mockados."
+        kicker="Painel"
+        icon="chart"
+        title={store?.name ? `${store.name} em destaque` : 'Seu painel comercial'}
+        description="Acompanhe seus números, acesse atalhos do dia e mantenha sua operação sempre em ritmo de venda."
       />
 
-      <div className="grid grid-metrics">
-        <KpiCard label="Pedidos hoje" value={orders.length} />
-        <KpiCard label="Produtos ativos" value={products.length} />
-        <KpiCard label="Faturamento" value={formatCurrency(revenue)} />
-        <KpiCard label="Ticket médio" value={formatCurrency(revenue / Math.max(orders.length, 1))} />
-      </div>
-
       <Card
-        title="Ações rápidas"
-        subtitle="Atalhos para próxima etapa do painel"
         variant="accentCorner"
         accentColor={storeTheme.accentColor}
+        title="Identidade da loja"
+        subtitle="Marca, performance e operação no mesmo espaço"
       >
         <div className="inline-info">
-          <span className="muted">Tema da loja aplicado em botões e destaques visuais.</span>
+          <Badge variant="store" storeColor={storeTheme.primaryColor}>
+            Loja ativa
+          </Badge>
+          <Badge variant="accent">Foco do dia: acelerar conversão</Badge>
         </div>
       </Card>
+
+      <div className="grid grid-metrics">
+        <KpiCard label="Pedidos do dia" value={orders.length} icon="clock" />
+        <KpiCard label="Produtos disponíveis" value={products.length} icon="package" />
+        <KpiCard label="Receita acumulada" value={formatCurrency(revenue)} icon="wallet" />
+        <KpiCard
+          label="Ticket médio"
+          value={formatCurrency(revenue / Math.max(orders.length, 1))}
+          icon="tag"
+        />
+      </div>
+
+      <SectionHeader
+        kicker="Atalhos"
+        icon="sparkles"
+        title="Ações rápidas"
+        description="Use tiles de ação para executar as tarefas principais do seu painel."
+      />
+
+      <div className="grid grid-tiles">
+        <ActionTile
+          title="Pedidos"
+          description="Atualize status e prioridades"
+          icon="cart"
+          to="/dashboard/orders"
+          accentColor={storeTheme.primaryColor}
+        />
+        <ActionTile
+          title="Catálogo"
+          description="Destaque produtos com melhor giro"
+          icon="package"
+          to="/dashboard/products"
+          accentColor={storeTheme.accentColor}
+        />
+        <ActionTile
+          title="Visual da loja"
+          description="Ajuste capa, logo e tom da vitrine"
+          icon="palette"
+          to={`/stores/${storeId}`}
+          accentColor={storeTheme.primaryColor}
+        />
+        <ActionTile
+          title="Visão cliente"
+          description="Veja como a loja aparece na vitrine"
+          icon="storefront"
+          to="/stores"
+          accentColor={storeTheme.accentColor}
+        />
+      </div>
     </section>
   )
 }

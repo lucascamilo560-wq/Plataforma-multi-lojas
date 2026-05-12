@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react'
 
-type CardVariant = 'default' | 'accentCorner' | 'layered'
+type CardVariant = 'default' | 'accentCorner' | 'layered' | 'actionTile'
 
 interface CardProps {
   title?: string
@@ -15,6 +15,7 @@ const variantClassMap: Record<CardVariant, string> = {
   default: 'card-default',
   accentCorner: 'card-accent-corner',
   layered: 'card-layered',
+  actionTile: 'card-action-tile',
 }
 
 export function Card({
@@ -26,7 +27,7 @@ export function Card({
   className = '',
 }: CardProps) {
   const inlineStyle =
-    variant === 'accentCorner' && accentColor
+    accentColor && (variant === 'accentCorner' || variant === 'actionTile')
       ? ({ '--card-accent': accentColor } as CSSProperties)
       : undefined
 

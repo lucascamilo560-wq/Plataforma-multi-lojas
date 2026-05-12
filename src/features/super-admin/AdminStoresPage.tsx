@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { getStores } from '../../services/mockData'
@@ -14,17 +15,19 @@ export function AdminStoresPage() {
   return (
     <section className="stack-lg">
       <PageHeader
-        title="Gestão de lojas"
-        description="Base inicial para governança multi-tenant e ciclo de ativação das lojas."
+        kicker="Gestão de lojas"
+        icon="storefront"
+        title="Rede de lojas parceiras"
+        description="Acompanhe ativação das lojas e mantenha a vitrine com padrão visual elevado."
       />
       <div className="grid">
         {stores.map((store) => (
-          <Card key={store.id} title={store.name} subtitle={`${store.city} · ${store.category}`}>
+          <Card key={store.id} title={store.name} subtitle={`${store.city} · ${store.category}`} variant="accentCorner">
             <div className="inline-info">
-              <span className={`badge ${store.isActive ? 'badge-success' : 'badge-muted'}`}>
-                {store.isActive ? 'Ativa' : 'Inativa'}
-              </span>
-              <small className="muted">store_id: {store.id}</small>
+              <Badge variant={store.isActive ? 'success' : 'muted'}>
+                {store.isActive ? 'Operação ativa' : 'Pausa programada'}
+              </Badge>
+              <small className="muted">Código: {store.id}</small>
             </div>
           </Card>
         ))}
