@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -20,6 +20,10 @@ export function CustomerHomePage() {
   const [lastVisitedStore, setLastVisitedStore] = useState<Store | undefined>()
   const [recentOrders, setRecentOrders] = useState<Order[]>([])
   const [followedOffers, setFollowedOffers] = useState<Product[]>([])
+  const storeSlugMap = useMemo(
+    () => new Map(followedStores.map((store) => [store.id, store.slug])),
+    [followedStores],
+  )
 
   useEffect(() => {
     async function loadHome() {
@@ -89,7 +93,7 @@ export function CustomerHomePage() {
                 <Link to={`/loja/${store.slug}`}>
                   <Button variant="store">Abrir loja</Button>
                 </Link>
-                <Link to={`/loja/${store.slug}`}>
+                <Link to={`/loja/${store.slug}?tab=ofertas`}>
                   <Button variant="ghost">Ver ofertas</Button>
                 </Link>
               </div>
@@ -116,16 +120,19 @@ export function CustomerHomePage() {
       {followedOffers.length > 0 && (
         <Card variant="accentCorner" title="Ofertas das lojas seguidas" subtitle="Ofertas externas e campanhas ativas">
           <div className="stack" style={{ gap: '0.6rem' }}>
-            {followedOffers.map((product) => (
-              <div key={product.id} className="inline-info">
-                <span className="muted">{product.name}</span>
-                <Link to={`/loja/${followedStores.find((store) => store.id === product.store_id)?.slug ?? ''}`}>
-                  <Button variant="ghost" size="md">
-                    Ver oferta
-                  </Button>
-                </Link>
-              </div>
-            ))}
+            {followedOffers
+              .map((product) => ({ product, storeSlug: storeSlugMap.get(product.store_id) }))
+              .filter((item): item is { product: Product; storeSlug: string } => Boolean(item.storeSlug))
+              .map(({ product, storeSlug }) => (
+                <div key={product.id} className="inline-info">
+                  <span className="muted">{product.name}</span>
+                  <Link to={`/loja/${storeSlug}?tab=ofertas`}>
+                    <Button variant="ghost" size="md">
+                      Ver oferta
+                    </Button>
+                  </Link>
+                </div>
+              ))}
           </div>
         </Card>
       )}

@@ -56,7 +56,7 @@ export function CustomerMyStoresPage() {
             <Link to={`/loja/${lastVisitedStore.slug}`}>
               <Button variant="accent">Abrir loja</Button>
             </Link>
-            <Link to={`/loja/${lastVisitedStore.slug}`}>
+            <Link to={`/loja/${lastVisitedStore.slug}?tab=ofertas`}>
               <Button variant="secondary">Ver ofertas</Button>
             </Link>
           </div>
@@ -72,7 +72,7 @@ export function CustomerMyStoresPage() {
                 <Link to={`/loja/${store.slug}`}>
                   <Button variant="store">Abrir loja</Button>
                 </Link>
-                <Link to={`/loja/${store.slug}`}>
+                <Link to={`/loja/${store.slug}?tab=ofertas`}>
                   <Button variant="ghost">Ver ofertas</Button>
                 </Link>
               </div>

@@ -225,16 +225,15 @@ function getDefaultCtaLabel(productType: Product['productType']) {
   }
 }
 
-function normalizeExternalUrl(value?: string) {
-  const trimmedValue = value?.trim()
-  return trimmedValue ? trimmedValue : undefined
+function normalizeOptionalString(value?: string) {
+  return value?.trim() || undefined
 }
 
 function normalizeProduct(product: Product): Product {
   const productType: Product['productType'] = validProductTypes.includes(product.productType)
     ? product.productType
     : 'physical'
-  const normalizedExternalUrl = normalizeExternalUrl(product.externalUrl)
+  const normalizedExternalUrl = normalizeOptionalString(product.externalUrl)
   const hasRequiredExternalUrl = productType === 'external_link' || productType === 'affiliate'
 
   if (hasRequiredExternalUrl && !normalizedExternalUrl) {
@@ -470,7 +469,10 @@ export async function registerStoreVisit(slug: string): Promise<void> {
   }
 
   setStoredSlug(STORAGE_KEYS.lastVisitedStoreSlug, normalizedSlug)
-  setStoredSlug(STORAGE_KEYS.invitedStoreSlug, normalizedSlug)
+  const currentInvitedStoreSlug = readStoredSlug(STORAGE_KEYS.invitedStoreSlug)
+  if (!currentInvitedStoreSlug) {
+    setStoredSlug(STORAGE_KEYS.invitedStoreSlug, normalizedSlug)
+  }
   return Promise.resolve()
 }
 
@@ -553,8 +555,8 @@ export async function updateProduct(
     updatedProduct = normalizeProduct({
       ...product,
       ...updates,
-      stock: updates.stock === undefined ? product.stock : Math.max(0, updates.stock),
-      price: updates.price === undefined ? product.price : Math.max(0, updates.price),
+      stock: updates.stock ?? product.stock,
+      price: updates.price ?? product.price,
       isActive: updates.isActive ?? product.isActive,
     })
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -17,8 +17,12 @@ import {
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Product, Store } from '../../types'
 
+const APP_DOWNLOAD_URL = 'https://example.com/app'
+const FOLLOW_SUCCESS_MESSAGE = 'Loja seguida com sucesso! Agora você acompanha promoções e novidades.'
+
 export function StorefrontPage() {
   const { slug = '' } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [store, setStore] = useState<Store | undefined>()
   const [products, setProducts] = useState<Product[]>([])
@@ -67,18 +71,25 @@ export function StorefrontPage() {
     }
   }
 
-  const handleFollowStore = async () => {
+  const handleFollowStore = async (successMessage = FOLLOW_SUCCESS_MESSAGE) => {
     if (!store) return
-    await followStore(store.id)
-    setIsFollowed(true)
-    setInfoMessage('Loja seguida com sucesso! Agora você acompanha promoções e novidades.')
+    try {
+      setErrorMessage('')
+      await followStore(store.id)
+      setIsFollowed(true)
+      setInfoMessage(successMessage)
+    } catch (error) {
+      console.error('Falha ao seguir loja:', error)
+      setErrorMessage('Não foi possível seguir esta loja agora. Tente novamente.')
+    }
   }
 
   const handleReceivePromotions = async () => {
-    if (!store) return
-    await followStore(store.id)
-    setIsFollowed(true)
-    setInfoMessage('Você começou a receber promoções desta loja.')
+    try {
+      await handleFollowStore('Você começou a receber promoções desta loja.')
+    } catch {
+      setErrorMessage('Não foi possível ativar promoções neste momento.')
+    }
   }
 
   const handleOpenApp = () => {
@@ -125,7 +136,11 @@ export function StorefrontPage() {
   const whatsappUrl = store.whatsapp
     ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Olá! Vim pela vitrine da ${store.name}.`)}`
     : null
-  const hasPhysicalProducts = products.some((product) => product.productType === 'physical')
+  const isOffersTab = searchParams.get('tab') === 'ofertas'
+  const productsToDisplay = isOffersTab
+    ? products.filter((product) => product.productType === 'external_link' || product.productType === 'affiliate')
+    : products
+  const hasPhysicalProducts = productsToDisplay.some((product) => product.productType === 'physical')
 
   return (
     <section className="stack-xl">
@@ -149,10 +164,6 @@ export function StorefrontPage() {
             <Badge variant={store.isActive ? 'success' : 'muted'}>
               {store.isActive ? 'Aberta — pronta para receber pedidos' : 'Loja em breve'}
             </Badge>
-            <Button variant="store" storeColor={storeTheme.primaryColor} onClick={handleFollowStore}>
-              <Icon name="star" className="icon-sm" />
-              {isFollowed ? 'Loja seguida' : 'Seguir loja'}
-            </Button>
             {whatsappUrl && (
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
                 <Button variant="store" storeColor={storeTheme.primaryColor}>
@@ -170,7 +181,7 @@ export function StorefrontPage() {
         variant="layered"
       >
         <div className="inline-info">
-          <Button variant="accent" onClick={handleFollowStore}>
+          <Button variant="accent" onClick={() => handleFollowStore()} disabled={isFollowed}>
             {isFollowed ? 'Loja seguida' : 'Seguir loja'}
           </Button>
           <Button variant="secondary" onClick={handleReceivePromotions}>
@@ -179,7 +190,7 @@ export function StorefrontPage() {
           <Button variant="secondary" onClick={handleOpenApp}>
             Abrir no app
           </Button>
-          <a href="https://example.com/app" target="_blank" rel="noopener noreferrer">
+          <a href={APP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
             <Button variant="ghost">Baixar app</Button>
           </a>
         </div>
@@ -196,7 +207,7 @@ export function StorefrontPage() {
           <Button variant="secondary" onClick={handleOpenApp}>
             Abrir no app
           </Button>
-          <a href="https://example.com/app" target="_blank" rel="noopener noreferrer">
+          <a href={APP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
             <Button variant="ghost">Baixar app</Button>
           </a>
         </div>
@@ -205,17 +216,25 @@ export function StorefrontPage() {
       <SectionHeader
         kicker="Vitrine"
         icon="tag"
-        title="Produtos da loja"
-        description="Escolha seus favoritos para comprar, solicitar ou abrir ofertas externas."
+        title={isOffersTab ? 'Ofertas da loja' : 'Produtos da loja'}
+        description={
+          isOffersTab
+            ? 'Ofertas externas e campanhas da loja para você acompanhar novidades.'
+            : 'Escolha seus favoritos para comprar, solicitar ou abrir ofertas externas.'
+        }
       />
 
       {errorMessage && <p className="error-text">{errorMessage}</p>}
 
-      {products.length === 0 ? (
-        <p className="empty-state">Nenhum produto ativo no momento. Volte em breve para novas ofertas.</p>
+      {productsToDisplay.length === 0 ? (
+        <p className="empty-state">
+          {isOffersTab
+            ? 'Esta loja ainda não publicou ofertas externas. Volte em breve para novidades.'
+            : 'Nenhum produto ativo no momento. Volte em breve para novas ofertas.'}
+        </p>
       ) : (
         <div className="grid">
-          {products.map((product) => (
+          {productsToDisplay.map((product) => (
             <ProductCard key={product.id} product={product} store={store} onAction={() => handleProductAction(product)} />
           ))}
         </div>

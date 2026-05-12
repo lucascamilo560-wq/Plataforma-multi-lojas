@@ -103,18 +103,13 @@ export function SellerNewProductPage() {
       return
     }
 
-    if ((isPhysical || formState.stock.trim()) && (!Number.isFinite(parsedStock) || parsedStock < 0)) {
+    if (isPhysical && (!Number.isFinite(parsedStock) || parsedStock < 0)) {
       setErrorMessage('Informe um estoque válido (0 ou maior).')
       return
     }
 
     if (isPhysical && !formState.stock.trim()) {
       setErrorMessage('Informe o estoque do produto físico.')
-      return
-    }
-
-    if (isPhysical && !formState.price.trim()) {
-      setErrorMessage('Informe o preço do produto físico.')
       return
     }
 
