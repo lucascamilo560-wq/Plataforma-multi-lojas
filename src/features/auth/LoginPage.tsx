@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -8,26 +8,38 @@ import { Select } from '../../components/ui/Select'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { Tabs } from '../../components/ui/Tabs'
 import { useMockSession } from '../../hooks/useMockSession'
-import type { UserRole } from '../../types'
+import { getStores } from '../../services/mockData'
+import type { Store, UserRole } from '../../types'
 
 const roleDestinations: Record<UserRole, string> = {
-  customer: '/',
-  store_admin: '/dashboard',
+  customer: '/cliente',
+  store_admin: '/lojista',
   super_admin: '/admin',
 }
 
 const roleTabs = [
   { key: 'customer', label: 'Cliente', icon: 'cart' as const },
   { key: 'store_admin', label: 'Lojista', icon: 'storefront' as const },
-  { key: 'super_admin', label: 'Gestão', icon: 'shield' as const },
+  { key: 'super_admin', label: 'Super Admin', icon: 'shield' as const },
 ]
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { setRole, setStoreId } = useMockSession()
+  const { setRole, setStoreId, storeId } = useMockSession()
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
-  const [selectedStoreId, setSelectedStoreId] = useState('store-1')
+  const [stores, setStores] = useState<Store[]>([])
+  const [selectedStoreId, setSelectedStoreId] = useState(storeId)
   const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    getStores().then((nextStores) => {
+      setStores(nextStores)
+
+      if (!nextStores.some((store) => store.id === selectedStoreId) && nextStores[0]) {
+        setSelectedStoreId(nextStores[0].id)
+      }
+    })
+  }, [selectedStoreId])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -51,17 +63,17 @@ export function LoginPage() {
     <main className="container login-shell">
       <section className="stack-lg login-card">
         <SectionHeader
-          kicker="Entrada"
+          kicker="Acesso"
           icon="sparkles"
-          title="Acesse seu painel comercial"
-          description="Entre para gerenciar pedidos, atualizar catálogo e acompanhar vendas em um ambiente de produto completo."
+          title="Entre na área certa para o seu perfil"
+          description="Cliente compra, lojista gerencia sua própria loja e Super Admin acompanha a operação da plataforma."
         />
 
         <Card title="Continuar" subtitle="Escolha seu perfil e entre em segundos." variant="accentCorner">
           <div className="login-banner">
             <div className="stack" style={{ gap: '0.45rem' }}>
-              <strong>Experiência premium para cada perfil</strong>
-              <p>Cliente, lojista e gestão em uma navegação fluida.</p>
+              <strong>Fluxos separados por perfil</strong>
+              <p>Cada área foi organizada para uma experiência clara e focada.</p>
             </div>
             <Icon name="sparkles" className="icon-md" />
           </div>
@@ -84,23 +96,27 @@ export function LoginPage() {
             >
               <option value="customer">Cliente</option>
               <option value="store_admin">Lojista</option>
-              <option value="super_admin">Equipe de gestão</option>
+              <option value="super_admin">Super Admin</option>
             </Select>
 
             {selectedRole === 'store_admin' && (
-              <Input
+              <Select
                 id="store-id"
-                label="Código da loja"
+                label="Minha loja"
                 value={selectedStoreId}
                 onChange={(event) => setSelectedStoreId(event.target.value)}
-                placeholder="store-1"
-                required
-              />
+              >
+                {stores.map((store) => (
+                  <option key={store.id} value={store.id}>
+                    {store.name}
+                  </option>
+                ))}
+              </Select>
             )}
 
             <Button type="submit" variant="accent" size="lg">
               <Icon name="arrowRight" className="icon-sm" />
-              Entrar no app
+              Entrar
             </Button>
             {errorMessage && <p className="error-text">{errorMessage}</p>}
           </form>

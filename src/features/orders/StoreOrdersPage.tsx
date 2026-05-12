@@ -7,6 +7,13 @@ import { getStoreById, getStoreOrders } from '../../services/mockData'
 import type { Order, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 
+const statusLabel: Record<Order['status'], string> = {
+  pending: 'Aguardando confirmação',
+  paid: 'Pagamento confirmado',
+  preparing: 'Em preparação',
+  delivered: 'Entregue',
+}
+
 export function StoreOrdersPage() {
   const { storeId } = useMockSession()
   const [orders, setOrders] = useState<Order[]>([])
@@ -22,7 +29,7 @@ export function StoreOrdersPage() {
       <PageHeader
         kicker="Pedidos"
         icon="cart"
-        title="Fila de entregas"
+        title="Pedidos da sua loja"
         description={`Gerencie o andamento dos pedidos de ${store?.name ?? 'sua loja'} com visão clara de prioridade.`}
       />
 
@@ -30,7 +37,7 @@ export function StoreOrdersPage() {
         {orders.map((order) => (
           <Card key={order.id} title={`Pedido ${order.id}`} subtitle={`Cliente: ${order.customerName}`} variant="layered">
             <div className="inline-info">
-              <Badge variant={order.status === 'pending' ? 'accent' : 'success'}>{order.status}</Badge>
+              <Badge variant={order.status === 'pending' ? 'accent' : 'success'}>{statusLabel[order.status]}</Badge>
               <strong>{formatCurrency(order.total)}</strong>
             </div>
           </Card>

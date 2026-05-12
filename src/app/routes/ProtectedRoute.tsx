@@ -4,8 +4,8 @@ import { useMockSession } from '../../hooks/useMockSession'
 import type { UserRole } from '../../types'
 
 const defaultRouteByRole: Record<UserRole, string> = {
-  customer: '/',
-  store_admin: '/dashboard',
+  customer: '/cliente',
+  store_admin: '/lojista',
   super_admin: '/admin',
 }
 

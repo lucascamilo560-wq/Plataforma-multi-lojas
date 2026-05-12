@@ -6,27 +6,35 @@ import { Card } from '../../components/ui/Card'
 import { Icon } from '../../components/ui/Icon'
 import { ProductCard } from '../../components/ui/ProductCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { addProductToCart, getProductsByStore, getStoreById } from '../../services/mockData'
+import { addProductToCart, getProductsByStore, getStoreBySlug } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Product, Store } from '../../types'
 
 export function StorePage() {
-  const { storeId = '' } = useParams()
+  const { slug = '' } = useParams()
   const navigate = useNavigate()
   const [store, setStore] = useState<Store | undefined>()
   const [products, setProducts] = useState<Product[]>([])
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
-    getStoreById(storeId).then(setStore)
-    getProductsByStore(storeId).then(setProducts)
-  }, [storeId])
+    getStoreBySlug(slug).then((nextStore) => {
+      setStore(nextStore)
+
+      if (!nextStore) {
+        setProducts([])
+        return
+      }
+
+      getProductsByStore(nextStore.id).then(setProducts)
+    })
+  }, [slug])
 
   const handleAddToCart = async (product: Product) => {
     try {
       setErrorMessage('')
       await addProductToCart(product)
-      navigate('/cart')
+      navigate('/cliente/carrinho')
     } catch (error) {
       console.error('Falha ao adicionar item no carrinho:', error)
       setErrorMessage('Não foi possível adicionar o produto ao carrinho. Tente novamente.')
@@ -42,7 +50,7 @@ export function StorePage() {
           title="Loja não encontrada"
           description="Este link não está disponível no momento. Explore outras vitrines e continue comprando."
         />
-        <Link to="/stores">
+        <Link to="/cliente/explorar">
           <Button variant="secondary">Voltar para lojas</Button>
         </Link>
       </section>
@@ -62,12 +70,14 @@ export function StorePage() {
         <div className="store-hero-content">
           <img src={storeTheme.logoUrl} alt={`Logo da loja ${store.name}`} className="store-hero-logo" />
           <div>
-            <h2 className="section-title" style={{ margin: 0 }}>{store.name}</h2>
+            <h2 className="section-title" style={{ margin: 0 }}>
+              {store.name}
+            </h2>
             <p style={{ margin: '0.2rem 0 0' }}>{store.description}</p>
           </div>
           <div className="inline-info">
             <Badge variant={store.isActive ? 'success' : 'muted'}>
-              {store.isActive ? 'Entrega no ritmo certo' : 'Agenda de retomada ativa'}
+              {store.isActive ? 'Loja pronta para receber pedidos' : 'Loja em breve'}
             </Badge>
             <Button variant="store" storeColor={storeTheme.primaryColor}>
               <Icon name="star" className="icon-sm" />
@@ -93,7 +103,7 @@ export function StorePage() {
       </div>
 
       <Card variant="layered" title="Compra contínua" subtitle="Finalize quando quiser, sem perder itens">
-        <Link to="/cart">
+        <Link to="/cliente/carrinho">
           <Button variant="store" size="lg" storeColor={storeTheme.primaryColor}>
             <Icon name="cart" className="icon-sm" />
             Ir para carrinho

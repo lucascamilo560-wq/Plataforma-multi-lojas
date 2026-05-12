@@ -18,16 +18,16 @@ export function CustomerHomePage() {
   return (
     <section className="stack-xl">
       <SectionHeader
-        kicker="Vitrine premium"
+        kicker="Vitrine"
         icon="sparkles"
-        title="Compre em lojas com identidade própria"
-        description="Descubra marcas, acompanhe ofertas e finalize pedidos em uma experiência fluida para mobile."
+        title="Compre em lojas locais com identidade própria"
+        description="Descubra marcas da sua região, acompanhe ofertas e finalize pedidos com praticidade."
       />
 
       <Card variant="layered" title="Comece agora" subtitle="Explore vitrines e encontre o que você precisa">
         <div className="inline-info">
           <span className="muted">Navegação rápida para entrar nas lojas mais ativas.</span>
-          <Link to="/stores">
+          <Link to="/cliente/explorar">
             <Button variant="accent" size="lg">
               <Icon name="arrowRight" className="icon-sm" />
               Explorar lojas

@@ -15,10 +15,10 @@ export function AdminStoresPage() {
   return (
     <section className="stack-lg">
       <PageHeader
-        kicker="Gestão de lojas"
+        kicker="Lojas"
         icon="storefront"
-        title="Rede de lojas parceiras"
-        description="Acompanhe ativação das lojas e mantenha a vitrine com padrão visual elevado."
+        title="Rede de lojas da plataforma"
+        description="Acompanhe o status de cada loja e mantenha a operação local em evolução constante."
       />
       <div className="grid">
         {stores.map((store) => (
@@ -27,7 +27,7 @@ export function AdminStoresPage() {
               <Badge variant={store.isActive ? 'success' : 'muted'}>
                 {store.isActive ? 'Operação ativa' : 'Pausa programada'}
               </Badge>
-              <small className="muted">Código: {store.id}</small>
+              <small className="muted">Identificador interno: {store.id}</small>
             </div>
           </Card>
         ))}

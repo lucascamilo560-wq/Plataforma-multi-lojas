@@ -17,24 +17,27 @@ export function AdminDashboardPage() {
   return (
     <section className="stack-xl">
       <SectionHeader
-        kicker="Gestão"
+        kicker="Super Admin"
         icon="shield"
         title="Visão executiva da plataforma"
-        description="Acompanhe expansão, performance e ritmo de pedidos em um painel comercial com leitura imediata."
+        description="Acompanhe expansão, desempenho e ritmo de pedidos em um painel de gestão central."
       />
       <div className="grid grid-metrics">
         <KpiCard label="Lojas totais" value={summary?.totalStores ?? 0} icon="storefront" />
-        <KpiCard label="Lojas em operação" value={summary?.activeStores ?? 0} icon="check" />
+        <KpiCard label="Lojas ativas" value={summary?.activeStores ?? 0} icon="check" />
         <KpiCard label="Pedidos" value={summary?.totalOrders ?? 0} icon="cart" />
         <KpiCard label="Receita bruta" value={formatCurrency(summary?.grossRevenue ?? 0)} icon="wallet" />
       </div>
 
       <Card title="Direcionamento rápido" subtitle="Acesso direto às áreas de gestão" variant="accentCorner">
         <div className="grid grid-tiles">
-          <ActionTile title="Lojas" description="Ativação e status" icon="storefront" to="/admin/stores" active />
-          <ActionTile title="Catálogo" description="Saúde dos produtos" icon="package" to="/dashboard/products" />
-          <ActionTile title="Pedidos" description="Fluxo operacional" icon="cart" to="/dashboard/orders" />
-          <ActionTile title="Vitrine" description="Experiência do cliente" icon="sparkles" to="/stores" />
+          <ActionTile title="Lojas" description="Ativação e status" icon="storefront" to="/admin/lojas" active />
+          <ActionTile title="Lojistas" description="Gestão de contas" icon="user" to="/admin/lojistas" />
+          <ActionTile title="Clientes" description="Engajamento" icon="cart" to="/admin/clientes" />
+          <ActionTile title="Planos" description="Oferta e receita" icon="wallet" to="/admin/planos" />
+          <ActionTile title="Pedidos" description="Monitoramento" icon="clock" to="/admin/pedidos" />
+          <ActionTile title="Suporte" description="Atendimento" icon="check" to="/admin/suporte" />
+          <ActionTile title="Configurações" description="Parâmetros" icon="shield" to="/admin/configuracoes" />
         </div>
       </Card>
     </section>

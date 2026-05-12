@@ -3,8 +3,8 @@ import type { Store } from '../../types'
 import { getStoreTheme } from '../../styles/storeTheme'
 import { Badge } from './Badge'
 import { Button } from './Button'
-import { Card } from './Card'
 import { Icon } from './Icon'
+import { Card } from './Card'
 
 interface StoreCardProps {
   store: Store
@@ -38,7 +38,7 @@ export function StoreCard({ store, ctaLabel = 'Visitar loja' }: StoreCardProps) 
         <Badge variant={store.isActive ? 'success' : 'muted'}>
           {store.isActive ? 'Entrega ativa' : 'Voltamos em breve'}
         </Badge>
-        <Link to={`/stores/${store.id}`}>
+        <Link to={`/cliente/loja/${store.slug}`}>
           <Button variant="store" storeColor={theme.primaryColor}>
             {ctaLabel}
           </Button>
