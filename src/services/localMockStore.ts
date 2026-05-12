@@ -618,3 +618,17 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
 export async function getOrderById(orderId: string): Promise<Order | undefined> {
   return Promise.resolve(getOrdersCollection().find((order) => order.id === orderId))
 }
+
+/**
+ * Ponto de entrada oficial para a vitrine pública de uma loja.
+ *
+ * Use sempre este método para resolver a loja a partir de uma URL pública
+ * (/loja/:slug). O app NÃO deve carregar todas as lojas por padrão —
+ * cada vitrine é carregada individualmente, sob demanda, pelo slug.
+ *
+ * Preparado para futura migração a Supabase:
+ *   supabase.from('stores').select('*').eq('slug', slug).single()
+ */
+export async function getPublicStorefront(slug: string): Promise<Store | undefined> {
+  return getStoreBySlug(slug)
+}

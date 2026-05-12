@@ -11,6 +11,7 @@ export {
   getOrderById,
   getPaymentSettings,
   getProductsByStore,
+  getPublicStorefront,
   getStoreById,
   getStoreBySlug,
   getStoreOrders,
