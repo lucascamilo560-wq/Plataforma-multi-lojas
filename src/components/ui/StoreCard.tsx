@@ -3,8 +3,8 @@ import type { Store } from '../../types'
 import { getStoreTheme } from '../../styles/storeTheme'
 import { Badge } from './Badge'
 import { Button } from './Button'
-import { Icon } from './Icon'
 import { Card } from './Card'
+import { Icon } from './Icon'
 
 interface StoreCardProps {
   store: Store

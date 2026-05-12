@@ -34,12 +34,12 @@ export function LoginPage() {
   useEffect(() => {
     getStores().then((nextStores) => {
       setStores(nextStores)
+      const hasCurrentStore = nextStores.some((store) => store.id === storeId)
+      const nextStoreId = !hasCurrentStore && nextStores.length > 0 ? nextStores[0].id : storeId
 
-      if (!nextStores.some((store) => store.id === selectedStoreId) && nextStores[0]) {
-        setSelectedStoreId(nextStores[0].id)
-      }
+      setSelectedStoreId(nextStoreId)
     })
-  }, [selectedStoreId])
+  }, [storeId])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()

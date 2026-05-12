@@ -17,6 +17,7 @@ export function StoreDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [store, setStore] = useState<Store | undefined>()
+  const [shareMessage, setShareMessage] = useState('')
 
   useEffect(() => {
     getStoreOrders(storeId).then(setOrders)
@@ -26,7 +27,17 @@ export function StoreDashboardPage() {
 
   const revenue = useMemo(() => orders.reduce((amount, order) => amount + order.total, 0), [orders])
   const storeTheme = getStoreTheme(store)
-  const storeSlug = store?.slug ?? ''
+  const storefrontUrl = store?.slug ? `/cliente/loja/${store.slug}` : '/cliente/explorar'
+
+  const handleShareStore = async () => {
+    try {
+      setShareMessage('')
+      await window.navigator.clipboard.writeText(`${window.location.origin}${storefrontUrl}`)
+      setShareMessage('Link da vitrine copiado para compartilhar.')
+    } catch {
+      setShareMessage('Não foi possível copiar automaticamente. Use o botão de ver vitrine para abrir o link.')
+    }
+  }
 
   return (
     <section className="stack-xl">
@@ -52,7 +63,7 @@ export function StoreDashboardPage() {
                 className="store-logo"
               />
             )}
-            <div className="stack" style={{ gap: '0.3rem' }}>
+            <div className="stack">
               <strong>{store?.name ?? 'Minha loja'}</strong>
               <Badge variant={store?.isActive ? 'success' : 'muted'}>
                 {store?.isActive ? 'Loja ativa' : 'Loja temporariamente pausada'}
@@ -60,15 +71,16 @@ export function StoreDashboardPage() {
             </div>
           </div>
           <div className="inline-info">
-            <Link to={storeSlug ? `/cliente/loja/${storeSlug}` : '/cliente/explorar'}>
+            <Link to={storefrontUrl}>
               <Button variant="store" storeColor={storeTheme.primaryColor}>
                 Ver minha vitrine
               </Button>
             </Link>
-            <Link to={storeSlug ? `/cliente/loja/${storeSlug}` : '/cliente/explorar'}>
-              <Button variant="secondary">Compartilhar loja</Button>
-            </Link>
+            <Button variant="secondary" onClick={handleShareStore}>
+              Compartilhar loja
+            </Button>
           </div>
+          {shareMessage && <p className="muted">{shareMessage}</p>}
         </div>
       </Card>
 
@@ -100,14 +112,8 @@ export function StoreDashboardPage() {
         <ActionTile title="Entrega/Retirada" description="Defina logística" icon="clock" to="/lojista/entrega" />
         <ActionTile title="Minha marca" description="Visual da loja" icon="palette" to="/lojista/marca" />
         <ActionTile title="Relatórios" description="Análises da loja" icon="chart" to="/lojista/relatorios" />
-        <ActionTile title="Ajuda" description="Suporte e orientações" icon="check" to="/lojista/minha-loja" />
+        <ActionTile title="Ajuda" description="Suporte e orientações" icon="check" to="/lojista/ajuda" />
       </div>
-
-      <Card title="Visualização" subtitle="Veja sua vitrine sem entrar no fluxo de compra" variant="layered">
-        <Link to={storeSlug ? `/cliente/loja/${storeSlug}` : '/cliente/explorar'}>
-          <Button variant="secondary">Ver minha vitrine como cliente</Button>
-        </Link>
-      </Card>
     </section>
   )
 }
