@@ -1,4 +1,4 @@
-import type { AdminSummary, CartItem, Order, OrderStatus, Product, Store } from '../types'
+import type { AdminSummary, CartItem, Order, OrderItem, OrderStatus, Product, Store } from '../types'
 
 export interface Coupon {
   id: string
@@ -57,6 +57,7 @@ const defaultStores: Store[] = [
     primaryColor: '#14213D',
     secondaryColor: '#E8EEF9',
     accentColor: '#3A86FF',
+    whatsapp: '5511999990001',
   },
   {
     id: 'store-2',
@@ -72,6 +73,7 @@ const defaultStores: Store[] = [
     primaryColor: '#4A2C2A',
     secondaryColor: '#F4ECE4',
     accentColor: '#FF7A59',
+    whatsapp: '5519999990002',
   },
   {
     id: 'store-3',
@@ -560,4 +562,59 @@ export async function getPaymentSettings(storeId: string): Promise<PaymentMethod
 
 export async function getDeliverySettings(storeId: string): Promise<DeliverySettings | undefined> {
   return Promise.resolve(getDeliverySettingsCollection().find((settings) => settings.store_id === storeId))
+}
+
+export async function getCartItemsByStore(storeId: string): Promise<CartItem[]> {
+  return Promise.resolve(getCartItemsCollection().filter((item) => item.store_id === storeId))
+}
+
+export interface CreateOrderPayload {
+  storeId: string
+  customerName: string
+  customerPhone?: string
+  address?: string
+  notes?: string
+  deliveryType?: 'delivery' | 'pickup'
+  paymentMethod?: string
+}
+
+export async function createOrderFromCart(payload: CreateOrderPayload): Promise<Order> {
+  const allItems = getCartItemsCollection()
+  const storeItems = allItems.filter((item) => item.store_id === payload.storeId)
+
+  const items: OrderItem[] = storeItems.map((item) => ({
+    product_id: item.product_id,
+    productName: item.productName,
+    quantity: item.quantity,
+    price: item.price,
+  }))
+
+  const total = storeItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  const order: Order = {
+    id: getNextId('ord'),
+    store_id: payload.storeId,
+    customerName: payload.customerName,
+    customerPhone: payload.customerPhone,
+    address: payload.address,
+    notes: payload.notes,
+    deliveryType: payload.deliveryType,
+    paymentMethod: payload.paymentMethod,
+    items,
+    total,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+  }
+
+  const orders = getOrdersCollection()
+  setOrdersCollection([...orders, order])
+
+  const remainingItems = allItems.filter((item) => item.store_id !== payload.storeId)
+  setCartItemsCollection(remainingItems)
+
+  return Promise.resolve(order)
+}
+
+export async function getOrderById(orderId: string): Promise<Order | undefined> {
+  return Promise.resolve(getOrdersCollection().find((order) => order.id === orderId))
 }
