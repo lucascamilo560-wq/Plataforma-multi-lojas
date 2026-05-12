@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { CustomerLayout } from '../../components/layout/CustomerLayout'
 import { SellerLayout } from '../../components/layout/SellerLayout'
+import { StorefrontLayout } from '../../components/layout/StorefrontLayout'
 import { LoginPage } from '../../features/auth/LoginPage'
 import { CartPage } from '../../features/cart/CartPage'
 import { CheckoutPage } from '../../features/checkout/CheckoutPage'
@@ -13,6 +14,10 @@ import { StorePage } from '../../features/customer-home/StorePage'
 import { StoreOrdersPage } from '../../features/orders/StoreOrdersPage'
 import { SellerNewProductPage } from '../../features/products/SellerNewProductPage'
 import { StoreProductsPage } from '../../features/products/StoreProductsPage'
+import { StorefrontCartPage } from '../../features/storefront/StorefrontCartPage'
+import { StorefrontCheckoutPage } from '../../features/storefront/StorefrontCheckoutPage'
+import { StorefrontOrderPage } from '../../features/storefront/StorefrontOrderPage'
+import { StorefrontPage } from '../../features/storefront/StorefrontPage'
 import { AdminCustomersPage } from '../../features/super-admin/AdminCustomersPage'
 import { AdminDashboardPage } from '../../features/super-admin/AdminDashboardPage'
 import { AdminOrdersPage } from '../../features/super-admin/AdminOrdersPage'
@@ -72,6 +77,13 @@ export function AppRoutes() {
 
       <Route path="/cliente/loja/:slug" element={<CustomerLayout />}>
         <Route index element={<StorePage />} />
+      </Route>
+
+      <Route path="/loja/:slug" element={<StorefrontLayout />}>
+        <Route index element={<StorefrontPage />} />
+        <Route path="carrinho" element={<StorefrontCartPage />} />
+        <Route path="checkout" element={<StorefrontCheckoutPage />} />
+        <Route path="pedido/:orderId" element={<StorefrontOrderPage />} />
       </Route>
 
       <Route

@@ -14,6 +14,7 @@ export interface Store {
   primaryColor?: string
   secondaryColor?: string
   accentColor?: string
+  whatsapp?: string
 }
 
 export interface Product {
@@ -30,10 +31,23 @@ export interface Product {
 
 export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
 
+export interface OrderItem {
+  product_id: string
+  productName: string
+  quantity: number
+  price: number
+}
+
 export interface Order {
   id: string
   store_id: string
   customerName: string
+  customerPhone?: string
+  address?: string
+  notes?: string
+  deliveryType?: 'delivery' | 'pickup'
+  paymentMethod?: string
+  items?: OrderItem[]
   total: number
   status: OrderStatus
   createdAt: string

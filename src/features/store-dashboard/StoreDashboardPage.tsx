@@ -27,7 +27,7 @@ export function StoreDashboardPage() {
 
   const revenue = useMemo(() => orders.reduce((amount, order) => amount + order.total, 0), [orders])
   const storeTheme = getStoreTheme(store)
-  const storefrontUrl = store?.slug ? `/cliente/loja/${store.slug}` : '/cliente/explorar'
+  const storefrontUrl = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
 
   const handleShareStore = async () => {
     try {
