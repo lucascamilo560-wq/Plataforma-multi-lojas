@@ -133,12 +133,18 @@ const DEFAULT_STORE_THEME: StoreTheme = {
 const HEX_COLOR_REGEX = /^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$/
 
 function safeColor(value: string | undefined, fallback: string): string {
-  if (!value) return fallback
+  if (!value) {
+    return fallback
+  }
+
   return HEX_COLOR_REGEX.test(value) ? value : fallback
 }
 
 function safeImage(value: string | undefined, fallback: string): string {
-  if (!value) return fallback
+  if (!value) {
+    return fallback
+  }
+
   try {
     const url = new URL(value)
     return ['https:', 'http:'].includes(url.protocol) ? url.href : fallback

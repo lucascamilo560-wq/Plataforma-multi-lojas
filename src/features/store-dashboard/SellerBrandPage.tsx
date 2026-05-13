@@ -315,7 +315,10 @@ export function SellerBrandPage() {
                     src={formState.logoUrl}
                     alt="Logo prévia"
                     style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '12px', border: '1px solid var(--border)' }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    onError={(e) => {
+                      const parent = (e.target as HTMLImageElement).parentElement
+                      if (parent) parent.style.display = 'none'
+                    }}
                   />
                 </div>
               )}
@@ -326,7 +329,10 @@ export function SellerBrandPage() {
                     src={formState.coverUrl}
                     alt="Banner prévia"
                     style={{ height: '60px', maxWidth: '240px', objectFit: 'cover', borderRadius: '10px', border: '1px solid var(--border)' }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    onError={(e) => {
+                      const parent = (e.target as HTMLImageElement).parentElement
+                      if (parent) parent.style.display = 'none'
+                    }}
                   />
                 </div>
               )}
