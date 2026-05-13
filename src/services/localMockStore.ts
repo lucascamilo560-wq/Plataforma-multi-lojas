@@ -985,3 +985,130 @@ export function clearSellerSession(): void {
 export function clearAllDemoData(): void {
   Object.values(STORAGE_KEYS).forEach((key) => window.localStorage.removeItem(key))
 }
+
+// ---------------------------------------------------------------------------
+// Customer order helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Retorna todos os pedidos do cliente mock atual.
+ * Como ainda não há customerId real, retorna todos os pedidos do localStorage
+ * ordenados do mais recente ao mais antigo.
+ * Preparado para futura migração: basta filtrar por customerId quando disponível.
+ */
+export async function getCustomerOrders(): Promise<Order[]> {
+  const orders = getOrdersCollection()
+  return Promise.resolve(
+    [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+  )
+}
+
+/**
+ * Retorna pedidos de uma loja específica para o cliente mock atual.
+ */
+export async function getOrdersByStoreForCustomer(storeId: string): Promise<Order[]> {
+  const orders = getOrdersCollection().filter((order) => order.store_id === storeId)
+  return Promise.resolve(
+    [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+  )
+}
+
+/**
+ * Retorna um pedido com os dados da loja associada.
+ */
+export async function getOrderWithStore(
+  orderId: string,
+): Promise<{ order: Order; store: Store | undefined } | undefined> {
+  const order = getOrdersCollection().find((o) => o.id === orderId)
+  if (!order) return Promise.resolve(undefined)
+  const store = getStoresCollection().find((s) => s.id === order.store_id)
+  return Promise.resolve({ order, store })
+}
+
+export interface RepeatOrderResult {
+  addedCount: number
+  skippedCount: number
+  storeSlug: string | undefined
+}
+
+/**
+ * Adiciona novamente ao carrinho os itens físicos de um pedido anterior.
+ * Itens de produtos inativos ou removidos são ignorados.
+ */
+export async function repeatOrder(orderId: string): Promise<RepeatOrderResult> {
+  const order = getOrdersCollection().find((o) => o.id === orderId)
+  if (!order?.items?.length) {
+    return Promise.resolve({ addedCount: 0, skippedCount: 0, storeSlug: undefined })
+  }
+
+  const store = getStoresCollection().find((s) => s.id === order.store_id)
+  const products = getProductsCollection()
+  let addedCount = 0
+  let skippedCount = 0
+  const cart = [...getCartItemsCollection()]
+
+  for (const item of order.items) {
+    const product = products.find((p) => p.id === item.product_id && p.store_id === order.store_id)
+
+    if (!product || !product.isActive || product.productType !== 'physical') {
+      skippedCount++
+      continue
+    }
+
+    const existingIndex = cart.findIndex(
+      (c) => c.product_id === item.product_id && c.store_id === order.store_id,
+    )
+    if (existingIndex >= 0) {
+      cart[existingIndex] = { ...cart[existingIndex], quantity: cart[existingIndex].quantity + item.quantity }
+    } else {
+      cart.push({
+        id: getNextId('cart'),
+        store_id: order.store_id,
+        product_id: item.product_id,
+        productName: item.productName,
+        quantity: item.quantity,
+        price: product.price,
+      })
+    }
+    addedCount++
+  }
+
+  setCartItemsCollection(cart)
+  return Promise.resolve({ addedCount, skippedCount, storeSlug: store?.slug })
+}
+
+// ---------------------------------------------------------------------------
+// Cart mutation helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Atualiza a quantidade de um item no carrinho.
+ * Se a quantidade for <= 0, o item é removido.
+ */
+export async function updateCartItemQuantity(cartItemId: string, quantity: number): Promise<void> {
+  const items = getCartItemsCollection()
+  const nextItems =
+    quantity <= 0
+      ? items.filter((item) => item.id !== cartItemId)
+      : items.map((item) => (item.id === cartItemId ? { ...item, quantity: Math.max(1, quantity) } : item))
+  setCartItemsCollection(nextItems)
+  return Promise.resolve()
+}
+
+/**
+ * Remove um item do carrinho pelo seu ID.
+ */
+export async function removeCartItem(cartItemId: string): Promise<void> {
+  const items = getCartItemsCollection().filter((item) => item.id !== cartItemId)
+  setCartItemsCollection(items)
+  return Promise.resolve()
+}
+
+/**
+ * Remove todos os itens do carrinho de uma loja específica.
+ */
+export async function clearCartByStore(storeId: string): Promise<void> {
+  const items = getCartItemsCollection().filter((item) => item.store_id !== storeId)
+  setCartItemsCollection(items)
+  return Promise.resolve()
+}

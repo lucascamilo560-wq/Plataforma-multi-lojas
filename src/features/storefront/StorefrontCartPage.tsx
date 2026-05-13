@@ -4,7 +4,13 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Icon } from '../../components/ui/Icon'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { getCartItemsByStore, getStoreBySlug } from '../../services/mockData'
+import {
+  clearCartByStore,
+  getCartItemsByStore,
+  getStoreBySlug,
+  removeCartItem,
+  updateCartItemQuantity,
+} from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { CartItem, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
@@ -30,6 +36,26 @@ export function StorefrontCartPage() {
 
   const storeTheme = getStoreTheme(store)
 
+  const handleUpdateQty = async (itemId: string, quantity: number) => {
+    await updateCartItemQuantity(itemId, quantity)
+    setItems((prev) =>
+      quantity <= 0
+        ? prev.filter((item) => item.id !== itemId)
+        : prev.map((item) => (item.id === itemId ? { ...item, quantity } : item)),
+    )
+  }
+
+  const handleRemove = async (itemId: string) => {
+    await removeCartItem(itemId)
+    setItems((prev) => prev.filter((item) => item.id !== itemId))
+  }
+
+  const handleClearCart = async () => {
+    if (!store) return
+    await clearCartByStore(store.id)
+    setItems([])
+  }
+
   return (
     <section className="stack-xl">
       <SectionHeader
@@ -45,7 +71,7 @@ export function StorefrontCartPage() {
             <div className="stack">
               <p className="empty-state">Seu carrinho está vazio.</p>
               <Link to={`/loja/${slug}`}>
-                <Button variant="secondary">Voltar para a loja</Button>
+                <Button variant="secondary">Continuar comprando</Button>
               </Link>
             </div>
           ) : (
@@ -59,12 +85,46 @@ export function StorefrontCartPage() {
                     <strong>{item.productName}</strong>
                     <p className="muted">{store?.name ?? 'Loja'}</p>
                   </div>
+                  <div className="inline-info" style={{ gap: '0.25rem', alignItems: 'center' }}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { void handleUpdateQty(item.id, item.quantity - 1) }}
+                      aria-label="Diminuir quantidade"
+                    >
+                      −
+                    </Button>
+                    <span style={{ minWidth: '1.5rem', textAlign: 'center' }}>{item.quantity}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => { void handleUpdateQty(item.id, item.quantity + 1) }}
+                      aria-label="Aumentar quantidade"
+                    >
+                      +
+                    </Button>
+                  </div>
                   <div className="text-right">
-                    <p className="muted">Qtd: {item.quantity}</p>
                     <strong>{formatCurrency(item.price * item.quantity)}</strong>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => { void handleRemove(item.id) }}
+                    aria-label="Remover item"
+                  >
+                    <Icon name="close" className="icon-sm" />
+                  </Button>
                 </article>
               ))}
+              <div className="inline-info" style={{ marginTop: '0.5rem' }}>
+                <Link to={`/loja/${slug}`}>
+                  <Button variant="secondary" size="md">Continuar comprando</Button>
+                </Link>
+                <Button variant="ghost" size="md" onClick={() => { void handleClearCart() }}>
+                  Limpar carrinho
+                </Button>
+              </div>
             </div>
           )}
         </Card>
@@ -96,3 +156,4 @@ export function StorefrontCartPage() {
     </section>
   )
 }
+

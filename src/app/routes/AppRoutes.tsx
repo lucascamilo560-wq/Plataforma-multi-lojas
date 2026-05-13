@@ -8,6 +8,7 @@ import { CartPage } from '../../features/cart/CartPage'
 import { CheckoutPage } from '../../features/checkout/CheckoutPage'
 import { CustomerHomePage } from '../../features/customer-home/CustomerHomePage'
 import { CustomerMyStoresPage } from '../../features/customer-home/CustomerMyStoresPage'
+import { CustomerOrderDetailPage } from '../../features/customer-home/CustomerOrderDetailPage'
 import { CustomerOrdersPage } from '../../features/customer-home/CustomerOrdersPage'
 import { CustomerProfilePage } from '../../features/customer-home/CustomerProfilePage'
 import { ExploreStoresPage } from '../../features/customer-home/ExploreStoresPage'
@@ -87,6 +88,7 @@ export function AppRoutes() {
         <Route path="carrinho" element={<CartPage />} />
         <Route path="checkout" element={<CheckoutPage />} />
         <Route path="pedidos" element={<CustomerOrdersPage />} />
+        <Route path="pedidos/:orderId" element={<CustomerOrderDetailPage />} />
         <Route path="perfil" element={<CustomerProfilePage />} />
       </Route>
 
