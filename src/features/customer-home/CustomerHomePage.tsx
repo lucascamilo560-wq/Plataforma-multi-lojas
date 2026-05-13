@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Icon } from '../../components/ui/Icon'
+import { Input } from '../../components/ui/Input'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import {
   followStore,
@@ -21,6 +22,7 @@ import type { Order, Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 
 export function CustomerHomePage() {
+  const navigate = useNavigate()
   const [activeStore, setActiveStore] = useState<Store | null>(null)
   const [isActiveStoreFollowed, setIsActiveStoreFollowed] = useState(false)
   const [followedStores, setFollowedStores] = useState<Store[]>([])
@@ -29,6 +31,8 @@ export function CustomerHomePage() {
   const [activeStoreProducts, setActiveStoreProducts] = useState<Product[]>([])
   const [activeStoreOffers, setActiveStoreOffers] = useState<Product[]>([])
   const [infoMessage, setInfoMessage] = useState('')
+  const [storeLink, setStoreLink] = useState('')
+  const [linkError, setLinkError] = useState('')
 
   useEffect(() => {
     async function loadHome() {
@@ -87,6 +91,28 @@ export function CustomerHomePage() {
     await followStore(activeStore.id)
     setIsActiveStoreFollowed(true)
     setInfoMessage(`Você começou a receber promoções da ${activeStore.name}.`)
+  }
+
+  const handleOpenByLink = async () => {
+    setLinkError('')
+    const input = storeLink.trim()
+
+    if (!input) {
+      setLinkError('Informe o link ou código da loja.')
+      return
+    }
+
+    // Extract slug from full URL or path like /loja/slug
+    const urlMatch = input.match(/\/loja\/([^/?#]+)/)
+    const slug = urlMatch ? urlMatch[1] : input.replace(/^\/+/, '')
+
+    const store = await getStoreBySlug(slug)
+    if (!store) {
+      setLinkError('Loja não encontrada. Verifique o link enviado pelo lojista.')
+      return
+    }
+
+    navigate(`/loja/${slug}`)
   }
 
   if (activeStore) {
@@ -196,9 +222,33 @@ export function CustomerHomePage() {
       <SectionHeader
         kicker="Suas lojas"
         icon="sparkles"
-        title="Sua experiência por lojas convidadas"
-        description="Acesse o link de um lojista para salvar uma loja ativa e continuar comprando com ela."
+        title="Acesse sua loja pelo convite"
+        description="Entre pelo link enviado pelo lojista ou escaneie o QR Code da vitrine para começar."
       />
+
+      <Card
+        variant="accentCorner"
+        title="Abrir loja por link ou código"
+        subtitle="Cole o link ou código recebido do lojista"
+      >
+        <div className="stack" style={{ gap: '0.75rem' }}>
+          <div className="inline-info">
+            <Input
+              id="store-link"
+              placeholder="/loja/nome-da-loja ou código da loja"
+              value={storeLink}
+              onChange={(event) => setStoreLink(event.target.value)}
+              onKeyDown={(event) => { if (event.key === 'Enter') { void handleOpenByLink() } }}
+            />
+            <Button variant="accent" onClick={() => { void handleOpenByLink() }}>
+              <Icon name="arrowRight" className="icon-sm" />
+              Abrir
+            </Button>
+          </div>
+          {linkError && <p className="error-text">{linkError}</p>}
+          <p className="muted">Peça ao lojista o link ou QR Code da vitrine para acessar a loja.</p>
+        </div>
+      </Card>
 
       {lastVisitedStore && (
         <Card variant="layered" title="Última loja acessada" subtitle={lastVisitedStore.name}>
@@ -211,7 +261,7 @@ export function CustomerHomePage() {
               </Button>
             </Link>
             <Link to="/cliente/minhas-lojas">
-              <Button variant="secondary">Ver minhas lojas</Button>
+              <Button variant="secondary">Suas lojas salvas</Button>
             </Link>
           </div>
         </Card>
@@ -236,21 +286,17 @@ export function CustomerHomePage() {
       )}
 
       {!hasStores && (
-        <Card variant="default" title="Nenhuma loja salva ainda" subtitle="Acesse /loja/:slug para iniciar sua experiência por loja">
+        <Card
+          variant="default"
+          title="Você ainda não tem lojas salvas"
+          subtitle="Acesse o link enviado por um lojista ou escaneie o QR Code da loja"
+        >
           <p className="muted">
-            Quando você entrar pelo link de um lojista, a loja ficará ativa aqui e sua Home mudará para o contexto dela.
+            Quando você entrar pelo link de um lojista, a loja ficará salva aqui e sua tela inicial passará a mostrar o contexto dela.
           </p>
         </Card>
       )}
-
-      <Card variant="default" title="Explorar (secundário)" subtitle="Você pode explorar novas lojas quando quiser">
-        <div className="inline-info">
-          <span className="muted">Explorar continua disponível, mas o foco principal é a loja que você acessar por convite.</span>
-          <Link to="/cliente/explorar">
-            <Button variant="secondary">Explorar lojas</Button>
-          </Link>
-        </div>
-      </Card>
     </section>
   )
 }
+

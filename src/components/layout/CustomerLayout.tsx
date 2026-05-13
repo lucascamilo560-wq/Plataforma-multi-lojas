@@ -25,7 +25,6 @@ export function CustomerLayout() {
     return [
       { to: '/cliente', label: 'Início', icon: 'sparkles' as const },
       { to: '/cliente/minhas-lojas', label: 'Minhas lojas', icon: 'storefront' as const },
-      { to: '/cliente/explorar', label: 'Explorar', icon: 'search' as const },
       { to: '/cliente/pedidos', label: 'Pedidos', icon: 'clock' as const },
       { to: '/cliente/perfil', label: 'Perfil', icon: 'user' as const },
     ]
