@@ -7,7 +7,8 @@ import { Card } from '../../components/ui/Card'
 import { KpiCard } from '../../components/ui/KpiCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { useMockSession } from '../../hooks/useMockSession'
-import { getProductsByStore, getStoreById, getStoreOrders } from '../../services/mockData'
+import { getProductsByStore, getStoreById, getStoreCustomers, getStoreOrders } from '../../services/mockData'
+import type { CustomerSummary } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
@@ -18,12 +19,14 @@ export function StoreDashboardPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [store, setStore] = useState<Store | undefined>()
+  const [customers, setCustomers] = useState<CustomerSummary[]>([])
   const [shareMessage, setShareMessage] = useState('')
 
   useEffect(() => {
     getStoreOrders(storeId).then(setOrders)
     getProductsByStore(storeId, { includeInactive: true }).then(setProducts)
     getStoreById(storeId).then(setStore)
+    getStoreCustomers(storeId).then(setCustomers)
   }, [storeId])
 
   const todayStr = new Date().toDateString()
@@ -50,6 +53,19 @@ export function StoreDashboardPage() {
   )
   const pendingOrders = useMemo(() => orders.filter((o) => o.status === 'pending').length, [orders])
   const toBeArrangedPayments = useMemo(() => orders.filter((o) => o.paymentStatus === 'to_be_arranged').length, [orders])
+
+  const uniqueCustomers = customers.length
+  const recurringCustomers = useMemo(() => customers.filter((c) => c.totalOrders >= 2).length, [customers])
+  const averageTicket = useMemo(() => {
+    const paidOrders = orders.filter((o) => o.paymentStatus === 'paid')
+    if (paidOrders.length === 0) return 0
+    return paidOrders.reduce((sum, o) => sum + o.total, 0) / paidOrders.length
+  }, [orders])
+  const topCustomer = useMemo(() => {
+    if (customers.length === 0) return null
+    return customers.reduce((best, c) => (c.totalSpent > best.totalSpent ? c : best))
+  }, [customers])
+
   const storeTheme = getStoreTheme(store)
   const storefrontPath = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
   const storefrontUrl = buildPublicUrl(storefrontPath)
@@ -116,6 +132,12 @@ export function StoreDashboardPage() {
         <KpiCard label="Faturamento confirmado" value={formatCurrency(confirmedRevenue)} icon="wallet" />
         <KpiCard label="A receber" value={formatCurrency(pendingRevenue)} icon="tag" />
         <KpiCard label="Produtos" value={products.length} icon="package" />
+        <KpiCard label="Clientes únicos" value={uniqueCustomers} icon="user" />
+        <KpiCard label="Clientes recorrentes" value={recurringCustomers} icon="user" />
+        <KpiCard label="Ticket médio" value={formatCurrency(averageTicket)} icon="wallet" />
+        {topCustomer && (
+          <KpiCard label="Maior comprador" value={topCustomer.name} icon="user" />
+        )}
       </div>
 
       <SectionHeader

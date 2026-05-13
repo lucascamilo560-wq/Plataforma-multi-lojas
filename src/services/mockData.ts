@@ -23,6 +23,7 @@ export {
   getCouponsByStore,
   getCurrentSellerStoreId,
   getCustomerOrders,
+  getCustomerOrdersByKey,
   getDeliverySettings,
   getFollowedStores,
   getInvitedStoreSlug,
@@ -36,6 +37,8 @@ export {
   getPublicStorefront,
   getStoreById,
   getStoreBySlug,
+  getStoreCustomerByPhone,
+  getStoreCustomers,
   getStoreOrders,
   getStores,
   followStore,
@@ -62,4 +65,4 @@ export {
   updateStoreTheme,
   validateCoupon,
 } from './localMockStore'
-export type { CreateStorePayload, RepeatOrderResult, ValidateCouponResult } from './localMockStore'
+export type { CreateStorePayload, CustomerSummary, RepeatOrderResult, ValidateCouponResult } from './localMockStore'
