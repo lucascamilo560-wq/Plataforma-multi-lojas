@@ -1281,3 +1281,121 @@ export async function clearCartByStore(storeId: string): Promise<void> {
   setCartItemsCollection(items)
   return Promise.resolve()
 }
+
+// ---------------------------------------------------------------------------
+// Customer aggregation helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Retorna uma chave de identidade para o cliente: telefone se disponível,
+ * caso contrário usa o nome. Isso evita duplicação enquanto não há Auth real.
+ */
+function getCustomerKey(order: Order): string {
+  const phone = order.customerPhone?.trim().replace(/\D/g, '')
+  return phone || order.customerName.trim()
+}
+
+export interface CustomerSummary {
+  /** Chave de identidade: telefone (apenas dígitos) ou nome. */
+  key: string
+  name: string
+  phone?: string
+  totalOrders: number
+  totalSpent: number
+  lastOrderAt: string
+  firstOrderAt: string
+  averageTicket: number
+  lastOrderStatus: Order['status']
+  lastPaymentStatus: Order['paymentStatus']
+  paymentPendingCount: number
+  deliveredOrdersCount: number
+  cancelledOrdersCount: number
+}
+
+/**
+ * Agrega os pedidos de uma loja em uma lista de clientes únicos.
+ * Identificação por telefone (prioritário) ou nome como fallback.
+ */
+export async function getStoreCustomers(storeId: string): Promise<CustomerSummary[]> {
+  const orders = getOrdersCollection().filter((o) => o.store_id === storeId)
+
+  const map = new Map<string, { orders: Order[]; name: string; phone?: string }>()
+
+  for (const order of orders) {
+    const key = getCustomerKey(order)
+    const existing = map.get(key)
+    if (existing) {
+      existing.orders.push(order)
+      // Prefer storing a phone if one order has it
+      if (!existing.phone && order.customerPhone?.trim()) {
+        existing.phone = order.customerPhone.trim()
+      }
+    } else {
+      map.set(key, {
+        orders: [order],
+        name: order.customerName.trim(),
+        phone: order.customerPhone?.trim() || undefined,
+      })
+    }
+  }
+
+  const customers: CustomerSummary[] = []
+
+  for (const [key, { orders: customerOrders, name, phone }] of map.entries()) {
+    const nonCancelled = customerOrders.filter((o) => o.status !== 'cancelled')
+    const totalSpent = nonCancelled.reduce((sum, o) => sum + o.total, 0)
+
+    const sorted = [...customerOrders].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    const lastOrder = sorted[0]
+    const firstOrder = sorted[sorted.length - 1]
+
+    const paymentPendingCount = customerOrders.filter(
+      (o) =>
+        o.status !== 'cancelled' &&
+        o.paymentStatus !== 'paid' &&
+        o.paymentStatus !== 'refunded' &&
+        o.paymentStatus !== 'failed',
+    ).length
+
+    customers.push({
+      key,
+      name,
+      phone,
+      totalOrders: customerOrders.length,
+      totalSpent,
+      lastOrderAt: lastOrder.createdAt,
+      firstOrderAt: firstOrder.createdAt,
+      averageTicket: nonCancelled.length > 0 ? totalSpent / nonCancelled.length : 0,
+      lastOrderStatus: lastOrder.status,
+      lastPaymentStatus: lastOrder.paymentStatus,
+      paymentPendingCount,
+      deliveredOrdersCount: customerOrders.filter((o) => o.status === 'delivered').length,
+      cancelledOrdersCount: customerOrders.filter((o) => o.status === 'cancelled').length,
+    })
+  }
+
+  return Promise.resolve(customers)
+}
+
+/**
+ * Retorna o resumo de um cliente específico da loja pelo telefone (ou nome como fallback).
+ */
+export async function getStoreCustomerByPhone(
+  storeId: string,
+  key: string,
+): Promise<CustomerSummary | undefined> {
+  const customers = await getStoreCustomers(storeId)
+  return customers.find((c) => c.key === key)
+}
+
+/**
+ * Retorna os pedidos de um cliente específico da loja, ordenados do mais recente ao mais antigo.
+ */
+export async function getCustomerOrdersByKey(storeId: string, key: string): Promise<Order[]> {
+  const orders = getOrdersCollection().filter((o) => o.store_id === storeId && getCustomerKey(o) === key)
+  return Promise.resolve(
+    [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+  )
+}
