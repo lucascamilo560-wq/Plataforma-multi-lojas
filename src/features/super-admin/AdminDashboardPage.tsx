@@ -25,8 +25,15 @@ export function AdminDashboardPage() {
       <div className="grid grid-metrics">
         <KpiCard label="Lojas totais" value={summary?.totalStores ?? 0} icon="storefront" />
         <KpiCard label="Lojas ativas" value={summary?.activeStores ?? 0} icon="check" />
-        <KpiCard label="Pedidos" value={summary?.totalOrders ?? 0} icon="cart" />
-        <KpiCard label="Receita bruta" value={formatCurrency(summary?.grossRevenue ?? 0)} icon="wallet" />
+        <KpiCard label="Lojas pausadas" value={summary?.pausedStores ?? 0} icon="clock" />
+        <KpiCard label="Lojas bloqueadas" value={summary?.blockedStores ?? 0} icon="shield" />
+        <KpiCard label="Pedidos totais" value={summary?.totalOrders ?? 0} icon="cart" />
+        <KpiCard label="GMV no app" value={formatCurrency(summary?.gmv ?? 0)} icon="chart" />
+        <KpiCard label="Faturamento confirmado" value={formatCurrency(summary?.confirmedRevenue ?? 0)} icon="wallet" />
+        <KpiCard label="Pagamentos pendentes" value={formatCurrency(summary?.pendingRevenue ?? 0)} icon="clock" />
+        <KpiCard label="Mensalidades ativas" value={summary?.activeSubscriptions ?? 0} icon="check" />
+        <KpiCard label="Comissões estimadas" value={formatCurrency(summary?.estimatedCommissions ?? 0)} icon="wallet" />
+        <KpiCard label="Receita estimada plataforma" value={formatCurrency(summary?.platformEstimatedRevenue ?? 0)} icon="chart" />
       </div>
 
       <Card title="Direcionamento rápido" subtitle="Acesso direto às áreas de gestão" variant="accentCorner">

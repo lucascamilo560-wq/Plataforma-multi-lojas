@@ -15,6 +15,8 @@ export interface Store {
   secondaryColor?: string
   accentColor?: string
   whatsapp?: string
+  adminStatus?: 'active' | 'paused' | 'blocked'
+  planId?: string
 }
 
 export interface Product {
@@ -89,6 +91,24 @@ export interface CartItem {
 export interface AdminSummary {
   totalStores: number
   activeStores: number
+  pausedStores: number
+  blockedStores: number
   totalOrders: number
-  grossRevenue: number
+  gmv: number
+  confirmedRevenue: number
+  pendingRevenue: number
+  platformEstimatedRevenue: number
+  activeSubscriptions: number
+  estimatedCommissions: number
+}
+
+export interface PlatformPlan {
+  id: string
+  name: string
+  monthlyPrice: number
+  commissionRate: number
+  commissionBase: 'paid_orders' | 'all_orders'
+  productLimit: number | null
+  features: string[]
+  isActive: boolean
 }

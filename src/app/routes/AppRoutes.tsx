@@ -40,6 +40,7 @@ import { AdminSettingsPage } from '../../features/super-admin/AdminSettingsPage'
 import { AdminSellersPage } from '../../features/super-admin/AdminSellersPage'
 import { AdminStoresPage } from '../../features/super-admin/AdminStoresPage'
 import { AdminSupportPage } from '../../features/super-admin/AdminSupportPage'
+import { AdminStoreDetailPage } from '../../features/super-admin/AdminStoreDetailPage'
 import { useMockSession } from '../../hooks/useMockSession'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -143,6 +144,7 @@ export function AppRoutes() {
       >
         <Route index element={<AdminDashboardPage />} />
         <Route path="lojas" element={<AdminStoresPage />} />
+        <Route path="lojas/:storeId" element={<AdminStoreDetailPage />} />
         <Route path="lojistas" element={<AdminSellersPage />} />
         <Route path="clientes" element={<AdminCustomersPage />} />
         <Route path="planos" element={<AdminPlansPage />} />
