@@ -1,5 +1,11 @@
 export type UserRole = 'customer' | 'store_admin' | 'super_admin'
 
+export type StoreButtonStyle = 'rounded' | 'pill' | 'square'
+export type StoreCardStyle = 'elevated' | 'flat' | 'outlined' | 'glass'
+export type StoreProductLayout = 'grid-2' | 'list' | 'cards-wide'
+export type StoreNavigationStyle = 'chips' | 'simple' | 'highlighted'
+export type StoreHeroStyle = 'cover' | 'minimal' | 'centered'
+
 export interface Store {
   id: string
   name: string
@@ -17,6 +23,20 @@ export interface Store {
   whatsapp?: string
   adminStatus?: 'active' | 'paused' | 'blocked'
   planId?: string
+  // Theme & visual customization
+  slogan?: string
+  shortDescription?: string
+  themePreset?: string
+  buttonStyle?: StoreButtonStyle
+  cardStyle?: StoreCardStyle
+  productLayout?: StoreProductLayout
+  navigationStyle?: StoreNavigationStyle
+  heroStyle?: StoreHeroStyle
+  showHero?: boolean
+  showLoyaltyBlock?: boolean
+  showPromotionsSection?: boolean
+  showBestSellersSection?: boolean
+  showWhatsappFloat?: boolean
 }
 
 export interface Product {
