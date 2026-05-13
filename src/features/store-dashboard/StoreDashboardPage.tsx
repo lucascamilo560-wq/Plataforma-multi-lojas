@@ -1,9 +1,9 @@
+import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ActionTile } from '../../components/ui/ActionTile'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
-import { Card } from '../../components/ui/Card'
 import { KpiCard } from '../../components/ui/KpiCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { useMockSession } from '../../hooks/useMockSession'
@@ -89,41 +89,72 @@ export function StoreDashboardPage() {
         description="Acompanhe suas vendas, produtos e pedidos em tempo real."
       />
 
-      <Card
-        variant="accentCorner"
-        accentColor={storeTheme.accentColor}
-        title={store?.name ?? 'Minha loja'}
-        subtitle="Resumo da sua operação"
+      {/* Store header card with gradient based on store theme */}
+      <article
+        className="card card-default seller-store-header"
+        style={{
+          background: `linear-gradient(135deg, ${storeTheme.primaryColor} 0%, ${storeTheme.accentColor}aa 100%)`,
+          color: '#fff',
+          border: 'none',
+        }}
       >
-        <div className="inline-info">
+        {storeTheme.coverUrl && (
+          <div
+            className="seller-store-header-bg"
+            style={{ backgroundImage: `url(${storeTheme.coverUrl})` }}
+          />
+        )}
+        <div className="seller-store-header-content">
           <div className="inline-info">
-            {storeTheme.logoUrl && (
-              <img
-                src={storeTheme.logoUrl}
-                alt={`Logo da loja ${store?.name ?? 'Minha loja'}`}
-                className="store-logo"
-              />
-            )}
-            <div className="stack">
-              <strong>{store?.name ?? 'Minha loja'}</strong>
-              <Badge variant={store?.isActive ? 'success' : 'muted'}>
-                {store?.isActive ? 'Loja ativa' : 'Loja temporariamente pausada'}
-              </Badge>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {storeTheme.logoUrl && (
+                <img
+                  src={storeTheme.logoUrl}
+                  alt={`Logo da loja ${store?.name ?? 'Minha loja'}`}
+                  style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '14px',
+                    border: '2px solid rgba(255,255,255,0.5)',
+                    objectFit: 'cover',
+                    background: 'rgba(255,255,255,0.15)',
+                  }}
+                />
+              )}
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{store?.name ?? 'Minha loja'}</h2>
+                <div style={{ marginTop: '0.25rem' }}>
+                  <Badge variant={store?.isActive ? 'success' : 'muted'}>
+                    {store?.isActive ? 'Loja ativa' : 'Loja pausada'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+              <Link to={storefrontPath}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  style={{ background: 'rgba(255,255,255,0.9)', color: storeTheme.primaryColor } as React.CSSProperties}
+                >
+                  Ver vitrine
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleShareStore}
+                style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.4)' } as React.CSSProperties}
+              >
+                Compartilhar
+              </Button>
             </div>
           </div>
-          <div className="inline-info">
-            <Link to={storefrontPath}>
-              <Button variant="store" storeColor={storeTheme.primaryColor}>
-                Ver minha vitrine
-              </Button>
-            </Link>
-            <Button variant="secondary" onClick={handleShareStore}>
-              Compartilhar loja
-            </Button>
-          </div>
-          {shareMessage && <p className="muted">{shareMessage}</p>}
+          {shareMessage && (
+            <p style={{ margin: 0, fontSize: '0.84rem', opacity: 0.88 }}>{shareMessage}</p>
+          )}
         </div>
-      </Card>
+      </article>
 
       <div className="grid grid-metrics">
         <KpiCard label="Pedidos hoje" value={ordersToday.length} icon="clock" />

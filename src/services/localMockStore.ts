@@ -759,7 +759,7 @@ export async function updateProductStock(productId: string, stock: number): Prom
 
 export async function updateStoreProfile(
   storeId: string,
-  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive' | 'whatsapp' | 'primaryColor' | 'secondaryColor' | 'accentColor' | 'adminStatus' | 'planId'>>,
+  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive' | 'whatsapp' | 'primaryColor' | 'secondaryColor' | 'accentColor' | 'adminStatus' | 'planId' | 'slogan' | 'shortDescription' | 'themePreset' | 'buttonStyle' | 'cardStyle' | 'productLayout' | 'navigationStyle' | 'heroStyle' | 'showHero' | 'showLoyaltyBlock' | 'showPromotionsSection' | 'showBestSellersSection' | 'showWhatsappFloat'>>,
 ): Promise<Store | undefined> {
   let updatedStore: Store | undefined
 
@@ -783,7 +783,7 @@ export async function updateStoreProfile(
 
 export async function updateStoreTheme(
   storeId: string,
-  updates: Pick<Store, 'primaryColor' | 'secondaryColor' | 'accentColor' | 'logoUrl' | 'coverUrl'>,
+  updates: Partial<Pick<Store, 'primaryColor' | 'secondaryColor' | 'accentColor' | 'logoUrl' | 'coverUrl' | 'slogan' | 'shortDescription' | 'themePreset' | 'buttonStyle' | 'cardStyle' | 'productLayout' | 'navigationStyle' | 'heroStyle' | 'showHero' | 'showLoyaltyBlock' | 'showPromotionsSection' | 'showBestSellersSection' | 'showWhatsappFloat'>>,
 ): Promise<Store | undefined> {
   return updateStoreProfile(storeId, updates)
 }
