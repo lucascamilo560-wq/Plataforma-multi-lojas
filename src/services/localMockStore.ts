@@ -41,6 +41,7 @@ export interface DeliverySettings {
 export const ENABLE_DEMO_STORES = false
 
 const STORAGE_KEYS = {
+  // Dados compartilhados (lojas, produtos, pedidos…)
   stores: 'marketplace:stores',
   products: 'marketplace:products',
   orders: 'marketplace:orders',
@@ -48,12 +49,16 @@ const STORAGE_KEYS = {
   promotions: 'marketplace:promotions',
   paymentMethods: 'marketplace:payment-methods',
   deliverySettings: 'marketplace:delivery-settings',
-  cartItems: 'marketplace:cart-items',
-  followedStores: 'marketplace:followed-stores',
-  lastVisitedStoreSlug: 'marketplace:last-visited-store-slug',
-  invitedStoreSlug: 'marketplace:invited-store-slug',
-  activeStoreSlug: 'marketplace:active-store-slug',
-  sellerStoreId: 'marketplace:seller-store-id',
+
+  // Dados do cliente (separados do estado do lojista)
+  cartItems: 'marketplace:customer:cart',
+  followedStores: 'marketplace:customer:followed-stores',
+  lastVisitedStoreSlug: 'marketplace:customer:last-visited-slug',
+  invitedStoreSlug: 'marketplace:customer:invited-slug',
+  activeStoreSlug: 'marketplace:customer:active-slug',
+
+  // Dados do lojista
+  sellerStoreId: 'marketplace:seller:store-id',
 } as const
 
 const defaultStores: Store[] = [
@@ -859,4 +864,27 @@ export async function createStore(payload: CreateStorePayload): Promise<Store> {
   setStoresCollection([...stores, store])
   setCurrentSellerStoreId(store.id)
   return Promise.resolve(store)
+}
+
+// ---------------------------------------------------------------------------
+// Demo session utilities
+// ---------------------------------------------------------------------------
+
+/** Limpa somente os dados de sessão do cliente (lojas ativas, seguidas, carrinho). */
+export function clearCustomerSession(): void {
+  window.localStorage.removeItem(STORAGE_KEYS.activeStoreSlug)
+  window.localStorage.removeItem(STORAGE_KEYS.invitedStoreSlug)
+  window.localStorage.removeItem(STORAGE_KEYS.lastVisitedStoreSlug)
+  window.localStorage.removeItem(STORAGE_KEYS.followedStores)
+  window.localStorage.removeItem(STORAGE_KEYS.cartItems)
+}
+
+/** Limpa somente os dados de sessão do lojista (loja vinculada). */
+export function clearSellerSession(): void {
+  window.localStorage.removeItem(STORAGE_KEYS.sellerStoreId)
+}
+
+/** Limpa todos os dados demo (lojas, produtos, pedidos, sessões). */
+export function clearAllDemoData(): void {
+  Object.values(STORAGE_KEYS).forEach((key) => window.localStorage.removeItem(key))
 }

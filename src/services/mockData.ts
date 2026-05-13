@@ -1,6 +1,9 @@
 export {
   addProductToCart,
   clearActiveStoreSlug,
+  clearAllDemoData,
+  clearCustomerSession,
+  clearSellerSession,
   createCoupon,
   createOrderFromCart,
   createProduct,
