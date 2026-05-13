@@ -13,14 +13,16 @@ interface AppHeaderProps {
   navigation: HeaderNavItem[]
   brandKicker: string
   brandTitle: string
+  brandLogoUrl?: string
 }
 
-export function AppHeader({ navigation, brandKicker, brandTitle }: AppHeaderProps) {
+export function AppHeader({ navigation, brandKicker, brandTitle, brandLogoUrl }: AppHeaderProps) {
   return (
     <header className="app-header">
       <div className="container">
         <div className="header-content">
           <div className="header-brand">
+            {brandLogoUrl && <img src={brandLogoUrl} alt="" className="header-brand-logo" loading="lazy" />}
             <p className="brand-kicker">{brandKicker}</p>
             <h1 className="brand-title">{brandTitle}</h1>
           </div>
