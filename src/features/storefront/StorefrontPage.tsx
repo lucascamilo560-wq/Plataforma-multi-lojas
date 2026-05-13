@@ -43,7 +43,7 @@ export function StorefrontPage() {
         return
       }
 
-      await registerStoreVisit(slug)
+      await registerStoreVisit(nextStore.slug)
       const [nextProducts, followed] = await Promise.all([
         getProductsByStore(nextStore.id),
         isStoreFollowed(nextStore.id),

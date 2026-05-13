@@ -43,6 +43,7 @@ const STORAGE_KEYS = {
   followedStores: 'marketplace:followed-stores',
   lastVisitedStoreSlug: 'marketplace:last-visited-store-slug',
   invitedStoreSlug: 'marketplace:invited-store-slug',
+  activeStoreSlug: 'marketplace:active-store-slug',
 } as const
 
 const defaultStores: Store[] = [
@@ -469,10 +470,8 @@ export async function registerStoreVisit(slug: string): Promise<void> {
   }
 
   setStoredSlug(STORAGE_KEYS.lastVisitedStoreSlug, normalizedSlug)
-  const currentInvitedStoreSlug = readStoredSlug(STORAGE_KEYS.invitedStoreSlug)
-  if (!currentInvitedStoreSlug) {
-    setStoredSlug(STORAGE_KEYS.invitedStoreSlug, normalizedSlug)
-  }
+  setStoredSlug(STORAGE_KEYS.invitedStoreSlug, normalizedSlug)
+  setStoredSlug(STORAGE_KEYS.activeStoreSlug, normalizedSlug)
   return Promise.resolve()
 }
 
@@ -482,6 +481,35 @@ export async function getLastVisitedStoreSlug(): Promise<string | null> {
 
 export async function getInvitedStoreSlug(): Promise<string | null> {
   return Promise.resolve(readStoredSlug(STORAGE_KEYS.invitedStoreSlug))
+}
+
+export async function setActiveStoreSlug(slug: string): Promise<void> {
+  const normalizedSlug = slug.trim()
+  if (!normalizedSlug) {
+    throw new Error('Informe um slug de loja válido para ativar.')
+  }
+
+  setStoredSlug(STORAGE_KEYS.activeStoreSlug, normalizedSlug)
+  return Promise.resolve()
+}
+
+export async function getActiveStoreSlug(): Promise<string | null> {
+  return Promise.resolve(readStoredSlug(STORAGE_KEYS.activeStoreSlug))
+}
+
+export async function clearActiveStoreSlug(): Promise<void> {
+  setStoredSlug(STORAGE_KEYS.activeStoreSlug, null)
+  return Promise.resolve()
+}
+
+export async function getActiveStore(): Promise<Store | null> {
+  const activeStoreSlug = readStoredSlug(STORAGE_KEYS.activeStoreSlug)
+  if (!activeStoreSlug) {
+    return Promise.resolve(null)
+  }
+
+  const activeStore = getStoresCollection().find((store) => store.slug === activeStoreSlug) ?? null
+  return Promise.resolve(activeStore)
 }
 
 export async function addProductToCart(product: Product): Promise<void> {

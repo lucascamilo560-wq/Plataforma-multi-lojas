@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
 import {
+  followStore,
   getFollowedStores,
   getInvitedStoreSlug,
   getLastVisitedStoreSlug,
@@ -14,39 +15,52 @@ import type { Store } from '../../types'
 
 export function CustomerMyStoresPage() {
   const [followedStores, setFollowedStores] = useState<Store[]>([])
+  const [followedStoreIds, setFollowedStoreIds] = useState<string[]>([])
   const [lastVisitedStore, setLastVisitedStore] = useState<Store | undefined>()
-  const [invitedStoreSlug, setInvitedStoreSlug] = useState<string | null>(null)
+  const [invitedStore, setInvitedStore] = useState<Store | undefined>()
+  const [infoMessage, setInfoMessage] = useState('')
 
   useEffect(() => {
     async function loadStores() {
-      const [followedStoreIds, lastVisitedSlug, invitedSlug] = await Promise.all([
+      const [followedIds, lastVisitedSlug, invitedSlug] = await Promise.all([
         getFollowedStores(),
         getLastVisitedStoreSlug(),
         getInvitedStoreSlug(),
       ])
 
-      const [stores, lastStore] = await Promise.all([
-        Promise.all(followedStoreIds.map((storeId) => getStoreById(storeId))),
+      const [stores, lastStore, invited] = await Promise.all([
+        Promise.all(followedIds.map((storeId) => getStoreById(storeId))),
         lastVisitedSlug ? getStoreBySlug(lastVisitedSlug) : Promise.resolve(undefined),
+        invitedSlug ? getStoreBySlug(invitedSlug) : Promise.resolve(undefined),
       ])
 
       setFollowedStores(stores.filter((store): store is Store => Boolean(store)))
+      setFollowedStoreIds(followedIds)
       setLastVisitedStore(lastStore)
-      setInvitedStoreSlug(invitedSlug)
+      setInvitedStore(invited)
     }
 
     loadStores()
   }, [])
 
-  const hasStores = followedStores.length > 0 || Boolean(lastVisitedStore)
+  const hasStores = followedStores.length > 0 || Boolean(lastVisitedStore) || Boolean(invitedStore)
+  const showInvitedStoreCard = invitedStore && invitedStore.slug !== lastVisitedStore?.slug
+  const followedStoreIdsSet = useMemo(() => new Set(followedStoreIds), [followedStoreIds])
+
+  const handleFollowStore = async (store: Store) => {
+    await followStore(store.id)
+    setFollowedStoreIds((currentIds) => (currentIds.includes(store.id) ? currentIds : [...currentIds, store.id]))
+    setFollowedStores((currentStores) => (currentStores.some((item) => item.id === store.id) ? currentStores : [...currentStores, store]))
+    setInfoMessage(`Agora você segue a loja ${store.name}.`)
+  }
 
   return (
     <section className="stack-xl">
       <PageHeader
         kicker="Minhas lojas"
         icon="storefront"
-        title="Suas lojas por link"
-        description="Veja apenas lojas que você seguiu ou acessou por convite do lojista."
+        title="Lojas visitadas e salvas"
+        description="As lojas acessadas por /loja/:slug aparecem aqui mesmo antes de você clicar em seguir."
       />
 
       {lastVisitedStore && (
@@ -59,6 +73,31 @@ export function CustomerMyStoresPage() {
             <Link to={`/loja/${lastVisitedStore.slug}?tab=ofertas`}>
               <Button variant="secondary">Ver ofertas</Button>
             </Link>
+            <Button
+              variant="ghost"
+              onClick={() => handleFollowStore(lastVisitedStore)}
+              disabled={followedStoreIdsSet.has(lastVisitedStore.id)}
+            >
+              {followedStoreIdsSet.has(lastVisitedStore.id) ? 'Loja seguida' : 'Seguir loja'}
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {showInvitedStoreCard && invitedStore && (
+        <Card title="Loja convidada por link" subtitle={invitedStore.name} variant="layered">
+          <p className="muted">{invitedStore.description}</p>
+          <div className="inline-info">
+            <Link to={`/loja/${invitedStore.slug}`}>
+              <Button variant="accent">Abrir loja</Button>
+            </Link>
+            <Button
+              variant="ghost"
+              onClick={() => handleFollowStore(invitedStore)}
+              disabled={followedStoreIdsSet.has(invitedStore.id)}
+            >
+              {followedStoreIdsSet.has(invitedStore.id) ? 'Loja seguida' : 'Seguir loja'}
+            </Button>
           </div>
         </Card>
       )}
@@ -83,19 +122,15 @@ export function CustomerMyStoresPage() {
 
       {!hasStores && (
         <Card
-          title="Nenhuma loja seguida ainda"
-          subtitle="Acesse uma loja pelo link do lojista para começar sua experiência personalizada."
+          title="Nenhuma loja por aqui ainda"
+          subtitle="Acesse o link de um lojista em /loja/:slug para salvar uma loja e começar sua experiência."
           variant="default"
         >
-          <p className="muted">
-            Assim que você entrar em uma vitrine em /loja/:slug e seguir a loja, ela aparecerá aqui.
-          </p>
+          <p className="muted">Você verá a última loja acessada e o convite mais recente mesmo antes de seguir uma loja.</p>
         </Card>
       )}
 
-      {invitedStoreSlug && (
-        <p className="muted">Convite mais recente por link: /loja/{invitedStoreSlug}</p>
-      )}
+      {infoMessage && <p className="muted">{infoMessage}</p>}
     </section>
   )
 }

@@ -91,6 +91,14 @@ img {
   gap: 0.3rem;
 }
 
+.header-brand-logo {
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
 .brand-kicker {
   margin: 0;
   font-size: 0.7rem;
