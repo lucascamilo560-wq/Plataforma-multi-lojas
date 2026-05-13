@@ -9,11 +9,13 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import {
   addProductToCart,
   followStore,
+  getActivePromotionsByStore,
   getProductsByStore,
   getPublicStorefront,
   isStoreFollowed,
   registerStoreVisit,
 } from '../../services/mockData'
+import type { Promotion } from '../../services/localMockStore'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Product, Store } from '../../types'
 
@@ -26,6 +28,7 @@ export function StorefrontPage() {
   const navigate = useNavigate()
   const [store, setStore] = useState<Store | undefined>()
   const [products, setProducts] = useState<Product[]>([])
+  const [promotions, setPromotions] = useState<Promotion[]>([])
   const [errorMessage, setErrorMessage] = useState('')
   const [isFollowed, setIsFollowed] = useState(false)
   const [infoMessage, setInfoMessage] = useState('')
@@ -40,18 +43,21 @@ export function StorefrontPage() {
       setStore(nextStore)
       if (!nextStore) {
         setProducts([])
+        setPromotions([])
         return
       }
 
       await registerStoreVisit(nextStore.slug)
-      const [nextProducts, followed] = await Promise.all([
+      const [nextProducts, followed, activePromos] = await Promise.all([
         getProductsByStore(nextStore.id),
         isStoreFollowed(nextStore.id),
+        getActivePromotionsByStore(nextStore.id),
       ])
 
       if (cancelled) return
       setProducts(nextProducts)
       setIsFollowed(followed)
+      setPromotions(activePromos)
     }
 
     loadStorefront()
@@ -174,6 +180,26 @@ export function StorefrontPage() {
           </div>
         </div>
       </article>
+
+      {promotions.length > 0 && (
+        <div className="stack" style={{ gap: '0.5rem' }}>
+          {promotions.map((promo) => (
+            <div
+              key={promo.id}
+              style={{
+                background: promo.highlightColor ?? storeTheme.accentColor,
+                color: '#fff',
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+              }}
+            >
+              {promo.bannerText ?? `🎉 ${promo.title} — ${promo.description}`}
+            </div>
+          ))}
+        </div>
+      )}
 
       <Card
         title="Fidelização da loja"

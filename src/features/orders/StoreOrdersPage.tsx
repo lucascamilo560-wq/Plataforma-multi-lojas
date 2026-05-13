@@ -250,6 +250,15 @@ export function StoreOrdersPage() {
                 {order.paidAt && <small className="muted">Pago em {new Date(order.paidAt).toLocaleString('pt-BR')}</small>}
               </div>
 
+              {order.couponCode && (
+                <div className="inline-info" style={{ gap: '0.5rem' }}>
+                  <Badge variant="accent">Cupom: {order.couponCode}</Badge>
+                  {order.discountTotal != null && order.discountTotal > 0 && (
+                    <Badge variant="success">Desconto: -{formatCurrency(order.discountTotal)}</Badge>
+                  )}
+                </div>
+              )}
+
               <div className="stack" style={{ gap: '0.25rem' }}>
                 <small className="muted">ID completo: {order.id}</small>
                 {order.customerPhone && <small className="muted">Telefone: {order.customerPhone}</small>}
@@ -288,8 +297,15 @@ export function StoreOrdersPage() {
                       {item.productName} × {item.quantity} — {formatCurrency(item.quantity * item.price)}
                     </small>
                   ))}
-                  <small className="muted">Subtotal: {formatCurrency(order.total)}</small>
-                  <small className="muted">Entrega/taxa: {formatCurrency(0)}</small>
+                  <small className="muted">Subtotal: {formatCurrency(order.subtotal ?? order.total)}</small>
+                  {order.deliveryFee != null && order.deliveryFee > 0 && (
+                    <small className="muted">Entrega: {formatCurrency(order.deliveryFee)}</small>
+                  )}
+                  {order.couponCode && (
+                    <small className="muted" style={{ color: 'var(--color-success, #16a34a)' }}>
+                      Cupom: {order.couponCode} — -{formatCurrency(order.discountTotal ?? 0)}
+                    </small>
+                  )}
                   <small className="muted">Total: {formatCurrency(order.total)}</small>
                   {order.address && <small className="muted">Endereço: {order.address}</small>}
                   {order.paymentInstructions && <small className="muted">Instruções: {order.paymentInstructions}</small>}
