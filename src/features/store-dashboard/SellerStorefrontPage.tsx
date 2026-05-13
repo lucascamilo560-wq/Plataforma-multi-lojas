@@ -10,6 +10,7 @@ import { useMockSession } from '../../hooks/useMockSession'
 import { getPublicStorefront, getStoreById } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Store } from '../../types'
+import { buildPublicUrl } from '../../utils/publicUrl'
 
 export function SellerStorefrontPage() {
   const { storeId } = useMockSession()
@@ -31,7 +32,7 @@ export function SellerStorefrontPage() {
   }, [storeId])
 
   const storefrontPath = store?.slug ? `/loja/${store.slug}` : null
-  const storefrontUrl = storefrontPath ? `${window.location.origin}${storefrontPath}` : null
+  const storefrontUrl = storefrontPath ? buildPublicUrl(storefrontPath) : null
   const storeTheme = getStoreTheme(store)
 
   const handleCopyLink = async () => {
@@ -86,7 +87,7 @@ export function SellerStorefrontPage() {
             <div className="inline-info">
               <Button variant="secondary" onClick={handleCopyLink} disabled={!storefrontUrl}>
                 <Icon name="check" className="icon-sm" />
-                Copiar link
+                Copiar link público
               </Button>
               {storefrontPath && (
                 <Link to={storefrontPath} target="_blank" rel="noopener noreferrer">
@@ -96,8 +97,26 @@ export function SellerStorefrontPage() {
                   </Button>
                 </Link>
               )}
+              {storefrontPath && (
+                <Link to={storefrontPath}>
+                  <Button variant="accent">
+                    <Icon name="user" className="icon-sm" />
+                    Simular cliente nesta loja
+                  </Button>
+                </Link>
+              )}
             </div>
 
+            {storefrontUrl && (
+              <p className="muted storefront-note">
+                Este é o link público correto da sua loja neste ambiente.
+              </p>
+            )}
+            {storefrontPath && (
+              <p className="muted storefront-note">
+                Ao usar “Simular cliente nesta loja”, esta loja será salva como loja ativa na área do cliente.
+              </p>
+            )}
             {copyMessage && <p className="muted">{copyMessage}</p>}
           </div>
         </Card>

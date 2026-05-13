@@ -11,6 +11,7 @@ import { getProductsByStore, getStoreById, getStoreOrders } from '../../services
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
+import { buildPublicUrl } from '../../utils/publicUrl'
 
 export function StoreDashboardPage() {
   const { storeId } = useMockSession()
@@ -27,12 +28,13 @@ export function StoreDashboardPage() {
 
   const revenue = useMemo(() => orders.reduce((amount, order) => amount + order.total, 0), [orders])
   const storeTheme = getStoreTheme(store)
-  const storefrontUrl = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
+  const storefrontPath = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
+  const storefrontUrl = buildPublicUrl(storefrontPath)
 
   const handleShareStore = async () => {
     try {
       setShareMessage('')
-      await window.navigator.clipboard.writeText(`${window.location.origin}${storefrontUrl}`)
+      await window.navigator.clipboard.writeText(storefrontUrl)
       setShareMessage('Link da vitrine copiado para compartilhar.')
     } catch {
       setShareMessage('Não foi possível copiar automaticamente. Use o botão de ver vitrine para abrir o link.')
@@ -71,7 +73,7 @@ export function StoreDashboardPage() {
             </div>
           </div>
           <div className="inline-info">
-            <Link to={storefrontUrl}>
+            <Link to={storefrontPath}>
               <Button variant="store" storeColor={storeTheme.primaryColor}>
                 Ver minha vitrine
               </Button>
