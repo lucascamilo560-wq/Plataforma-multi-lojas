@@ -80,6 +80,34 @@ export function StoreOrdersPage() {
               <strong>{formatCurrency(order.total)}</strong>
             </div>
             <small className="muted">Criado em {new Date(order.createdAt).toLocaleString('pt-BR')}</small>
+
+            {order.customerPhone && (
+              <p className="muted">Telefone: {order.customerPhone}</p>
+            )}
+            {order.deliveryType && (
+              <p className="muted">
+                {order.deliveryType === 'delivery' ? 'Entrega' : 'Retirada'}
+                {order.address ? ` — ${order.address}` : ''}
+              </p>
+            )}
+            {order.paymentMethod && (
+              <p className="muted">Pagamento: {order.paymentMethod}</p>
+            )}
+            {order.notes && (
+              <p className="muted">Obs: {order.notes}</p>
+            )}
+
+            {order.items && order.items.length > 0 && (
+              <div className="stack" style={{ gap: '0.25rem', marginTop: '0.5rem' }}>
+                <small className="muted" style={{ fontWeight: 600 }}>Itens:</small>
+                {order.items.map((item) => (
+                  <small key={item.product_id} className="muted">
+                    {item.productName} × {item.quantity} — {formatCurrency(item.price * item.quantity)}
+                  </small>
+                ))}
+              </div>
+            )}
+
             <div className="inline-info">
               {statusActions.map((action) => (
                 <Button
