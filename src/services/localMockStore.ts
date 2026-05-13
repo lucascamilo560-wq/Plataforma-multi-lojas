@@ -1415,8 +1415,8 @@ function filterOrdersByPeriod(orders: Order[], period: ReportPeriod): Order[] {
     period === 'today'
       ? startOfToday.getTime()
       : period === 'seven_days'
-        ? now - 6 * 24 * 60 * 60 * 1000
-        : now - 29 * 24 * 60 * 60 * 1000
+        ? now - 7 * 24 * 60 * 60 * 1000
+        : now - 30 * 24 * 60 * 60 * 1000
   return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
 }
 
