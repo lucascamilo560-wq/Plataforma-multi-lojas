@@ -3,7 +3,7 @@ import type { UserRole } from '../types'
 
 const SESSION_ROLE_KEY = 'marketplace:role'
 const SESSION_STORE_KEY = 'marketplace:store_id'
-const DEFAULT_STORE_ID = 'store-1'
+const DEFAULT_STORE_ID = ''
 
 const validRoles: UserRole[] = ['customer', 'store_admin', 'super_admin']
 

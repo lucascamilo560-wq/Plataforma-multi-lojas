@@ -31,6 +31,15 @@ export interface DeliverySettings {
   fee: number
 }
 
+/**
+ * Controla se as lojas de demonstração (Mercado Central, Casa do Café, Moda Urbana)
+ * são exibidas automaticamente para clientes comuns.
+ *
+ * false = fluxo real (cliente só vê lojas via link/convite do lojista)
+ * true  = modo demo/dev (lojas fake carregadas automaticamente)
+ */
+export const ENABLE_DEMO_STORES = false
+
 const STORAGE_KEYS = {
   stores: 'marketplace:stores',
   products: 'marketplace:products',
@@ -44,6 +53,7 @@ const STORAGE_KEYS = {
   lastVisitedStoreSlug: 'marketplace:last-visited-store-slug',
   invitedStoreSlug: 'marketplace:invited-store-slug',
   activeStoreSlug: 'marketplace:active-store-slug',
+  sellerStoreId: 'marketplace:seller-store-id',
 } as const
 
 const defaultStores: Store[] = [
@@ -791,4 +801,62 @@ export async function getOrderById(orderId: string): Promise<Order | undefined> 
  */
 export async function getPublicStorefront(slug: string): Promise<Store | undefined> {
   return getStoreBySlug(slug)
+}
+
+// ---------------------------------------------------------------------------
+// Seller store management
+// ---------------------------------------------------------------------------
+
+/** Retorna o ID da loja vinculada ao lojista atual (localStorage), ou null. */
+export function getCurrentSellerStoreId(): string | null {
+  return window.localStorage.getItem(STORAGE_KEYS.sellerStoreId) || null
+}
+
+/** Salva o ID da loja vinculada ao lojista atual no localStorage. */
+export function setCurrentSellerStoreId(storeId: string): void {
+  window.localStorage.setItem(STORAGE_KEYS.sellerStoreId, storeId)
+}
+
+export interface CreateStorePayload {
+  name: string
+  category: string
+  city: string
+  description: string
+  whatsapp?: string
+  primaryColor?: string
+  accentColor?: string
+  logoUrl?: string
+  coverUrl?: string
+}
+
+/**
+ * Cria uma nova loja no localMockStore, gera o slug automaticamente
+ * e vincula a loja ao lojista atual via setCurrentSellerStoreId.
+ */
+export async function createStore(payload: CreateStorePayload): Promise<Store> {
+  const stores = getStoresCollection()
+  const baseSlug = normalizeSlug(payload.name)
+  const slugExists = stores.some((store) => store.slug === baseSlug)
+  const slug = slugExists ? `${baseSlug}-${Date.now()}` : baseSlug
+
+  const store: Store = {
+    id: getNextId('store'),
+    name: payload.name.trim(),
+    slug,
+    category: payload.category.trim(),
+    city: payload.city.trim(),
+    description: payload.description.trim(),
+    isActive: true,
+    rating: 0,
+    whatsapp: payload.whatsapp?.trim() || undefined,
+    primaryColor: payload.primaryColor || '#14213D',
+    secondaryColor: '#E8EEF9',
+    accentColor: payload.accentColor || '#3A86FF',
+    logoUrl: payload.logoUrl?.trim() || undefined,
+    coverUrl: payload.coverUrl?.trim() || undefined,
+  }
+
+  setStoresCollection([...stores, store])
+  setCurrentSellerStoreId(store.id)
+  return Promise.resolve(store)
 }

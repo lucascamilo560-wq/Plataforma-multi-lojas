@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
@@ -8,8 +8,7 @@ import { Select } from '../../components/ui/Select'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { Tabs } from '../../components/ui/Tabs'
 import { useMockSession } from '../../hooks/useMockSession'
-import { getStores } from '../../services/mockData'
-import type { Store, UserRole } from '../../types'
+import type { UserRole } from '../../types'
 
 const roleDestinations: Record<UserRole, string> = {
   customer: '/cliente',
@@ -25,21 +24,9 @@ const roleTabs = [
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { setRole, setStoreId, storeId } = useMockSession()
+  const { setRole } = useMockSession()
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
-  const [stores, setStores] = useState<Store[]>([])
-  const [selectedStoreId, setSelectedStoreId] = useState(storeId)
   const [errorMessage, setErrorMessage] = useState('')
-
-  useEffect(() => {
-    getStores().then((nextStores) => {
-      setStores(nextStores)
-      const hasCurrentStore = nextStores.some((store) => store.id === storeId)
-      const nextStoreId = !hasCurrentStore && nextStores.length > 0 ? nextStores[0].id : storeId
-
-      setSelectedStoreId(nextStoreId)
-    })
-  }, [storeId])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -47,11 +34,6 @@ export function LoginPage() {
 
     try {
       setRole(selectedRole)
-
-      if (selectedRole === 'store_admin') {
-        setStoreId(selectedStoreId)
-      }
-
       navigate(roleDestinations[selectedRole])
     } catch (error) {
       console.error('Erro ao entrar:', error)
@@ -98,21 +80,6 @@ export function LoginPage() {
               <option value="store_admin">Lojista</option>
               <option value="super_admin">Super Admin</option>
             </Select>
-
-            {selectedRole === 'store_admin' && (
-              <Select
-                id="store-id"
-                label="Minha loja"
-                value={selectedStoreId}
-                onChange={(event) => setSelectedStoreId(event.target.value)}
-              >
-                {stores.map((store) => (
-                  <option key={store.id} value={store.id}>
-                    {store.name}
-                  </option>
-                ))}
-              </Select>
-            )}
 
             <Button type="submit" variant="accent" size="lg">
               <Icon name="arrowRight" className="icon-sm" />

@@ -4,12 +4,14 @@ export {
   createCoupon,
   createOrderFromCart,
   createProduct,
+  createStore,
   deleteProduct,
   getActiveStore,
   getActiveStoreSlug,
   getAdminSummary,
   getCartItems,
   getCartItemsByStore,
+  getCurrentSellerStoreId,
   getDeliverySettings,
   getFollowedStores,
   getInvitedStoreSlug,
@@ -26,6 +28,7 @@ export {
   isStoreFollowed,
   registerStoreVisit,
   setActiveStoreSlug,
+  setCurrentSellerStoreId,
   toggleProductActive,
   unfollowStore,
   updateDeliverySettings,
@@ -36,3 +39,4 @@ export {
   updateStoreProfile,
   updateStoreTheme,
 } from './localMockStore'
+export type { CreateStorePayload } from './localMockStore'

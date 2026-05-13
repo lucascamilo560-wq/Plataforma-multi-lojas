@@ -97,9 +97,21 @@ export function SellerStorefrontPage() {
                   </Button>
                 </Link>
               )}
+              {storefrontUrl && (
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Acesse minha loja: ${storefrontUrl}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="accent">
+                    <Icon name="check" className="icon-sm" />
+                    Compartilhar pelo WhatsApp
+                  </Button>
+                </a>
+              )}
               {storefrontPath && (
                 <Link to={storefrontPath}>
-                  <Button variant="accent">
+                  <Button variant="ghost">
                     <Icon name="user" className="icon-sm" />
                     Simular cliente nesta loja
                   </Button>

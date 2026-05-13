@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import { AdminLayout } from '../../components/layout/AdminLayout'
 import { CustomerLayout } from '../../components/layout/CustomerLayout'
 import { SellerLayout } from '../../components/layout/SellerLayout'
@@ -15,6 +15,18 @@ import { StorePage } from '../../features/customer-home/StorePage'
 import { StoreOrdersPage } from '../../features/orders/StoreOrdersPage'
 import { SellerNewProductPage } from '../../features/products/SellerNewProductPage'
 import { StoreProductsPage } from '../../features/products/StoreProductsPage'
+import { SellerCreateStorePage } from '../../features/store-dashboard/SellerCreateStorePage'
+import { SellerBrandPage } from '../../features/store-dashboard/SellerBrandPage'
+import { SellerCouponsPage } from '../../features/store-dashboard/SellerCouponsPage'
+import { SellerCustomersPage } from '../../features/store-dashboard/SellerCustomersPage'
+import { SellerDeliveryPage } from '../../features/store-dashboard/SellerDeliveryPage'
+import { StoreDashboardPage } from '../../features/store-dashboard/StoreDashboardPage'
+import { SellerHelpPage } from '../../features/store-dashboard/SellerHelpPage'
+import { SellerPaymentsPage } from '../../features/store-dashboard/SellerPaymentsPage'
+import { SellerPromotionsPage } from '../../features/store-dashboard/SellerPromotionsPage'
+import { SellerReportsPage } from '../../features/store-dashboard/SellerReportsPage'
+import { SellerStorePage } from '../../features/store-dashboard/SellerStorePage'
+import { SellerStorefrontPage } from '../../features/store-dashboard/SellerStorefrontPage'
 import { StorefrontCartPage } from '../../features/storefront/StorefrontCartPage'
 import { StorefrontCheckoutPage } from '../../features/storefront/StorefrontCheckoutPage'
 import { StorefrontOrderPage } from '../../features/storefront/StorefrontOrderPage'
@@ -27,17 +39,6 @@ import { AdminSettingsPage } from '../../features/super-admin/AdminSettingsPage'
 import { AdminSellersPage } from '../../features/super-admin/AdminSellersPage'
 import { AdminStoresPage } from '../../features/super-admin/AdminStoresPage'
 import { AdminSupportPage } from '../../features/super-admin/AdminSupportPage'
-import { SellerBrandPage } from '../../features/store-dashboard/SellerBrandPage'
-import { SellerCouponsPage } from '../../features/store-dashboard/SellerCouponsPage'
-import { SellerCustomersPage } from '../../features/store-dashboard/SellerCustomersPage'
-import { SellerDeliveryPage } from '../../features/store-dashboard/SellerDeliveryPage'
-import { StoreDashboardPage } from '../../features/store-dashboard/StoreDashboardPage'
-import { SellerHelpPage } from '../../features/store-dashboard/SellerHelpPage'
-import { SellerPaymentsPage } from '../../features/store-dashboard/SellerPaymentsPage'
-import { SellerPromotionsPage } from '../../features/store-dashboard/SellerPromotionsPage'
-import { SellerReportsPage } from '../../features/store-dashboard/SellerReportsPage'
-import { SellerStorePage } from '../../features/store-dashboard/SellerStorePage'
-import { SellerStorefrontPage } from '../../features/store-dashboard/SellerStorefrontPage'
 import { useMockSession } from '../../hooks/useMockSession'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -53,6 +54,17 @@ function HomeRedirect() {
   }
 
   return <Navigate to="/cliente" replace />
+}
+
+/** Garante que o lojista tenha uma loja antes de acessar o painel. */
+function SellerStoreGuard() {
+  const { storeId } = useMockSession()
+
+  if (!storeId) {
+    return <Navigate to="/lojista/criar-loja" replace />
+  }
+
+  return <Outlet />
 }
 
 export function AppRoutes() {
@@ -97,20 +109,26 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<StoreDashboardPage />} />
-        <Route path="minha-loja" element={<SellerStorePage />} />
-        <Route path="minha-vitrine" element={<SellerStorefrontPage />} />
-        <Route path="produtos" element={<StoreProductsPage />} />
-        <Route path="produtos/novo" element={<SellerNewProductPage />} />
-        <Route path="pedidos" element={<StoreOrdersPage />} />
-        <Route path="promocoes" element={<SellerPromotionsPage />} />
-        <Route path="cupons" element={<SellerCouponsPage />} />
-        <Route path="clientes" element={<SellerCustomersPage />} />
-        <Route path="pagamentos" element={<SellerPaymentsPage />} />
-        <Route path="entrega" element={<SellerDeliveryPage />} />
-        <Route path="marca" element={<SellerBrandPage />} />
-        <Route path="relatorios" element={<SellerReportsPage />} />
-        <Route path="ajuda" element={<SellerHelpPage />} />
+        {/* Rota acessível sem loja vinculada */}
+        <Route path="criar-loja" element={<SellerCreateStorePage />} />
+
+        {/* Rotas que exigem loja vinculada */}
+        <Route element={<SellerStoreGuard />}>
+          <Route index element={<StoreDashboardPage />} />
+          <Route path="minha-loja" element={<SellerStorePage />} />
+          <Route path="minha-vitrine" element={<SellerStorefrontPage />} />
+          <Route path="produtos" element={<StoreProductsPage />} />
+          <Route path="produtos/novo" element={<SellerNewProductPage />} />
+          <Route path="pedidos" element={<StoreOrdersPage />} />
+          <Route path="promocoes" element={<SellerPromotionsPage />} />
+          <Route path="cupons" element={<SellerCouponsPage />} />
+          <Route path="clientes" element={<SellerCustomersPage />} />
+          <Route path="pagamentos" element={<SellerPaymentsPage />} />
+          <Route path="entrega" element={<SellerDeliveryPage />} />
+          <Route path="marca" element={<SellerBrandPage />} />
+          <Route path="relatorios" element={<SellerReportsPage />} />
+          <Route path="ajuda" element={<SellerHelpPage />} />
+        </Route>
       </Route>
 
       <Route
