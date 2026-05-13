@@ -152,7 +152,9 @@ export function StorefrontCheckoutPage() {
   const total = Math.max(0, subtotal + deliveryFee - discountAmount)
 
   const storeTheme = getStoreTheme(store)
-  const selectedMethod = paymentMethods.find((m) => m.id === selectedPaymentId)
+  const selectedMethod = paymentMethods.length === 1
+    ? paymentMethods[0]
+    : paymentMethods.find((m) => m.id === selectedPaymentId)
 
   const handleApplyCoupon = async () => {
     if (!store || !couponInput.trim()) return

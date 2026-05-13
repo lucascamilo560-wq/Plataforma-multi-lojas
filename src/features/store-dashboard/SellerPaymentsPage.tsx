@@ -29,6 +29,7 @@ export function SellerPaymentsPage() {
   const { storeId } = useMockSession()
   const [methods, setMethods] = useState<PaymentOption[]>(DEFAULT_METHODS)
   const [successMessage, setSuccessMessage] = useState('')
+  const [formError, setFormError] = useState('')
 
   const loadPayments = useCallback(() => {
     getPaymentSettings(storeId).then((saved) => {
@@ -62,6 +63,7 @@ export function SellerPaymentsPage() {
       current.map((method, i) => (i === index ? { ...method, enabled: !method.enabled } : method)),
     )
     setSuccessMessage('')
+    setFormError('')
   }
 
   const handleFieldChange = (index: number, field: keyof PaymentOption, value: string) => {
@@ -69,15 +71,21 @@ export function SellerPaymentsPage() {
       current.map((method, i) => (i === index ? { ...method, [field]: value } : method)),
     )
     setSuccessMessage('')
+    setFormError('')
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setFormError('')
 
     for (const method of methods) {
-      if (method.enabled && method.type === 'external_payment_link' && !method.externalUrl?.trim()) {
-        setSuccessMessage('')
-        alert('O método "Link de pagamento externo" requer uma URL de pagamento.')
+      if (!method.enabled) continue
+      if (method.type === 'pix' && !method.pixKey?.trim()) {
+        setFormError('Informe a chave Pix para ativar o método Pix.')
+        return
+      }
+      if (method.type === 'external_payment_link' && !method.externalUrl?.trim()) {
+        setFormError('O método "Link de pagamento externo" requer uma URL de pagamento.')
         return
       }
     }
@@ -184,6 +192,11 @@ export function SellerPaymentsPage() {
             ))}
           </div>
 
+          {formError && (
+            <p style={{ color: 'var(--color-error, #dc2626)', fontWeight: 500 }}>
+              ❌ {formError}
+            </p>
+          )}
           {successMessage && (
             <p className="muted" style={{ color: 'var(--color-success, green)' }}>
               {successMessage}

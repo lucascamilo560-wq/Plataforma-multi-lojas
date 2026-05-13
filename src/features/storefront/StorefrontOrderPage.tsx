@@ -45,18 +45,33 @@ function resolvePaymentMethodKey(order: Order): OrderPaymentMethod {
 
 function CopyButton({ text, label }: { text: string; label: string }) {
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState(false)
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    navigator.clipboard.writeText(text).then(
+      () => {
+        setCopied(true)
+        setCopyError(false)
+        setTimeout(() => setCopied(false), 2000)
+      },
+      () => {
+        setCopyError(true)
+        setTimeout(() => setCopyError(false), 3000)
+      },
+    )
   }
 
   return (
-    <Button variant="secondary" onClick={handleCopy}>
-      {copied ? '✅ Copiado!' : label}
-    </Button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+      <Button variant="secondary" onClick={handleCopy}>
+        {copied ? '✅ Copiado!' : label}
+      </Button>
+      {copyError && (
+        <p style={{ fontSize: '0.8rem', color: 'var(--color-error, #dc2626)', margin: 0 }}>
+          Não foi possível copiar. Copie manualmente.
+        </p>
+      )}
+    </div>
   )
 }
 
