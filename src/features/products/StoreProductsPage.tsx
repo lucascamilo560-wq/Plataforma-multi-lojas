@@ -23,6 +23,20 @@ function compareProducts(a: Product, b: Product) {
   return a.name.localeCompare(b.name)
 }
 
+function getProductTypeLabel(productType: Product['productType']) {
+  switch (productType) {
+    case 'service':
+      return 'Serviço local'
+    case 'external_link':
+      return 'Produto por link'
+    case 'affiliate':
+      return 'Oferta afiliada'
+    case 'physical':
+    default:
+      return 'Produto físico'
+  }
+}
+
 export function StoreProductsPage() {
   const { storeId } = useMockSession()
   const [products, setProducts] = useState<Product[]>([])
@@ -69,6 +83,12 @@ export function StoreProductsPage() {
   }
 
   const handleUpdateStock = async (productId: string) => {
+    const product = products.find((item) => item.id === productId)
+    if (product && product.productType !== 'physical') {
+      setErrorMessage('Ajuste de estoque é usado apenas para produtos físicos.')
+      return
+    }
+
     const nextStock = Number(stockInputs[productId])
 
     if (!Number.isFinite(nextStock) || nextStock < 0) {
@@ -101,14 +121,20 @@ export function StoreProductsPage() {
 
       <div className="grid">
         {sortedProducts.map((product) => (
-          <Card key={product.id} title={product.name} subtitle={product.category} variant="accentCorner">
-            <img src={product.imageUrl} alt={product.name} className="product-image" loading="lazy" />
-            <p className="muted">{product.description}</p>
-            <div className="inline-info">
-              <strong>{formatCurrency(product.price)}</strong>
-              <Badge variant={product.isActive ? 'success' : 'danger'}>
-                {product.isActive ? 'Ativo' : 'Pausado'}
-              </Badge>
+            <Card key={product.id} title={product.name} subtitle={product.category} variant="accentCorner">
+              <img src={product.imageUrl} alt={product.name} className="product-image" loading="lazy" />
+              <p className="muted">{product.description}</p>
+              <p className="muted">Tipo: {getProductTypeLabel(product.productType)}</p>
+              {product.externalUrl && (
+                <p className="muted" style={{ wordBreak: 'break-all' }}>
+                  URL externa: {product.externalUrl}
+                </p>
+              )}
+              <div className="inline-info">
+                <strong>{formatCurrency(product.price)}</strong>
+                <Badge variant={product.isActive ? 'success' : 'danger'}>
+                  {product.isActive ? 'Ativo' : 'Pausado'}
+                </Badge>
             </div>
 
             <div className="field">
@@ -125,6 +151,7 @@ export function StoreProductsPage() {
                       [product.id]: event.target.value,
                     }))
                   }
+                  disabled={product.productType !== 'physical'}
                 />
                 <Button type="button" variant="secondary" onClick={() => handleUpdateStock(product.id)}>
                   Salvar estoque
