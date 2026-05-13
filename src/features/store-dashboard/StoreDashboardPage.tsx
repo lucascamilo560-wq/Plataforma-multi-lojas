@@ -48,6 +48,8 @@ export function StoreDashboardPage() {
         .reduce((sum, o) => sum + o.total, 0),
     [orders],
   )
+  const pendingOrders = useMemo(() => orders.filter((o) => o.status === 'pending').length, [orders])
+  const toBeArrangedPayments = useMemo(() => orders.filter((o) => o.paymentStatus === 'to_be_arranged').length, [orders])
   const storeTheme = getStoreTheme(store)
   const storefrontPath = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
   const storefrontUrl = buildPublicUrl(storefrontPath)
@@ -109,9 +111,11 @@ export function StoreDashboardPage() {
 
       <div className="grid grid-metrics">
         <KpiCard label="Pedidos hoje" value={ordersToday.length} icon="clock" />
-        <KpiCard label="Produtos" value={products.length} icon="package" />
+        <KpiCard label="Pedidos pendentes" value={pendingOrders} icon="cart" />
+        <KpiCard label="Pagamentos a combinar" value={toBeArrangedPayments} icon="wallet" />
         <KpiCard label="Faturamento confirmado" value={formatCurrency(confirmedRevenue)} icon="wallet" />
         <KpiCard label="A receber" value={formatCurrency(pendingRevenue)} icon="tag" />
+        <KpiCard label="Produtos" value={products.length} icon="package" />
       </div>
 
       <SectionHeader
