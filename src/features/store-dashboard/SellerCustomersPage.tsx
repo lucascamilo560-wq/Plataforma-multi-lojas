@@ -78,6 +78,7 @@ export function SellerCustomersPage() {
   const [selectedFilter, setSelectedFilter] = useState<CustomerFilter>('all')
   const [selectedSort, setSelectedSort] = useState<CustomerSort>('last_order')
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const [customerOrders, setCustomerOrders] = useState<Record<string, Order[]>>({})
 
   const refresh = useCallback(() => {
@@ -91,6 +92,7 @@ export function SellerCustomersPage() {
 
   const filtered = useMemo(() => {
     const term = searchTerm.trim().toLowerCase()
+    const termDigits = term.replace(/\D/g, '')
 
     return customers.filter((c) => {
       const matchesFilter =
@@ -104,9 +106,11 @@ export function SellerCustomersPage() {
       if (!matchesFilter) return false
       if (!term) return true
 
+      const sanitizedPhone = (c.phone ?? '').replace(/\D/g, '')
       return (
         c.name.toLowerCase().includes(term) ||
-        (c.phone ?? '').toLowerCase().includes(term)
+        (c.phone ?? '').toLowerCase().includes(term) ||
+        (termDigits.length > 0 && sanitizedPhone.includes(termDigits))
       )
     })
   }, [customers, searchTerm, selectedFilter])
@@ -139,7 +143,7 @@ export function SellerCustomersPage() {
 
   const openWhatsApp = (customer: CustomerSummary, message: string) => {
     const phone = sanitizePhone(customer.phone)
-    if (!phone) return
+    if (phone.length < 8) return
     const link = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`
     window.open(link, '_blank', 'noopener,noreferrer')
   }
@@ -160,9 +164,11 @@ export function SellerCustomersPage() {
     openWhatsApp(customer, msg)
   }
 
-  const handleCopyPhone = async (phone: string) => {
+  const handleCopyPhone = async (customerKey: string, phone: string) => {
     try {
       await window.navigator.clipboard.writeText(phone)
+      setCopiedKey(customerKey)
+      setTimeout(() => setCopiedKey((prev) => (prev === customerKey ? null : prev)), 2000)
     } catch {
       // silently fail
     }
@@ -278,7 +284,7 @@ export function SellerCustomersPage() {
                 <Button type="button" variant="ghost" onClick={() => handleToggleHistory(customer.key)}>
                   {isExpanded ? 'Fechar histórico' : 'Ver histórico'}
                 </Button>
-                {customer.phone && (
+                {customer.phone && sanitizePhone(customer.phone).length >= 8 && (
                   <>
                     <Button type="button" variant="primary" onClick={() => handleSendReturn(customer)}>
                       Chamar no WhatsApp
@@ -286,8 +292,8 @@ export function SellerCustomersPage() {
                     <Button type="button" variant="secondary" onClick={() => handleSendCoupon(customer)}>
                       Enviar cupom
                     </Button>
-                    <Button type="button" variant="ghost" onClick={() => handleCopyPhone(customer.phone!)}>
-                      Copiar telefone
+                    <Button type="button" variant="ghost" onClick={() => handleCopyPhone(customer.key, customer.phone!)}>
+                      {copiedKey === customer.key ? 'Copiado!' : 'Copiar telefone'}
                     </Button>
                   </>
                 )}
@@ -343,7 +349,7 @@ export function SellerCustomersPage() {
                         </div>
                       )}
 
-                      {customer.phone && (
+                      {customer.phone && sanitizePhone(customer.phone).length >= 8 && (
                         <div>
                           <Button
                             type="button"
