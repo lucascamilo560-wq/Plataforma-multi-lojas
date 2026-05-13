@@ -6,12 +6,12 @@ function normalizeBasePath(basePath: string | undefined): string {
 }
 
 function normalizePath(path: string): string {
-  if (!path) return '/'
+  if (path === '') return '/'
   return path.startsWith('/') ? path : `/${path}`
 }
 
 function isAbsoluteUrl(path: string): boolean {
-  return /^https?:\/\//i.test(path)
+  return /^https?:\/\//.test(path)
 }
 
 export function getAppBasePath(): string {
@@ -28,6 +28,7 @@ export function buildPublicPath(path: string): string {
     return normalizedPath
   }
 
+  // Evita duplicar o basename quando a rota já estiver montada com BASE_URL.
   if (normalizedPath === basePath || normalizedPath.startsWith(basePath)) {
     return normalizedPath
   }

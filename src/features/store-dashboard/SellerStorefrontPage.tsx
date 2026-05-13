@@ -108,13 +108,13 @@ export function SellerStorefrontPage() {
             </div>
 
             {storefrontUrl && (
-              <p className="muted" style={{ fontSize: '0.8rem' }}>
+              <p className="muted storefront-note">
                 Este é o link público correto da sua loja neste ambiente.
               </p>
             )}
             {storefrontPath && (
-              <p className="muted" style={{ fontSize: '0.8rem' }}>
-                Ao abrir a vitrine, esta loja será salva como loja ativa na área do cliente.
+              <p className="muted storefront-note">
+                Ao usar “Simular cliente nesta loja”, esta loja será salva como loja ativa na área do cliente.
               </p>
             )}
             {copyMessage && <p className="muted">{copyMessage}</p>}

@@ -1,1 +1,5 @@
 @import './styles/theme.css';
+
+.storefront-note {
+  font-size: 0.8rem;
+}
