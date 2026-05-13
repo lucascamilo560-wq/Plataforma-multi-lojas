@@ -43,6 +43,23 @@ function resolvePaymentMethodKey(order: Order): OrderPaymentMethod {
   return order.paymentMethodKey ?? derivePaymentMethodKey(order.paymentMethod)
 }
 
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <Button variant="secondary" onClick={handleCopy}>
+      {copied ? '✅ Copiado!' : label}
+    </Button>
+  )
+}
+
 export function StorefrontOrderPage() {
   const { slug = '', orderId = '' } = useParams()
   const [store, setStore] = useState<Store | undefined>()
@@ -70,15 +87,24 @@ export function StorefrontOrderPage() {
   }
 
   const storeTheme = getStoreTheme(store)
-  const whatsappUrl = store.whatsapp
-    ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Olá! Quero acompanhar meu pedido #${order.id} feito na ${store.name}.`)}`
-    : null
 
   const paymentMethodKey = resolvePaymentMethodKey(order)
   const isPixPayment = paymentMethodKey === 'pix'
   const isWhatsappPayment = paymentMethodKey === 'whatsapp'
   const isExternalLink = paymentMethodKey === 'external_payment_link'
   const isPaymentArranged = order.paymentStatus === 'to_be_arranged'
+
+  const externalPaymentUrl = order.externalPaymentUrl ?? (isExternalLink ? order.paymentInstructions : undefined)
+
+  const whatsappOrderMessage = store.whatsapp
+    ? `Olá! Fiz o pedido #${order.id} na loja ${store.name}, no valor de ${formatCurrency(order.total)}. Podemos combinar o pagamento?`
+    : null
+  const whatsappPaymentUrl = store.whatsapp && whatsappOrderMessage
+    ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(whatsappOrderMessage)}`
+    : null
+  const whatsappContactUrl = store.whatsapp
+    ? `https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Olá! Quero acompanhar meu pedido #${order.id} feito na ${store.name}.`)}`
+    : null
 
   return (
     <section className="stack-xl">
@@ -154,46 +180,94 @@ export function StorefrontOrderPage() {
 
         <Card title="Próximos passos" subtitle="O que acontece agora?" variant="layered">
           <div className="stack" style={{ gap: '0.75rem' }}>
-            {isPaymentArranged && (
+
+            {isPixPayment && order.paymentStatus !== 'paid' && (
+              <>
+                {order.pixKey && (
+                  <div className="stack" style={{ gap: '0.35rem' }}>
+                    <p className="muted" style={{ margin: 0 }}>
+                      <strong>Chave Pix:</strong>
+                    </p>
+                    <div style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      padding: '0.5rem 0.75rem',
+                      background: 'var(--color-surface-raised, #f9fafb)',
+                      borderRadius: '0.5rem',
+                      border: '1px solid var(--color-border)',
+                    }}>
+                      <code style={{ flex: 1, fontSize: '0.9rem', wordBreak: 'break-all' }}>{order.pixKey}</code>
+                      <CopyButton text={order.pixKey} label="Copiar chave Pix" />
+                    </div>
+                  </div>
+                )}
+                {order.paymentInstructions && (
+                  <p className="muted">{order.paymentInstructions}</p>
+                )}
+                <p className="muted">
+                  O lojista confirmará o pagamento manualmente.
+                </p>
+              </>
+            )}
+
+            {isExternalLink && order.paymentStatus !== 'paid' && (
+              <>
+                {externalPaymentUrl ? (
+                  <a href={externalPaymentUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="store" storeColor={storeTheme.primaryColor}>
+                      Abrir link de pagamento
+                    </Button>
+                  </a>
+                ) : (
+                  <p className="muted">
+                    Entre em contato com a loja para receber o link de pagamento.
+                  </p>
+                )}
+                <p className="muted" style={{ fontSize: '0.85rem' }}>
+                  ⚠️ O pagamento acontece fora da plataforma.
+                </p>
+              </>
+            )}
+
+            {isWhatsappPayment && (
+              <>
+                <p className="muted">
+                  <strong>Pagamento pelo WhatsApp:</strong> combine o pagamento diretamente com a loja.
+                </p>
+                {whatsappPaymentUrl ? (
+                  <a href={whatsappPaymentUrl} target="_blank" rel="noopener noreferrer">
+                    <Button variant="store" storeColor={storeTheme.primaryColor}>
+                      Chamar loja no WhatsApp
+                    </Button>
+                  </a>
+                ) : (
+                  <p className="muted">Entre em contato com a loja para combinar o pagamento.</p>
+                )}
+              </>
+            )}
+
+            {isPaymentArranged && !isWhatsappPayment && (
               <p className="muted">
                 <strong>Pagamento a combinar:</strong> entre em contato com a loja para acertar a forma de pagamento antes da entrega.
               </p>
             )}
-            {isPixPayment && order.paymentStatus !== 'paid' && (
+
+            {!isPixPayment && !isExternalLink && !isWhatsappPayment && !isPaymentArranged && (
               <p className="muted">
-                <strong>Pix:</strong>{' '}
-                {order.paymentInstructions
-                  ? order.paymentInstructions
-                  : 'Aguarde as instruções de pagamento via Pix enviadas pela loja, ou entre em contato pelo WhatsApp.'}
+                Aguardando pagamento conforme combinado. A loja recebeu seu pedido e em breve confirmará.
               </p>
             )}
-            {isExternalLink && order.paymentInstructions && order.paymentStatus !== 'paid' && (
-              <a href={order.paymentInstructions} target="_blank" rel="noopener noreferrer">
-                <Button variant="store" storeColor={storeTheme.primaryColor}>
-                  Abrir link de pagamento
-                </Button>
-              </a>
-            )}
-            {(isWhatsappPayment || isPaymentArranged) && whatsappUrl && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="store" storeColor={storeTheme.primaryColor}>
-                  Chamar loja no WhatsApp
-                </Button>
-              </a>
-            )}
-            {!isWhatsappPayment && !isPaymentArranged && (
-              <p className="muted">
-                A loja recebeu seu pedido e em breve confirmará. Você pode acompanhar o andamento
-                diretamente pelo WhatsApp se preferir.
-              </p>
-            )}
-            {whatsappUrl && !isWhatsappPayment && !isPaymentArranged && (
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="store" storeColor={storeTheme.primaryColor}>
+
+            {whatsappContactUrl && !isWhatsappPayment && (
+              <a href={whatsappContactUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="secondary">
                   Falar com a loja pelo WhatsApp
                 </Button>
               </a>
             )}
+
             <Link to={`/loja/${slug}`}>
               <Button variant="secondary">Continuar comprando</Button>
             </Link>

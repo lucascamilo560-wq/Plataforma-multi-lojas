@@ -76,6 +76,8 @@ export interface Order {
   paymentStatus: PaymentStatus
   paidAt?: string
   paymentInstructions?: string
+  externalPaymentUrl?: string
+  pixKey?: string
   createdAt: string
 }
 

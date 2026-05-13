@@ -19,6 +19,87 @@ import type { CartItem, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 import type { DeliverySettings, PaymentMethod } from '../../services/localMockStore'
 
+function PaymentMethodCard({
+  method,
+  selected,
+  onSelect,
+}: {
+  method: PaymentMethod
+  selected: boolean
+  onSelect: () => void
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => e.key === 'Enter' && onSelect()}
+      style={{
+        border: selected ? '2px solid var(--color-accent, #3A86FF)' : '1.5px solid var(--color-border)',
+        borderRadius: '0.75rem',
+        padding: '0.85rem 1rem',
+        cursor: 'pointer',
+        background: selected ? 'var(--color-accent-subtle, #f0f7ff)' : 'var(--color-surface, #fff)',
+        outline: 'none',
+      }}
+    >
+      <div style={{ fontWeight: 600, marginBottom: method.instructions || method.pixKey ? '0.35rem' : 0 }}>
+        {method.name}
+      </div>
+
+      {method.type === 'pix' && (
+        <>
+          {method.pixKey && (
+            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.875rem' }}>
+              Chave Pix: <strong>{method.pixKey}</strong>
+            </p>
+          )}
+          {method.instructions && (
+            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.875rem' }}>{method.instructions}</p>
+          )}
+          <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.8rem' }}>
+            Após o pagamento, aguarde a confirmação do lojista.
+          </p>
+        </>
+      )}
+
+      {method.type === 'external_payment_link' && (
+        <>
+          {method.instructions && (
+            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.875rem' }}>{method.instructions}</p>
+          )}
+          <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.8rem' }}>
+            ⚠️ O pagamento será feito fora da plataforma. O link será disponibilizado após confirmar o pedido.
+          </p>
+        </>
+      )}
+
+      {method.type === 'whatsapp' && (
+        <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.875rem' }}>
+          Você poderá chamar a loja após confirmar o pedido.
+        </p>
+      )}
+
+      {method.type === 'cash' && (
+        <>
+          {method.instructions && (
+            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.875rem' }}>{method.instructions}</p>
+          )}
+          {!method.instructions && (
+            <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.875rem' }}>
+              Pague na entrega ou retirada, conforme combinado com a loja.
+            </p>
+          )}
+        </>
+      )}
+
+      {(method.type === 'card_on_delivery' || method.type === 'pickup_payment') && method.instructions && (
+        <p className="muted" style={{ margin: '0.2rem 0 0', fontSize: '0.875rem' }}>{method.instructions}</p>
+      )}
+    </div>
+  )
+}
+
 export function StorefrontCheckoutPage() {
   const { slug = '' } = useParams()
   const navigate = useNavigate()
@@ -32,7 +113,7 @@ export function StorefrontCheckoutPage() {
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('pickup')
-  const [selectedPayment, setSelectedPayment] = useState('')
+  const [selectedPaymentId, setSelectedPaymentId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
@@ -48,7 +129,7 @@ export function StorefrontCheckoutPage() {
       getPaymentSettings(nextStore.id).then((methods) => {
         const enabled = methods.filter((m) => m.enabled)
         setPaymentMethods(enabled)
-        if (enabled.length > 0) setSelectedPayment(enabled[0].name)
+        if (enabled.length > 0) setSelectedPaymentId(enabled[0].id)
       })
       getDeliverySettings(nextStore.id).then((settings) => {
         setDeliverySettings(settings)
@@ -71,6 +152,7 @@ export function StorefrontCheckoutPage() {
   const total = Math.max(0, subtotal + deliveryFee - discountAmount)
 
   const storeTheme = getStoreTheme(store)
+  const selectedMethod = paymentMethods.find((m) => m.id === selectedPaymentId)
 
   const handleApplyCoupon = async () => {
     if (!store || !couponInput.trim()) return
@@ -91,7 +173,7 @@ export function StorefrontCheckoutPage() {
       setErrorMessage('Informe seu nome para continuar.')
       return
     }
-    if (!selectedPayment) {
+    if (!selectedMethod) {
       setErrorMessage('Selecione uma forma de pagamento.')
       return
     }
@@ -114,7 +196,11 @@ export function StorefrontCheckoutPage() {
         address: deliveryType === 'delivery' ? address.trim() : undefined,
         notes: notes.trim() || undefined,
         deliveryType,
-        paymentMethod: selectedPayment,
+        paymentMethod: selectedMethod.name,
+        paymentMethodKey: selectedMethod.type,
+        paymentInstructions: selectedMethod.instructions || undefined,
+        externalPaymentUrl: selectedMethod.externalUrl || undefined,
+        pixKey: selectedMethod.pixKey || undefined,
         couponCode: couponApplied && couponResult?.valid ? couponResult.coupon.code : undefined,
         deliveryFee: deliveryFee > 0 ? deliveryFee : undefined,
       })
@@ -249,23 +335,27 @@ export function StorefrontCheckoutPage() {
         )}
 
         {paymentMethods.length > 0 && (
-          <Card title="Forma de pagamento" subtitle="Formas aceitas por esta loja" variant="layered">
-            <div className="stack" style={{ gap: '0.5rem' }}>
-              {paymentMethods.map((method) => (
-                <label
-                  key={method.id}
-                  style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', cursor: 'pointer' }}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value={method.name}
-                    checked={selectedPayment === method.name}
-                    onChange={() => setSelectedPayment(method.name)}
+          <Card title="Pagamento" subtitle="Como esta loja recebe" variant="layered">
+            <div className="stack" style={{ gap: '0.65rem' }}>
+              {paymentMethods.length === 1 ? (
+                <PaymentMethodCard
+                  method={paymentMethods[0]}
+                  selected={true}
+                  onSelect={() => {}}
+                />
+              ) : (
+                paymentMethods.map((method) => (
+                  <PaymentMethodCard
+                    key={method.id}
+                    method={method}
+                    selected={selectedPaymentId === method.id}
+                    onSelect={() => setSelectedPaymentId(method.id)}
                   />
-                  {method.name}
-                </label>
-              ))}
+                ))
+              )}
+              <p className="muted" style={{ fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                O pedido será registrado no app. O pagamento é confirmado manualmente pelo lojista.
+              </p>
             </div>
           </Card>
         )}
