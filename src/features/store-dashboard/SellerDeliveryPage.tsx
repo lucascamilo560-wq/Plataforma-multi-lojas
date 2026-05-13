@@ -30,6 +30,14 @@ const DEFAULT_STATE: DeliveryFormState = {
   deliveryNotes: '',
 }
 
+function parsePositiveNumber(value: string, fieldName: string): { value: number; error?: string } {
+  const parsed = Number(value)
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return { value: 0, error: `Informe um valor válido (0 ou maior) para: ${fieldName}.` }
+  }
+  return { value: parsed }
+}
+
 export function SellerDeliveryPage() {
   const { storeId } = useMockSession()
   const [formState, setFormState] = useState<DeliveryFormState>(DEFAULT_STATE)
@@ -78,20 +86,13 @@ export function SellerDeliveryPage() {
     setSuccessMessage('')
     setErrorMessage('')
 
-    const parsedMinutes = Number(formState.estimatedMinutes)
-    const parsedFee = Number(formState.fee)
-    const parsedMinOrder = Number(formState.minOrder)
+    const { value: parsedMinutes, error: minutesError } = parsePositiveNumber(formState.estimatedMinutes, 'tempo estimado')
+    const { value: parsedFee, error: feeError } = parsePositiveNumber(formState.fee, 'taxa de entrega')
+    const { value: parsedMinOrder, error: minOrderError } = parsePositiveNumber(formState.minOrder, 'pedido mínimo')
 
-    if (!Number.isFinite(parsedMinutes) || parsedMinutes < 0) {
-      setErrorMessage('Informe um tempo estimado válido (0 ou maior).')
-      return
-    }
-    if (!Number.isFinite(parsedFee) || parsedFee < 0) {
-      setErrorMessage('Informe uma taxa de entrega válida (0 ou maior).')
-      return
-    }
-    if (!Number.isFinite(parsedMinOrder) || parsedMinOrder < 0) {
-      setErrorMessage('Informe um pedido mínimo válido (0 ou maior).')
+    const validationError = minutesError ?? feeError ?? minOrderError
+    if (validationError) {
+      setErrorMessage(validationError)
       return
     }
 

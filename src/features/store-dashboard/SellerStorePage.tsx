@@ -145,7 +145,7 @@ export function SellerStorePage() {
           <div className="grid grid-3">
             <Input
               id="store-whatsapp"
-              label="WhatsApp (somente números)"
+              label="WhatsApp"
               value={formState.whatsapp}
               onChange={handleChange('whatsapp')}
               placeholder="Ex: 5511999990001"
