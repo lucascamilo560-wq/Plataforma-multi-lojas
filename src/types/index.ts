@@ -36,6 +36,17 @@ export interface Product {
 
 export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
 
+export type PaymentStatus = 'awaiting_payment' | 'to_be_arranged' | 'paid' | 'failed' | 'refunded'
+
+export type OrderPaymentMethod =
+  | 'pix'
+  | 'cash'
+  | 'card_on_delivery'
+  | 'pickup_payment'
+  | 'external_payment_link'
+  | 'whatsapp'
+  | 'custom'
+
 export interface OrderItem {
   product_id: string
   productName: string
@@ -52,9 +63,13 @@ export interface Order {
   notes?: string
   deliveryType?: 'delivery' | 'pickup'
   paymentMethod?: string
+  paymentMethodKey?: OrderPaymentMethod
   items?: OrderItem[]
   total: number
   status: OrderStatus
+  paymentStatus: PaymentStatus
+  paidAt?: string
+  paymentInstructions?: string
   createdAt: string
 }
 

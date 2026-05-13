@@ -1,4 +1,4 @@
-import type { AdminSummary, CartItem, Order, OrderItem, OrderStatus, Product, Store } from '../types'
+import type { AdminSummary, CartItem, Order, OrderItem, OrderPaymentMethod, OrderStatus, PaymentStatus, Product, Store } from '../types'
 
 export interface Coupon {
   id: string
@@ -165,6 +165,9 @@ const defaultOrders: Order[] = [
     customerName: 'Ana Souza',
     total: 89.8,
     status: 'preparing',
+    paymentStatus: 'awaiting_payment',
+    paymentMethod: 'Pix',
+    paymentMethodKey: 'pix',
     createdAt: '2026-05-11T10:35:00.000Z',
   },
   {
@@ -173,6 +176,9 @@ const defaultOrders: Order[] = [
     customerName: 'Carlos Lima',
     total: 42,
     status: 'pending',
+    paymentStatus: 'to_be_arranged',
+    paymentMethod: 'Combinar pelo WhatsApp',
+    paymentMethodKey: 'whatsapp',
     createdAt: '2026-05-11T09:10:00.000Z',
   },
   {
@@ -181,6 +187,10 @@ const defaultOrders: Order[] = [
     customerName: 'Marina Alves',
     total: 119.9,
     status: 'paid',
+    paymentStatus: 'paid',
+    paymentMethod: 'Pix',
+    paymentMethodKey: 'pix',
+    paidAt: '2026-05-10T18:30:00.000Z',
     createdAt: '2026-05-10T18:22:00.000Z',
   },
 ]
@@ -252,6 +262,7 @@ const defaultCartItems: CartItem[] = [
 ]
 
 const validOrderStatus: OrderStatus[] = ['pending', 'paid', 'preparing', 'delivered', 'cancelled']
+const validPaymentStatus: PaymentStatus[] = ['awaiting_payment', 'to_be_arranged', 'paid', 'failed', 'refunded']
 const validProductTypes = ['physical', 'service', 'external_link', 'affiliate'] as const
 
 function getDefaultCtaLabel(productType: Product['productType']) {
@@ -337,6 +348,7 @@ function normalizeOrders(orders: Order[]): Order[] {
   return orders.map((order) => ({
     ...order,
     status: validOrderStatus.includes(order.status) ? order.status : 'pending',
+    paymentStatus: validPaymentStatus.includes(order.paymentStatus) ? order.paymentStatus : 'awaiting_payment',
   }))
 }
 
@@ -708,6 +720,30 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
   return Promise.resolve(updatedOrder)
 }
 
+export async function updateOrderPaymentStatus(
+  orderId: string,
+  paymentStatus: PaymentStatus,
+): Promise<Order | undefined> {
+  let updatedOrder: Order | undefined
+  const now = new Date().toISOString()
+
+  const orders = getOrdersCollection().map((order) => {
+    if (order.id !== orderId) {
+      return order
+    }
+
+    updatedOrder = {
+      ...order,
+      paymentStatus,
+      paidAt: paymentStatus === 'paid' ? (order.paidAt ?? now) : order.paidAt,
+    }
+    return updatedOrder
+  })
+
+  setOrdersCollection(orders)
+  return Promise.resolve(updatedOrder)
+}
+
 export async function createCoupon(payload: Omit<Coupon, 'id'>): Promise<Coupon> {
   const coupons = getCouponsCollection()
   const coupon: Coupon = { ...payload, id: getNextId('coupon') }
@@ -783,6 +819,29 @@ export interface CreateOrderPayload {
   notes?: string
   deliveryType?: 'delivery' | 'pickup'
   paymentMethod?: string
+  paymentMethodKey?: OrderPaymentMethod
+  paymentInstructions?: string
+}
+
+function derivePaymentStatus(paymentMethodKey?: OrderPaymentMethod, paymentMethodName?: string): PaymentStatus {
+  if (paymentMethodKey === 'whatsapp') return 'to_be_arranged'
+  if (!paymentMethodKey && paymentMethodName) {
+    const lower = paymentMethodName.toLowerCase()
+    if (lower.includes('whatsapp') || lower.includes('combinar')) return 'to_be_arranged'
+  }
+  return 'awaiting_payment'
+}
+
+export function derivePaymentMethodKey(paymentMethodName?: string): OrderPaymentMethod {
+  if (!paymentMethodName) return 'custom'
+  const lower = paymentMethodName.toLowerCase()
+  if (lower.includes('pix')) return 'pix'
+  if (lower.includes('dinheiro') || lower.includes('cash')) return 'cash'
+  if (lower.includes('cartão') || lower.includes('cartao') || lower.includes('entrega')) return 'card_on_delivery'
+  if (lower.includes('retirada') || lower.includes('pickup')) return 'pickup_payment'
+  if (lower.includes('link') || lower.includes('externo')) return 'external_payment_link'
+  if (lower.includes('whatsapp') || lower.includes('combinar')) return 'whatsapp'
+  return 'custom'
 }
 
 export async function createOrderFromCart(payload: CreateOrderPayload): Promise<Order> {
@@ -798,6 +857,9 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
 
   const total = storeItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
+  const paymentMethodKey = payload.paymentMethodKey ?? derivePaymentMethodKey(payload.paymentMethod)
+  const paymentStatus = derivePaymentStatus(paymentMethodKey, payload.paymentMethod)
+
   const order: Order = {
     id: getNextId('ord'),
     store_id: payload.storeId,
@@ -807,9 +869,12 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
     notes: payload.notes,
     deliveryType: payload.deliveryType,
     paymentMethod: payload.paymentMethod,
+    paymentMethodKey,
+    paymentInstructions: payload.paymentInstructions,
     items,
     total,
     status: 'pending',
+    paymentStatus,
     createdAt: new Date().toISOString(),
   }
 
