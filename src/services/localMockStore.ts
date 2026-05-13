@@ -849,7 +849,7 @@ export async function validateCoupon(storeId: string, code: string, subtotal: nu
 
   const discountAmount =
     coupon.discountType === 'percent'
-      ? Math.round((subtotal * coupon.discountValue) / 100 * 100) / 100
+      ? Math.round((subtotal * coupon.discountValue / 100) * 100) / 100
       : Math.min(coupon.discountValue, subtotal)
 
   return Promise.resolve({ valid: true, coupon, discountAmount })
