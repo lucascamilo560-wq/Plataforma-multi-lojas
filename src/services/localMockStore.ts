@@ -27,8 +27,13 @@ export interface DeliverySettings {
   store_id: string
   deliveryEnabled: boolean
   pickupEnabled: boolean
+  combineDelivery: boolean
   estimatedMinutes: number
   fee: number
+  minOrder: number
+  neighborhoods: string
+  pickupAddress: string
+  deliveryNotes: string
 }
 
 /**
@@ -201,8 +206,30 @@ const defaultPaymentMethods: PaymentMethod[] = [
 ]
 
 const defaultDeliverySettings: DeliverySettings[] = [
-  { store_id: 'store-1', deliveryEnabled: true, pickupEnabled: true, estimatedMinutes: 45, fee: 6 },
-  { store_id: 'store-2', deliveryEnabled: true, pickupEnabled: false, estimatedMinutes: 60, fee: 8 },
+  {
+    store_id: 'store-1',
+    deliveryEnabled: true,
+    pickupEnabled: true,
+    combineDelivery: false,
+    estimatedMinutes: 45,
+    fee: 6,
+    minOrder: 0,
+    neighborhoods: '',
+    pickupAddress: '',
+    deliveryNotes: '',
+  },
+  {
+    store_id: 'store-2',
+    deliveryEnabled: true,
+    pickupEnabled: false,
+    combineDelivery: false,
+    estimatedMinutes: 60,
+    fee: 8,
+    minOrder: 0,
+    neighborhoods: '',
+    pickupAddress: '',
+    deliveryNotes: '',
+  },
 ]
 
 const defaultCartItems: CartItem[] = [
@@ -636,7 +663,7 @@ export async function updateProductStock(productId: string, stock: number): Prom
 
 export async function updateStoreProfile(
   storeId: string,
-  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive'>>,
+  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive' | 'whatsapp' | 'primaryColor' | 'secondaryColor' | 'accentColor'>>,
 ): Promise<Store | undefined> {
   let updatedStore: Store | undefined
 
@@ -716,6 +743,11 @@ export async function updateDeliverySettings(
     store_id: storeId,
     estimatedMinutes: Math.max(0, settings.estimatedMinutes),
     fee: Math.max(0, settings.fee),
+    minOrder: Math.max(0, settings.minOrder ?? 0),
+    neighborhoods: settings.neighborhoods ?? '',
+    pickupAddress: settings.pickupAddress ?? '',
+    deliveryNotes: settings.deliveryNotes ?? '',
+    combineDelivery: settings.combineDelivery ?? false,
   }
 
   setDeliverySettingsCollection([...currentSettings, nextSettings])
