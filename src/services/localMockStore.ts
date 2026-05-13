@@ -43,7 +43,11 @@ export interface PaymentMethod {
   id: string
   store_id: string
   name: string
+  type: OrderPaymentMethod
   enabled: boolean
+  pixKey?: string
+  instructions?: string
+  externalUrl?: string
 }
 
 export interface DeliverySettings {
@@ -257,9 +261,9 @@ const defaultPromotions: Promotion[] = [
 ]
 
 const defaultPaymentMethods: PaymentMethod[] = [
-  { id: 'pm-1', store_id: 'store-1', name: 'Pix', enabled: true },
-  { id: 'pm-2', store_id: 'store-1', name: 'Cartão na entrega', enabled: true },
-  { id: 'pm-3', store_id: 'store-2', name: 'Pix', enabled: true },
+  { id: 'pm-1', store_id: 'store-1', name: 'Pix', type: 'pix', enabled: true },
+  { id: 'pm-2', store_id: 'store-1', name: 'Cartão na entrega', type: 'card_on_delivery', enabled: true },
+  { id: 'pm-3', store_id: 'store-2', name: 'Pix', type: 'pix', enabled: true },
 ]
 
 const defaultDeliverySettings: DeliverySettings[] = [
@@ -911,7 +915,7 @@ export async function validateCoupon(storeId: string, code: string, subtotal: nu
 
 export async function updatePaymentSettings(
   storeId: string,
-  paymentMethods: Array<Pick<PaymentMethod, 'name' | 'enabled'>>,
+  paymentMethods: Array<Omit<PaymentMethod, 'id' | 'store_id'>>,
 ): Promise<PaymentMethod[]> {
   const methodsWithoutStore = getPaymentMethodsCollection().filter((method) => method.store_id !== storeId)
   const nextMethods: PaymentMethod[] = paymentMethods.map((method) => ({
@@ -1019,6 +1023,8 @@ export interface CreateOrderPayload {
   paymentMethod?: string
   paymentMethodKey?: OrderPaymentMethod
   paymentInstructions?: string
+  externalPaymentUrl?: string
+  pixKey?: string
   couponCode?: string
   deliveryFee?: number
 }
@@ -1090,6 +1096,8 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
     paymentMethod: payload.paymentMethod,
     paymentMethodKey,
     paymentInstructions: payload.paymentInstructions,
+    externalPaymentUrl: payload.externalPaymentUrl,
+    pixKey: payload.pixKey,
     items,
     subtotal,
     deliveryFee: deliveryFee > 0 ? deliveryFee : undefined,
