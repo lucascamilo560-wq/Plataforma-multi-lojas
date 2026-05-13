@@ -11,7 +11,9 @@ import {
   getDeliverySettings,
   getPaymentSettings,
   getStoreBySlug,
+  validateCoupon,
 } from '../../services/mockData'
+import type { ValidateCouponResult } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { CartItem, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
@@ -33,6 +35,10 @@ export function StorefrontCheckoutPage() {
   const [selectedPayment, setSelectedPayment] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  const [couponInput, setCouponInput] = useState('')
+  const [couponResult, setCouponResult] = useState<ValidateCouponResult | null>(null)
+  const [couponApplied, setCouponApplied] = useState(false)
 
   useEffect(() => {
     getStoreBySlug(slug).then((nextStore) => {
@@ -61,9 +67,23 @@ export function StorefrontCheckoutPage() {
   )
 
   const deliveryFee = deliveryType === 'delivery' && deliverySettings?.deliveryEnabled ? deliverySettings.fee : 0
-  const total = subtotal + deliveryFee
+  const discountAmount = couponApplied && couponResult?.valid ? couponResult.discountAmount : 0
+  const total = Math.max(0, subtotal + deliveryFee - discountAmount)
 
   const storeTheme = getStoreTheme(store)
+
+  const handleApplyCoupon = async () => {
+    if (!store || !couponInput.trim()) return
+    const result = await validateCoupon(store.id, couponInput.trim(), subtotal)
+    setCouponResult(result)
+    setCouponApplied(result.valid)
+  }
+
+  const handleRemoveCoupon = () => {
+    setCouponInput('')
+    setCouponResult(null)
+    setCouponApplied(false)
+  }
 
   const handleConfirm = async () => {
     if (!store) return
@@ -95,6 +115,8 @@ export function StorefrontCheckoutPage() {
         notes: notes.trim() || undefined,
         deliveryType,
         paymentMethod: selectedPayment,
+        couponCode: couponApplied && couponResult?.valid ? couponResult.coupon.code : undefined,
+        deliveryFee: deliveryFee > 0 ? deliveryFee : undefined,
       })
       navigate(`/loja/${slug}/pedido/${order.id}`)
     } catch (error) {
@@ -145,6 +167,16 @@ export function StorefrontCheckoutPage() {
                 <strong>{formatCurrency(deliverySettings.fee)}</strong>
               </div>
             )}
+            {discountAmount > 0 && (
+              <div className="inline-info">
+                <span className="muted" style={{ color: 'var(--color-success, #16a34a)' }}>
+                  Desconto ({couponResult?.valid ? couponResult.coupon.code : ''})
+                </span>
+                <strong style={{ color: 'var(--color-success, #16a34a)' }}>
+                  -{formatCurrency(discountAmount)}
+                </strong>
+              </div>
+            )}
             <div className="inline-info">
               <span>
                 <strong>Total</strong>
@@ -152,6 +184,37 @@ export function StorefrontCheckoutPage() {
               <strong>{formatCurrency(total)}</strong>
             </div>
           </div>
+        </Card>
+
+        <Card title="Cupom de desconto" subtitle="Tem um cupom? Aplique aqui" variant="layered">
+          {couponApplied && couponResult?.valid ? (
+            <div className="stack" style={{ gap: '0.5rem' }}>
+              <p style={{ color: 'var(--color-success, #16a34a)', fontWeight: 600 }}>
+                ✅ Cupom <strong>{couponResult.coupon.code}</strong> aplicado — {formatCurrency(couponResult.discountAmount)} de desconto
+              </p>
+              <Button variant="ghost" onClick={handleRemoveCoupon}>
+                Remover cupom
+              </Button>
+            </div>
+          ) : (
+            <div className="stack" style={{ gap: '0.5rem' }}>
+              <div className="inline-info">
+                <Input
+                  label=""
+                  value={couponInput}
+                  onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                  placeholder="Ex: BEMVINDO10"
+                  style={{ flex: 1 }}
+                />
+                <Button variant="secondary" onClick={handleApplyCoupon} disabled={!couponInput.trim()}>
+                  Aplicar
+                </Button>
+              </div>
+              {couponResult && !couponResult.valid && (
+                <p className="error-text">{couponResult.error}</p>
+              )}
+            </div>
+          )}
         </Card>
 
         {(deliverySettings?.deliveryEnabled || deliverySettings?.pickupEnabled) && (

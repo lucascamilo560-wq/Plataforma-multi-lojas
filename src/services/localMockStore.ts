@@ -4,8 +4,15 @@ export interface Coupon {
   id: string
   store_id: string
   code: string
-  discountPercent: number
+  discountType: 'percent' | 'fixed'
+  discountValue: number
+  minOrderValue?: number
+  usageLimit?: number
+  usedCount: number
+  startsAt?: string
+  expiresAt?: string
   active: boolean
+  description?: string
 }
 
 export interface Promotion {
@@ -14,6 +21,11 @@ export interface Promotion {
   title: string
   description: string
   active: boolean
+  startsAt?: string
+  expiresAt?: string
+  highlightColor?: string
+  productIds?: string[]
+  bannerText?: string
 }
 
 export interface PaymentMethod {
@@ -196,7 +208,16 @@ const defaultOrders: Order[] = [
 ]
 
 const defaultCoupons: Coupon[] = [
-  { id: 'coupon-1', store_id: 'store-1', code: 'BEMVINDO10', discountPercent: 10, active: true },
+  {
+    id: 'coupon-1',
+    store_id: 'store-1',
+    code: 'BEMVINDO10',
+    discountType: 'percent',
+    discountValue: 10,
+    usedCount: 0,
+    active: true,
+    description: 'Desconto de boas-vindas de 10%',
+  },
 ]
 
 const defaultPromotions: Promotion[] = [
@@ -205,6 +226,7 @@ const defaultPromotions: Promotion[] = [
     store_id: 'store-1',
     title: 'Semana de hortifruti',
     description: 'Seleção com desconto para itens frescos.',
+    bannerText: '🥦 Hortifruti fresquinho com desconto especial!',
     active: true,
   },
 ]
@@ -386,6 +408,10 @@ function setCouponsCollection(coupons: Coupon[]) {
 
 function getPromotionsCollection() {
   return readCollection(STORAGE_KEYS.promotions, defaultPromotions)
+}
+
+function setPromotionsCollection(promotions: Promotion[]) {
+  persistCollection(STORAGE_KEYS.promotions, promotions)
 }
 
 function getPaymentMethodsCollection() {
@@ -746,11 +772,87 @@ export async function updateOrderPaymentStatus(
 
 export async function createCoupon(payload: Omit<Coupon, 'id'>): Promise<Coupon> {
   const coupons = getCouponsCollection()
-  const coupon: Coupon = { ...payload, id: getNextId('coupon') }
+  const coupon: Coupon = {
+    ...payload,
+    id: getNextId('coupon'),
+    usedCount: payload.usedCount ?? 0,
+    code: payload.code.trim().toUpperCase(),
+  }
 
   setCouponsCollection([...coupons, coupon])
 
   return Promise.resolve(coupon)
+}
+
+export async function updateCoupon(couponId: string, updates: Partial<Omit<Coupon, 'id' | 'store_id'>>): Promise<Coupon | undefined> {
+  let updated: Coupon | undefined
+  const coupons = getCouponsCollection().map((c) => {
+    if (c.id !== couponId) return c
+    updated = {
+      ...c,
+      ...updates,
+      code: updates.code ? updates.code.trim().toUpperCase() : c.code,
+    }
+    return updated
+  })
+  setCouponsCollection(coupons)
+  return Promise.resolve(updated)
+}
+
+export async function toggleCouponActive(couponId: string): Promise<Coupon | undefined> {
+  const coupon = getCouponsCollection().find((c) => c.id === couponId)
+  if (!coupon) return Promise.resolve(undefined)
+  return updateCoupon(couponId, { active: !coupon.active })
+}
+
+export async function deleteCoupon(couponId: string): Promise<void> {
+  setCouponsCollection(getCouponsCollection().filter((c) => c.id !== couponId))
+  return Promise.resolve()
+}
+
+export type ValidateCouponResult =
+  | {
+      valid: true
+      coupon: Coupon
+      discountAmount: number
+    }
+  | {
+      valid: false
+      error: string
+    }
+
+export async function validateCoupon(storeId: string, code: string, subtotal: number): Promise<ValidateCouponResult> {
+  const normalized = code.trim().toUpperCase()
+  const coupon = getCouponsCollection().find(
+    (c) => c.store_id === storeId && c.code === normalized,
+  )
+
+  if (!coupon) return Promise.resolve({ valid: false, error: 'Cupom não encontrado.' })
+  if (!coupon.active) return Promise.resolve({ valid: false, error: 'Este cupom está inativo.' })
+
+  const now = new Date().toISOString()
+  if (coupon.startsAt && now < coupon.startsAt) {
+    return Promise.resolve({ valid: false, error: 'Este cupom ainda não está válido.' })
+  }
+  if (coupon.expiresAt && now > coupon.expiresAt) {
+    return Promise.resolve({ valid: false, error: 'Este cupom expirou.' })
+  }
+  if (coupon.usageLimit != null && coupon.usedCount >= coupon.usageLimit) {
+    return Promise.resolve({ valid: false, error: 'Este cupom atingiu o limite de uso.' })
+  }
+  if (coupon.minOrderValue != null && subtotal < coupon.minOrderValue) {
+    return Promise.resolve({
+      valid: false,
+      error: `Pedido mínimo de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(coupon.minOrderValue)} para este cupom.`,
+    })
+  }
+
+  const discountAmount =
+    coupon.discountType === 'percent'
+      ? Math.round((subtotal * coupon.discountValue / 100) * 100) / 100
+      : Math.min(coupon.discountValue, subtotal)
+
+  return Promise.resolve({ valid: true, coupon, discountAmount })
 }
 
 export async function updatePaymentSettings(
@@ -799,6 +901,48 @@ export async function getPromotionsByStore(storeId: string): Promise<Promotion[]
   return Promise.resolve(getPromotionsCollection().filter((promo) => promo.store_id === storeId))
 }
 
+export async function getActivePromotionsByStore(storeId: string): Promise<Promotion[]> {
+  const now = new Date().toISOString()
+  return Promise.resolve(
+    getPromotionsCollection().filter((promo) => {
+      if (promo.store_id !== storeId) return false
+      if (!promo.active) return false
+      if (promo.startsAt && now < promo.startsAt) return false
+      if (promo.expiresAt && now > promo.expiresAt) return false
+      return true
+    }),
+  )
+}
+
+export async function createPromotion(payload: Omit<Promotion, 'id'>): Promise<Promotion> {
+  const promotions = getPromotionsCollection()
+  const promotion: Promotion = { ...payload, id: getNextId('promo') }
+  setPromotionsCollection([...promotions, promotion])
+  return Promise.resolve(promotion)
+}
+
+export async function updatePromotion(promotionId: string, updates: Partial<Omit<Promotion, 'id' | 'store_id'>>): Promise<Promotion | undefined> {
+  let updated: Promotion | undefined
+  const promotions = getPromotionsCollection().map((p) => {
+    if (p.id !== promotionId) return p
+    updated = { ...p, ...updates }
+    return updated
+  })
+  setPromotionsCollection(promotions)
+  return Promise.resolve(updated)
+}
+
+export async function togglePromotionActive(promotionId: string): Promise<Promotion | undefined> {
+  const promotion = getPromotionsCollection().find((p) => p.id === promotionId)
+  if (!promotion) return Promise.resolve(undefined)
+  return updatePromotion(promotionId, { active: !promotion.active })
+}
+
+export async function deletePromotion(promotionId: string): Promise<void> {
+  setPromotionsCollection(getPromotionsCollection().filter((p) => p.id !== promotionId))
+  return Promise.resolve()
+}
+
 export async function getPaymentSettings(storeId: string): Promise<PaymentMethod[]> {
   return Promise.resolve(getPaymentMethodsCollection().filter((method) => method.store_id === storeId))
 }
@@ -821,6 +965,8 @@ export interface CreateOrderPayload {
   paymentMethod?: string
   paymentMethodKey?: OrderPaymentMethod
   paymentInstructions?: string
+  couponCode?: string
+  deliveryFee?: number
 }
 
 function derivePaymentStatus(paymentMethodKey?: OrderPaymentMethod, paymentMethodName?: string): PaymentStatus {
@@ -855,7 +1001,26 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
     price: item.price,
   }))
 
-  const total = storeItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const subtotal = storeItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const deliveryFee = payload.deliveryFee ?? 0
+
+  // Validate and apply coupon
+  let discountTotal = 0
+  let couponCode: string | undefined
+  if (payload.couponCode) {
+    const result = await validateCoupon(payload.storeId, payload.couponCode, subtotal)
+    if (result.valid) {
+      discountTotal = result.discountAmount
+      couponCode = result.coupon.code
+      // Increment usedCount
+      const coupons = getCouponsCollection().map((c) =>
+        c.id === result.coupon.id ? { ...c, usedCount: c.usedCount + 1 } : c,
+      )
+      setCouponsCollection(coupons)
+    }
+  }
+
+  const total = Math.max(0, subtotal + deliveryFee - discountTotal)
 
   const paymentMethodKey = payload.paymentMethodKey ?? derivePaymentMethodKey(payload.paymentMethod)
   const paymentStatus = derivePaymentStatus(paymentMethodKey, payload.paymentMethod)
@@ -872,6 +1037,10 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
     paymentMethodKey,
     paymentInstructions: payload.paymentInstructions,
     items,
+    subtotal,
+    deliveryFee: deliveryFee > 0 ? deliveryFee : undefined,
+    couponCode,
+    discountTotal: discountTotal > 0 ? discountTotal : undefined,
     total,
     status: 'pending',
     paymentStatus,

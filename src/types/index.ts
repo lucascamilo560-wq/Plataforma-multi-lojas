@@ -65,6 +65,10 @@ export interface Order {
   paymentMethod?: string
   paymentMethodKey?: OrderPaymentMethod
   items?: OrderItem[]
+  subtotal?: number
+  deliveryFee?: number
+  couponCode?: string
+  discountTotal?: number
   total: number
   status: OrderStatus
   paymentStatus: PaymentStatus

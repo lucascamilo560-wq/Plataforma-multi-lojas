@@ -125,6 +125,26 @@ export function StorefrontOrderPage() {
               ))}
               <hr style={{ border: 'none', borderTop: '1px solid var(--color-border)' }} />
               <div className="inline-info">
+                <span className="muted">Subtotal</span>
+                <strong>{formatCurrency(order.subtotal ?? order.total)}</strong>
+              </div>
+              {order.deliveryFee != null && order.deliveryFee > 0 && (
+                <div className="inline-info">
+                  <span className="muted">Entrega</span>
+                  <strong>{formatCurrency(order.deliveryFee)}</strong>
+                </div>
+              )}
+              {order.couponCode && order.discountTotal != null && order.discountTotal > 0 && (
+                <div className="inline-info">
+                  <span className="muted" style={{ color: 'var(--color-success, #16a34a)' }}>
+                    Desconto ({order.couponCode})
+                  </span>
+                  <strong style={{ color: 'var(--color-success, #16a34a)' }}>
+                    -{formatCurrency(order.discountTotal)}
+                  </strong>
+                </div>
+              )}
+              <div className="inline-info">
                 <strong>Total</strong>
                 <strong>{formatCurrency(order.total)}</strong>
               </div>
