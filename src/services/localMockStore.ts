@@ -1,4 +1,15 @@
-import type { AdminSummary, CartItem, Order, OrderItem, OrderPaymentMethod, OrderStatus, PaymentStatus, Product, Store } from '../types'
+import type {
+  AdminSummary,
+  CartItem,
+  Order,
+  OrderItem,
+  OrderPaymentMethod,
+  OrderStatus,
+  PaymentStatus,
+  PlatformPlan,
+  Product,
+  Store,
+} from '../types'
 
 export interface Coupon {
   id: string
@@ -66,6 +77,7 @@ const STORAGE_KEYS = {
   promotions: 'marketplace:promotions',
   paymentMethods: 'marketplace:payment-methods',
   deliverySettings: 'marketplace:delivery-settings',
+  plans: 'marketplace:plans',
 
   // Dados do cliente (separados do estado do lojista)
   cartItems: 'marketplace:customer:cart',
@@ -94,6 +106,8 @@ const defaultStores: Store[] = [
     secondaryColor: '#E8EEF9',
     accentColor: '#3A86FF',
     whatsapp: '5511999990001',
+    adminStatus: 'active',
+    planId: 'basic',
   },
   {
     id: 'store-2',
@@ -110,6 +124,8 @@ const defaultStores: Store[] = [
     secondaryColor: '#F4ECE4',
     accentColor: '#FF7A59',
     whatsapp: '5519999990002',
+    adminStatus: 'active',
+    planId: 'premium',
   },
   {
     id: 'store-3',
@@ -125,7 +141,16 @@ const defaultStores: Store[] = [
     primaryColor: '#1F2937',
     secondaryColor: '#EEF2FF',
     accentColor: '#6C63FF',
+    adminStatus: 'paused',
+    planId: 'free',
   },
+]
+
+const defaultPlans: PlatformPlan[] = [
+  { id: 'free', name: 'Grátis', monthlyPrice: 0, commissionRate: 8, commissionBase: 'paid_orders', productLimit: 30, features: ['Vitrine básica', 'Pedidos no app'], isActive: true },
+  { id: 'basic', name: 'Básico', monthlyPrice: 49.9, commissionRate: 5, commissionBase: 'paid_orders', productLimit: 200, features: ['Cupons', 'Promoções', 'Relatórios básicos'], isActive: true },
+  { id: 'premium', name: 'Premium', monthlyPrice: 129.9, commissionRate: 3, commissionBase: 'all_orders', productLimit: null, features: ['Marca personalizada', 'Relatórios avançados'], isActive: true },
+  { id: 'white-label', name: 'White Label', monthlyPrice: 299.9, commissionRate: 1.5, commissionBase: 'all_orders', productLimit: null, features: ['App com identidade da marca', 'Suporte prioritário'], isActive: true },
 ]
 
 const defaultProducts: Product[] = [
@@ -425,6 +450,12 @@ function setPaymentMethodsCollection(paymentMethods: PaymentMethod[]) {
 function getDeliverySettingsCollection() {
   return readCollection(STORAGE_KEYS.deliverySettings, defaultDeliverySettings)
 }
+function getPlansCollection() {
+  return readCollection(STORAGE_KEYS.plans, defaultPlans)
+}
+function setPlansCollection(plans: PlatformPlan[]) {
+  persistCollection(STORAGE_KEYS.plans, plans)
+}
 
 function setDeliverySettingsCollection(deliverySettings: DeliverySettings[]) {
   persistCollection(STORAGE_KEYS.deliverySettings, deliverySettings)
@@ -626,12 +657,35 @@ export async function addProductToCart(product: Product): Promise<void> {
 export async function getAdminSummary(): Promise<AdminSummary> {
   const stores = getStoresCollection()
   const orders = getOrdersCollection()
+  const plans = getPlansCollection()
+  const planById = new Map(plans.map((plan) => [plan.id, plan]))
+  const effectiveStatus = (store: Store) => store.adminStatus ?? (store.isActive ? 'active' : 'paused')
+  const confirmedOrders = orders.filter((order) => order.paymentStatus === 'paid')
+  const pendingOrders = orders.filter(
+    (order) => order.status !== 'cancelled' && order.paymentStatus !== 'paid' && order.paymentStatus !== 'failed' && order.paymentStatus !== 'refunded',
+  )
+  const estimatedCommissions = stores.reduce((sum, store) => {
+    const storePlan = planById.get(store.planId ?? 'free')
+    if (!storePlan) return sum
+    const storeOrders = orders.filter((order) => order.store_id === store.id)
+    const baseAmount = (storePlan.commissionBase === 'paid_orders' ? storeOrders.filter((order) => order.paymentStatus === 'paid') : storeOrders)
+      .reduce((total, order) => total + order.total, 0)
+    return sum + (baseAmount * storePlan.commissionRate) / 100
+  }, 0)
+  const monthlyRevenue = stores.reduce((sum, store) => sum + (planById.get(store.planId ?? 'free')?.monthlyPrice ?? 0), 0)
 
   return Promise.resolve({
     totalStores: stores.length,
-    activeStores: stores.filter((store) => store.isActive).length,
+    activeStores: stores.filter((store) => effectiveStatus(store) === 'active').length,
+    pausedStores: stores.filter((store) => effectiveStatus(store) === 'paused').length,
+    blockedStores: stores.filter((store) => effectiveStatus(store) === 'blocked').length,
     totalOrders: orders.length,
-    grossRevenue: orders.reduce((total, order) => total + order.total, 0),
+    gmv: orders.reduce((total, order) => total + order.total, 0),
+    confirmedRevenue: confirmedOrders.reduce((total, order) => total + order.total, 0),
+    pendingRevenue: pendingOrders.reduce((total, order) => total + order.total, 0),
+    platformEstimatedRevenue: monthlyRevenue + estimatedCommissions,
+    activeSubscriptions: stores.filter((store) => (planById.get(store.planId ?? 'free')?.monthlyPrice ?? 0) > 0).length,
+    estimatedCommissions,
   })
 }
 
@@ -701,7 +755,7 @@ export async function updateProductStock(productId: string, stock: number): Prom
 
 export async function updateStoreProfile(
   storeId: string,
-  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive' | 'whatsapp' | 'primaryColor' | 'secondaryColor' | 'accentColor'>>,
+  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive' | 'whatsapp' | 'primaryColor' | 'secondaryColor' | 'accentColor' | 'adminStatus' | 'planId'>>,
 ): Promise<Store | undefined> {
   let updatedStore: Store | undefined
 
@@ -1118,6 +1172,8 @@ export async function createStore(payload: CreateStorePayload): Promise<Store> {
     city: payload.city.trim(),
     description: payload.description.trim(),
     isActive: true,
+    adminStatus: 'active',
+    planId: 'free',
     rating: 0,
     whatsapp: payload.whatsapp?.trim() || undefined,
     primaryColor: payload.primaryColor || '#14213D',
@@ -1130,6 +1186,39 @@ export async function createStore(payload: CreateStorePayload): Promise<Store> {
   setStoresCollection([...stores, store])
   setCurrentSellerStoreId(store.id)
   return Promise.resolve(store)
+}
+
+export async function getAdminPlans(): Promise<PlatformPlan[]> {
+  return Promise.resolve(getPlansCollection())
+}
+
+export async function updateAdminPlan(planId: string, updates: Partial<Omit<PlatformPlan, 'id'>>): Promise<PlatformPlan | undefined> {
+  let updatedPlan: PlatformPlan | undefined
+  const plans = getPlansCollection().map((plan) => {
+    if (plan.id !== planId) return plan
+    updatedPlan = { ...plan, ...updates }
+    return updatedPlan
+  })
+  setPlansCollection(plans)
+  return Promise.resolve(updatedPlan)
+}
+
+export async function updateStoreAdminStatus(
+  storeId: string,
+  adminStatus: NonNullable<Store['adminStatus']>,
+): Promise<Store | undefined> {
+  return updateStoreProfile(storeId, { isActive: adminStatus === 'active', adminStatus })
+}
+
+export async function updateStorePlan(storeId: string, planId: string): Promise<Store | undefined> {
+  let updatedStore: Store | undefined
+  const stores = getStoresCollection().map((store) => {
+    if (store.id !== storeId) return store
+    updatedStore = { ...store, planId }
+    return updatedStore
+  })
+  setStoresCollection(stores)
+  return Promise.resolve(updatedStore)
 }
 
 // ---------------------------------------------------------------------------
