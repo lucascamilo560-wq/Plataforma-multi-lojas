@@ -26,7 +26,28 @@ export function StoreDashboardPage() {
     getStoreById(storeId).then(setStore)
   }, [storeId])
 
-  const revenue = useMemo(() => orders.reduce((amount, order) => amount + order.total, 0), [orders])
+  const todayStr = new Date().toDateString()
+  const ordersToday = useMemo(
+    () => orders.filter((o) => o.status !== 'cancelled' && new Date(o.createdAt).toDateString() === todayStr),
+    [orders, todayStr],
+  )
+  const confirmedRevenue = useMemo(
+    () => orders.filter((o) => o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0),
+    [orders],
+  )
+  const pendingRevenue = useMemo(
+    () =>
+      orders
+        .filter(
+          (o) =>
+            o.status !== 'cancelled' &&
+            o.paymentStatus !== 'paid' &&
+            o.paymentStatus !== 'refunded' &&
+            o.paymentStatus !== 'failed',
+        )
+        .reduce((sum, o) => sum + o.total, 0),
+    [orders],
+  )
   const storeTheme = getStoreTheme(store)
   const storefrontPath = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
   const storefrontUrl = buildPublicUrl(storefrontPath)
@@ -87,14 +108,10 @@ export function StoreDashboardPage() {
       </Card>
 
       <div className="grid grid-metrics">
-        <KpiCard label="Pedidos" value={orders.length} icon="clock" />
+        <KpiCard label="Pedidos hoje" value={ordersToday.length} icon="clock" />
         <KpiCard label="Produtos" value={products.length} icon="package" />
-        <KpiCard label="Vendas" value={formatCurrency(revenue)} icon="wallet" />
-        <KpiCard
-          label="Ticket médio"
-          value={formatCurrency(revenue / Math.max(orders.length, 1))}
-          icon="tag"
-        />
+        <KpiCard label="Faturamento confirmado" value={formatCurrency(confirmedRevenue)} icon="wallet" />
+        <KpiCard label="A receber" value={formatCurrency(pendingRevenue)} icon="tag" />
       </div>
 
       <SectionHeader

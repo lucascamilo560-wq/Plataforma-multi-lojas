@@ -4,23 +4,30 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { useMockSession } from '../../hooks/useMockSession'
-import { getStoreById, getStoreOrders, updateOrderStatus } from '../../services/mockData'
-import type { Order, OrderStatus, Store } from '../../types'
+import { getStoreById, getStoreOrders, updateOrderPaymentStatus, updateOrderStatus } from '../../services/mockData'
+import type { Order, OrderStatus, PaymentStatus, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 
 const statusLabel: Record<OrderStatus, string> = {
   pending: 'Aguardando confirmação',
-  paid: 'Pagamento confirmado',
+  paid: 'Confirmado',
   preparing: 'Em preparação',
   delivered: 'Entregue',
   cancelled: 'Cancelado',
 }
 
-const statusActions: Array<{ label: string; status: OrderStatus }> = [
-  { label: 'Confirmar', status: 'paid' },
+const paymentStatusLabel: Record<PaymentStatus, string> = {
+  awaiting_payment: 'Aguardando pagamento',
+  to_be_arranged: 'A combinar',
+  paid: 'Pago',
+  failed: 'Falhou',
+  refunded: 'Reembolsado',
+}
+
+const orderStatusActions: Array<{ label: string; status: OrderStatus }> = [
+  { label: 'Confirmar pedido', status: 'paid' },
   { label: 'Preparando', status: 'preparing' },
   { label: 'Entregue', status: 'delivered' },
-  { label: 'Cancelar', status: 'cancelled' },
 ]
 
 function getStatusVariant(status: OrderStatus): 'accent' | 'success' | 'danger' | 'muted' {
@@ -36,6 +43,13 @@ function getStatusVariant(status: OrderStatus): 'accent' | 'success' | 'danger' 
     return 'accent'
   }
 
+  return 'muted'
+}
+
+function getPaymentStatusVariant(status: PaymentStatus): 'accent' | 'success' | 'danger' | 'muted' {
+  if (status === 'paid') return 'success'
+  if (status === 'failed' || status === 'refunded') return 'danger'
+  if (status === 'to_be_arranged') return 'accent'
   return 'muted'
 }
 
@@ -63,6 +77,11 @@ export function StoreOrdersPage() {
     refreshOrders()
   }
 
+  const handleUpdatePaymentStatus = async (orderId: string, paymentStatus: PaymentStatus) => {
+    await updateOrderPaymentStatus(orderId, paymentStatus)
+    refreshOrders()
+  }
+
   return (
     <section className="stack-lg">
       <PageHeader
@@ -77,9 +96,13 @@ export function StoreOrdersPage() {
           <Card key={order.id} title={`Pedido ${order.id}`} subtitle={`Cliente: ${order.customerName}`} variant="layered">
             <div className="inline-info">
               <Badge variant={getStatusVariant(order.status)}>{statusLabel[order.status]}</Badge>
+              <Badge variant={getPaymentStatusVariant(order.paymentStatus)}>{paymentStatusLabel[order.paymentStatus]}</Badge>
               <strong>{formatCurrency(order.total)}</strong>
             </div>
             <small className="muted">Criado em {new Date(order.createdAt).toLocaleString('pt-BR')}</small>
+            {order.paidAt && (
+              <small className="muted">Pago em {new Date(order.paidAt).toLocaleString('pt-BR')}</small>
+            )}
 
             {order.customerPhone && (
               <p className="muted">Telefone: {order.customerPhone}</p>
@@ -108,18 +131,45 @@ export function StoreOrdersPage() {
               </div>
             )}
 
-            <div className="inline-info">
-              {statusActions.map((action) => (
+            <div className="inline-info" style={{ flexWrap: 'wrap' }}>
+              {order.paymentStatus !== 'paid' && order.status !== 'cancelled' && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => handleUpdatePaymentStatus(order.id, 'paid')}
+                >
+                  Confirmar pagamento
+                </Button>
+              )}
+              {order.paymentStatus === 'paid' && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => handleUpdatePaymentStatus(order.id, 'refunded')}
+                  disabled={order.status === 'cancelled'}
+                >
+                  Estornar pagamento
+                </Button>
+              )}
+              {orderStatusActions.map((action) => (
                 <Button
                   key={action.status}
                   type="button"
-                  variant={action.status === 'cancelled' ? 'danger' : 'secondary'}
+                  variant="secondary"
                   onClick={() => handleUpdateStatus(order.id, action.status)}
-                  disabled={order.status === action.status}
+                  disabled={order.status === action.status || order.status === 'cancelled'}
                 >
                   {action.label}
                 </Button>
               ))}
+              <Button
+                type="button"
+                variant="danger"
+                onClick={() => handleUpdateStatus(order.id, 'cancelled')}
+                disabled={order.status === 'cancelled'}
+              >
+                Cancelar pedido
+              </Button>
             </div>
           </Card>
         ))}
