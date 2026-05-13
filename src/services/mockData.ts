@@ -65,4 +65,12 @@ export {
   updateStoreTheme,
   validateCoupon,
 } from './localMockStore'
-export type { CreateStorePayload, CustomerSummary, RepeatOrderResult, ValidateCouponResult } from './localMockStore'
+export type { CreateStorePayload, CustomerSummary, RepeatOrderResult, ValidateCouponResult, ReportPeriod, StoreReportSummary, TopProduct, CouponPerformance, PaymentStatusEntry, OrderStatusEntry } from './localMockStore'
+
+export {
+  getCouponPerformanceByStore,
+  getOrderStatusSummaryByStore,
+  getPaymentSummaryByStore,
+  getStoreReportSummary,
+  getTopProductsByStore,
+} from './localMockStore'

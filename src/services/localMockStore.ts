@@ -1399,3 +1399,247 @@ export async function getCustomerOrdersByKey(storeId: string, key: string): Prom
     [...orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
   )
 }
+
+// ---------------------------------------------------------------------------
+// Report aggregation helpers
+// ---------------------------------------------------------------------------
+
+export type ReportPeriod = 'today' | 'seven_days' | 'thirty_days' | 'all'
+
+function filterOrdersByPeriod(orders: Order[], period: ReportPeriod): Order[] {
+  if (period === 'all') return orders
+  const now = Date.now()
+  const startOfToday = new Date()
+  startOfToday.setHours(0, 0, 0, 0)
+  const cutoff =
+    period === 'today'
+      ? startOfToday.getTime()
+      : period === 'seven_days'
+        ? now - 6 * 24 * 60 * 60 * 1000
+        : now - 29 * 24 * 60 * 60 * 1000
+  return orders.filter((o) => new Date(o.createdAt).getTime() >= cutoff)
+}
+
+export interface StoreReportSummary {
+  totalOrders: number
+  deliveredOrders: number
+  cancelledOrders: number
+  confirmedRevenue: number
+  pendingRevenue: number
+  averageTicket: number
+  uniqueCustomers: number
+  recurringCustomers: number
+  totalProductsSold: number
+  totalDiscounts: number
+}
+
+export async function getStoreReportSummary(storeId: string, period: ReportPeriod): Promise<StoreReportSummary> {
+  const allOrders = getOrdersCollection().filter((o) => o.store_id === storeId)
+  const orders = filterOrdersByPeriod(allOrders, period)
+
+  const confirmedRevenue = orders
+    .filter((o) => o.paymentStatus === 'paid')
+    .reduce((sum, o) => sum + o.total, 0)
+
+  const pendingRevenue = orders
+    .filter(
+      (o) =>
+        o.status !== 'cancelled' &&
+        o.paymentStatus !== 'paid' &&
+        o.paymentStatus !== 'refunded' &&
+        o.paymentStatus !== 'failed',
+    )
+    .reduce((sum, o) => sum + o.total, 0)
+
+  const paidOrders = orders.filter((o) => o.paymentStatus === 'paid')
+  const averageTicket = paidOrders.length > 0 ? confirmedRevenue / paidOrders.length : 0
+
+  const customerMap = new Map<string, { count: number }>()
+  for (const order of orders) {
+    const key = getCustomerKey(order)
+    const existing = customerMap.get(key)
+    customerMap.set(key, { count: (existing?.count ?? 0) + 1 })
+  }
+  const uniqueCustomers = customerMap.size
+  const recurringCustomers = Array.from(customerMap.values()).filter((c) => c.count >= 2).length
+
+  const totalProductsSold = orders.reduce((sum, o) => {
+    return sum + (o.items ?? []).reduce((s, item) => s + item.quantity, 0)
+  }, 0)
+
+  const totalDiscounts = orders.reduce((sum, o) => sum + (o.discountTotal ?? 0), 0)
+
+  return Promise.resolve({
+    totalOrders: orders.length,
+    deliveredOrders: orders.filter((o) => o.status === 'delivered').length,
+    cancelledOrders: orders.filter((o) => o.status === 'cancelled').length,
+    confirmedRevenue,
+    pendingRevenue,
+    averageTicket,
+    uniqueCustomers,
+    recurringCustomers,
+    totalProductsSold,
+    totalDiscounts,
+  })
+}
+
+export interface TopProduct {
+  productId: string
+  productName: string
+  quantitySold: number
+  revenue: number
+  orderCount: number
+  isActive: boolean
+}
+
+export async function getTopProductsByStore(storeId: string, period: ReportPeriod): Promise<TopProduct[]> {
+  const allOrders = getOrdersCollection().filter((o) => o.store_id === storeId)
+  const orders = filterOrdersByPeriod(allOrders, period)
+  const products = getProductsCollection().filter((p) => p.store_id === storeId)
+
+  const map = new Map<string, { name: string; qty: number; revenue: number; orders: Set<string>; isActive: boolean }>()
+
+  for (const order of orders) {
+    for (const item of order.items ?? []) {
+      const existing = map.get(item.product_id)
+      const product = products.find((p) => p.id === item.product_id)
+      if (existing) {
+        existing.qty += item.quantity
+        existing.revenue += item.price * item.quantity
+        existing.orders.add(order.id)
+      } else {
+        map.set(item.product_id, {
+          name: item.productName,
+          qty: item.quantity,
+          revenue: item.price * item.quantity,
+          orders: new Set([order.id]),
+          isActive: product?.isActive ?? true,
+        })
+      }
+    }
+  }
+
+  const result: TopProduct[] = Array.from(map.entries()).map(([productId, data]) => ({
+    productId,
+    productName: data.name,
+    quantitySold: data.qty,
+    revenue: data.revenue,
+    orderCount: data.orders.size,
+    isActive: data.isActive,
+  }))
+
+  return Promise.resolve(result.sort((a, b) => b.quantitySold - a.quantitySold))
+}
+
+export interface CouponPerformance {
+  couponId: string
+  code: string
+  usageCount: number
+  totalDiscount: number
+  associatedRevenue: number
+  active: boolean
+}
+
+export async function getCouponPerformanceByStore(storeId: string, period: ReportPeriod): Promise<CouponPerformance[]> {
+  const allOrders = getOrdersCollection().filter((o) => o.store_id === storeId)
+  const orders = filterOrdersByPeriod(allOrders, period)
+  const coupons = getCouponsCollection().filter((c) => c.store_id === storeId)
+
+  const map = new Map<string, { discount: number; revenue: number; count: number }>()
+
+  for (const order of orders) {
+    if (!order.couponCode) continue
+    const existing = map.get(order.couponCode)
+    if (existing) {
+      existing.discount += order.discountTotal ?? 0
+      existing.revenue += order.total
+      existing.count += 1
+    } else {
+      map.set(order.couponCode, {
+        discount: order.discountTotal ?? 0,
+        revenue: order.total,
+        count: 1,
+      })
+    }
+  }
+
+  const result: CouponPerformance[] = coupons.map((coupon) => {
+    const data = map.get(coupon.code)
+    return {
+      couponId: coupon.id,
+      code: coupon.code,
+      usageCount: data?.count ?? 0,
+      totalDiscount: data?.discount ?? 0,
+      associatedRevenue: data?.revenue ?? 0,
+      active: coupon.active,
+    }
+  })
+
+  return Promise.resolve(result.sort((a, b) => b.usageCount - a.usageCount))
+}
+
+export interface PaymentStatusEntry {
+  status: Order['paymentStatus']
+  label: string
+  count: number
+  total: number
+}
+
+export async function getPaymentSummaryByStore(storeId: string, period: ReportPeriod): Promise<PaymentStatusEntry[]> {
+  const allOrders = getOrdersCollection().filter((o) => o.store_id === storeId)
+  const orders = filterOrdersByPeriod(allOrders, period)
+
+  const labels: Record<Order['paymentStatus'], string> = {
+    paid: 'Pago',
+    awaiting_payment: 'Aguardando pagamento',
+    to_be_arranged: 'A combinar',
+    failed: 'Falhou',
+    refunded: 'Estornado',
+  }
+
+  const statuses: Order['paymentStatus'][] = ['paid', 'awaiting_payment', 'to_be_arranged', 'failed', 'refunded']
+  const result: PaymentStatusEntry[] = statuses.map((status) => {
+    const filtered = orders.filter((o) => o.paymentStatus === status)
+    return {
+      status,
+      label: labels[status],
+      count: filtered.length,
+      total: filtered.reduce((sum, o) => sum + o.total, 0),
+    }
+  })
+
+  return Promise.resolve(result)
+}
+
+export interface OrderStatusEntry {
+  status: Order['status']
+  label: string
+  count: number
+  total: number
+}
+
+export async function getOrderStatusSummaryByStore(storeId: string, period: ReportPeriod): Promise<OrderStatusEntry[]> {
+  const allOrders = getOrdersCollection().filter((o) => o.store_id === storeId)
+  const orders = filterOrdersByPeriod(allOrders, period)
+
+  const labels: Record<Order['status'], string> = {
+    pending: 'Pendente',
+    paid: 'Confirmado',
+    preparing: 'Preparando',
+    delivered: 'Entregue',
+    cancelled: 'Cancelado',
+  }
+
+  const statuses: Order['status'][] = ['pending', 'paid', 'preparing', 'delivered', 'cancelled']
+  const result: OrderStatusEntry[] = statuses.map((status) => {
+    const filtered = orders.filter((o) => o.status === status)
+    return {
+      status,
+      label: labels[status],
+      count: filtered.length,
+      total: filtered.reduce((sum, o) => sum + o.total, 0),
+    }
+  })
+
+  return Promise.resolve(result)
+}
