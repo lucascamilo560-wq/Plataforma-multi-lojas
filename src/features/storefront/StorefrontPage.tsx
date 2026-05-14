@@ -262,7 +262,7 @@ export function StorefrontPage() {
         })}
       </div>
 
-      <div className="stack-xl" style={{ padding: '0 0 4rem' }}>
+      <div className="stack-xl store-vitrine-content" style={{ padding: '0 0 5rem' }}>
         {/* Promotions section */}
         {storeTheme.showPromotionsSection && activePromos.length > 0 && (
           <div className="stack" style={{ gap: '0.5rem' }}>
@@ -363,11 +363,13 @@ export function StorefrontPage() {
             {errorMessage && <p className="error-text">{errorMessage}</p>}
 
             {productsToDisplay.length === 0 ? (
-              <p className="empty-state">
+              <div className="store-empty-state">
+                <p className="empty-state">
                 {activeTab === 'promocoes'
                   ? 'Esta loja ainda não publicou ofertas. Volte em breve.'
                   : 'Nenhum produto ativo no momento. Volte em breve.'}
               </p>
+              </div>
             ) : (
               <div className={productGridClass}>
                 {productsToDisplay.map((product) => (
@@ -385,7 +387,7 @@ export function StorefrontPage() {
 
         {/* Orders tab */}
         {activeTab === 'pedidos' && (
-          <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+          <div className="store-empty-state" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
             <p style={{ fontSize: '2rem', margin: '0 0 0.5rem' }}>📦</p>
             <h3 style={{ margin: '0 0 0.5rem' }}>Meus pedidos</h3>
             <p style={{ color: 'var(--text-secondary)', margin: '0 0 1rem' }}>
@@ -408,6 +410,7 @@ export function StorefrontPage() {
           <div className="stack">
             <h2 style={{ margin: 0, fontSize: '1.15rem' }}>Sobre a loja</h2>
             <div
+              className="store-about-card"
               style={{
                 background: 'var(--surface)',
                 border: '1px solid var(--border-soft)',
@@ -493,6 +496,13 @@ export function StorefrontPage() {
           </div>
         )}
       </div>
+
+              {hasPhysicalProducts && (
+                <Link to={`/loja/${slug}/carrinho`} className="store-floating-cart" style={{ '--store-cart-color': storeTheme.primaryColor } as React.CSSProperties}>
+                  <Icon name="cart" className="icon-md" />
+                  <span>Carrinho</span>
+                </Link>
+              )}
 
       {/* Floating WhatsApp button */}
       {storeTheme.showWhatsappFloat && whatsappUrl && (

@@ -25,31 +25,18 @@ function getExternalNotice(productType: Product['productType']) {
 }
 
 function getProductBadgeLabel(product: Product) {
-  if (product.productType === 'physical') {
-    return `${product.stock} disponíveis`
-  }
-
-  if (product.productType === 'service') {
-    return 'Serviço local'
-  }
-
-  return 'Oferta externa'
+  if (product.productType === 'physical') return `${product.stock} disponíveis`
+  if (product.productType === 'service') return 'Serviço local'
+  if (product.productType === 'external_link') return 'Link externo'
+  return 'Afiliado'
 }
 
 function getProductPriceLabel(product: Product) {
-  if (product.productType === 'service') {
-    return product.price > 0 ? formatCurrency(product.price) : 'Preço sob consulta'
-  }
-
+  if (product.productType === 'service') return product.price > 0 ? formatCurrency(product.price) : 'Preço sob consulta'
   return formatCurrency(product.price)
 }
 
-export function ProductCard({
-  product,
-  store,
-  actionLabel,
-  onAction,
-}: ProductCardProps) {
+export function ProductCard({ product, store, actionLabel, onAction }: ProductCardProps) {
   const theme = getStoreTheme(store)
   const actionButtonLabel = actionLabel ?? product.ctaLabel ?? 'Adicionar ao carrinho'
   const isPhysical = product.productType === 'physical'
@@ -62,9 +49,12 @@ export function ProductCard({
       subtitle={product.category}
       variant="accentCorner"
       accentColor={theme.accentColor}
-      className="product-card"
+      className={`product-card product-card--${theme.cardStyle} product-card--${theme.productLayout}`}
     >
-      <img src={product.imageUrl} alt={product.name} className="product-image" loading="lazy" />
+      <div className="product-image-wrap">
+        <img src={product.imageUrl} alt={product.name} className="product-image" loading="lazy" />
+        {product.sponsoredLabel && <Badge variant="danger">Destaque</Badge>}
+      </div>
       <p className="muted">{product.description}</p>
       <div className="inline-info">
         <Badge variant="store" storeColor={theme.primaryColor}>
