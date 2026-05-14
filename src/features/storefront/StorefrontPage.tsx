@@ -18,8 +18,7 @@ import type { Promotion } from '../../services/localMockStore'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Product, Store } from '../../types'
 
-const APP_DOWNLOAD_URL = 'https://example.com/app'
-const FOLLOW_SUCCESS_MESSAGE = 'Loja seguida com sucesso! Agora você acompanha promoções e novidades.'
+const FOLLOW_SUCCESS_MESSAGE = 'Loja salva! Agora você acompanha pedidos e novidades.'
 const WHATSAPP_COLOR = '#25D366'
 
 type StoreNavTab = 'inicio' | 'produtos' | 'promocoes' | 'pedidos' | 'sobre'
@@ -98,18 +97,6 @@ export function StorefrontPage() {
       console.error('Falha ao seguir loja:', error)
       setErrorMessage('Não foi possível seguir esta loja agora. Tente novamente.')
     }
-  }
-
-  const handleReceivePromotions = async () => {
-    try {
-      await handleFollowStore('Você começou a receber promoções desta loja.')
-    } catch {
-      setErrorMessage('Não foi possível ativar promoções neste momento.')
-    }
-  }
-
-  const handleOpenApp = () => {
-    setInfoMessage('Em breve, este link abrirá direto no app.')
   }
 
   const handleProductAction = async (product: Product) => {
@@ -237,7 +224,10 @@ export function StorefrontPage() {
       )}
 
       {/* Store Navigation */}
-      <div className={`store-vitrine-nav store-vitrine-nav--${storeTheme.navigationStyle}`}>
+      <div
+        className={`store-vitrine-nav store-vitrine-nav--${storeTheme.navigationStyle}`}
+        translate="no"
+      >
         {STORE_NAV_ITEMS.map((item) => {
           const isActive = activeTab === item.id
           return (
@@ -299,40 +289,58 @@ export function StorefrontPage() {
               flexDirection: 'column',
               gap: '0.8rem',
             }}
+            translate="no"
           >
             <div>
-              <h3 style={{ margin: '0 0 0.2rem', fontSize: '0.98rem' }}>Acompanhe esta loja</h3>
+              <h3 style={{ margin: '0 0 0.2rem', fontSize: '0.98rem' }}>
+                {isFollowed ? 'Loja salva' : 'Gostou desta loja?'}
+              </h3>
               <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
-                Salve para acompanhar pedidos, promoções e novidades.
+                {isFollowed
+                  ? 'Você poderá acompanhar pedidos e novidades desta loja por aqui.'
+                  : 'Salve para acompanhar pedidos, promoções e novidades.'}
               </p>
             </div>
-            <div className="inline-info" style={{ flexWrap: 'wrap' }}>
-              <Button
-                variant="store"
-                size="sm"
-                storeColor={storeTheme.primaryColor}
-                onClick={() => handleFollowStore()}
-                disabled={isFollowed}
-                style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-              >
-                {isFollowed ? '✓ Loja seguida' : '+ Seguir loja'}
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleReceivePromotions}
-                style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-              >
-                Receber promoções
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleOpenApp}
-                style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-              >
-                Abrir no app
-              </Button>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.6rem',
+              }}
+            >
+              {isFollowed ? (
+                <Link to="/cliente/pedidos" style={{ flexShrink: 0 }}>
+                  <Button
+                    variant="store"
+                    size="sm"
+                    storeColor={storeTheme.primaryColor}
+                    style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
+                  >
+                    Meus pedidos
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  variant="store"
+                  size="sm"
+                  storeColor={storeTheme.primaryColor}
+                  onClick={() => handleFollowStore()}
+                  style={{ borderRadius: storeTheme.buttonRadius, flexShrink: 0 } as React.CSSProperties}
+                >
+                  Salvar loja
+                </Button>
+              )}
+              {whatsappUrl && (
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
+                  >
+                    Falar com a loja
+                  </Button>
+                </a>
+              )}
             </div>
             {infoMessage && <p className="muted" style={{ margin: 0 }}>{infoMessage}</p>}
           </div>
@@ -455,46 +463,6 @@ export function StorefrontPage() {
           </div>
         )}
 
-        {/* App download nudge */}
-        {activeTab === 'inicio' && (
-          <div
-            style={{
-              background: `linear-gradient(135deg, ${storeTheme.primaryColor} 0%, ${storeTheme.accentColor} 100%)`,
-              borderRadius: storeTheme.borderRadius,
-              padding: '1.1rem',
-              color: '#fff',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.7rem',
-            }}
-          >
-            <div>
-              <h3 style={{ margin: '0 0 0.2rem', fontSize: '0.98rem' }}>Compre mais fácil</h3>
-              <p style={{ margin: 0, fontSize: '0.86rem', opacity: 0.85 }}>
-                Use o app para acompanhar seus pedidos e novidades com mais praticidade.
-              </p>
-            </div>
-            <div className="inline-info" style={{ flexWrap: 'wrap' }}>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleOpenApp}
-                style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-              >
-                Abrir no app
-              </Button>
-              <a href={APP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.4)', borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-                >
-                  Baixar app
-                </Button>
-              </a>
-            </div>
-          </div>
-        )}
       </div>
 
               {hasPhysicalProducts && (
