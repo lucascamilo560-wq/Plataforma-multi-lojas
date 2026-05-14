@@ -1050,3 +1050,29 @@ img {
   flex-direction: column;
   gap: 0.9rem;
 }
+
+.store-vitrine-content{padding-inline:1rem;max-width:1100px;margin:0 auto;width:100%;}
+.store-vitrine-hero{min-height:260px;}
+.store-vitrine-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,15,34,.08),rgba(7,15,34,.7));}
+.store-vitrine-hero-inner{padding:2rem 1rem 1.5rem;gap:1rem;max-width:1100px;margin:0 auto;width:100%;}
+.store-vitrine-hero-logo{box-shadow:0 16px 34px rgba(0,0,0,.25);margin-top:1rem;background:#fff;}
+.store-vitrine-nav{top:0.2rem;border-radius:16px;margin: -1rem auto 0.8rem;max-width:1040px;left:0;right:0;box-shadow:var(--shadow-soft)}
+.store-nav-item--active{transform:translateY(-1px)}
+.store-empty-state{border:1px dashed var(--border);border-radius:18px;padding:1rem;background:linear-gradient(180deg,var(--surface),var(--surface-alt));}
+.store-about-card{box-shadow:var(--shadow-soft)}
+.store-floating-cart{position:fixed;right:1.2rem;bottom:5.6rem;z-index:49;background:var(--store-cart-color,var(--primary));color:#fff;padding:.7rem .95rem;border-radius:999px;display:inline-flex;align-items:center;gap:.45rem;font-weight:700;box-shadow:0 16px 30px color-mix(in srgb,var(--store-cart-color,var(--primary)) 35%, transparent);}
+.store-whatsapp-float{bottom:1.2rem;right:1.2rem;border:2px solid rgba(255,255,255,.5)}
+.store-product-list .product-card{display:grid;grid-template-columns:104px 1fr;grid-template-areas:'img head' 'img body';gap:.8rem;align-items:start}
+.store-product-list .product-card .card-head{grid-area:head}
+.store-product-list .product-card .product-image-wrap{grid-area:img}
+.store-product-list .product-card .product-image{height:100px}
+.store-product-list .product-card>p,.store-product-list .product-card .inline-info,.store-product-list .product-card .btn{grid-column:2}
+.store-product-wide .product-card .product-image{height:220px}
+.product-card--flat{box-shadow:none;background:var(--surface-alt)}
+.product-card--outlined{box-shadow:none;border:1px solid color-mix(in srgb,var(--store-primary,var(--primary)) 25%, var(--border))}
+.product-card--glass{background:linear-gradient(160deg,rgba(255,255,255,.72),rgba(255,255,255,.46));backdrop-filter:blur(10px);border-color:rgba(255,255,255,.55)}
+.product-image-wrap{position:relative}
+.product-image-wrap .badge{position:absolute;top:.55rem;left:.55rem}
+.product-image{height:190px}
+.price-text{font-size:1.22rem;font-weight:800}
+@media (min-width:760px){.store-vitrine-content{padding-inline:1.2rem}.store-vitrine-nav{margin-top:-1.3rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr));}}

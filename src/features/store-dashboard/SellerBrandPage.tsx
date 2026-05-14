@@ -421,6 +421,29 @@ export function SellerBrandPage() {
           </div>
         </Card>
 
+
+        <Card title="Estúdio visual (prévia ao vivo)" subtitle="Veja como seu tema aparece na vitrine" variant="layered">
+          <p className="muted" style={{ marginTop: 0 }}>Os presets definem uma base pronta de cores e estilo. Você pode ajustar cada detalhe para deixar sua vitrine única.</p>
+          <div style={{ border: '1px solid var(--border-soft)', borderRadius: '16px', overflow: 'hidden', background: '#fff' }}>
+            <div style={{ padding: '1rem', background: `linear-gradient(135deg, ${formState.primaryColor} 0%, ${formState.accentColor} 100%)`, color: '#fff' }}>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: '1.05rem' }}>{formState.slogan || 'Sua vitrine premium'}</p>
+              <p style={{ margin: '0.25rem 0 0', opacity: 0.9, fontSize: '0.85rem' }}>{formState.shortDescription || 'Prévia do hero e da identidade da loja.'}</p>
+            </div>
+            <div style={{ padding: '0.9rem', display: 'grid', gap: '0.7rem' }}>
+              <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                {['Início', 'Produtos', 'Promoções'].map((item, i) => (
+                  <span key={item} style={{ padding: '0.35rem 0.65rem', borderRadius: formState.navigationStyle === 'simple' ? '8px' : '999px', background: i === 0 ? formState.primaryColor : 'var(--surface-alt)', color: i === 0 ? '#fff' : 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: 700 }}>{item}</span>
+                ))}
+              </div>
+              <div style={{ borderRadius: formState.cardStyle === 'glass' ? '18px' : '14px', border: '1px solid var(--border-soft)', padding: '0.75rem' }}>
+                <p style={{ margin: 0, fontWeight: 700 }}>Card de produto</p>
+                <p className="muted" style={{ margin: '0.2rem 0 0.5rem' }}>Layout: {formState.productLayout}</p>
+                <button type="button" style={{ border: 'none', background: formState.primaryColor, color: '#fff', borderRadius: formState.buttonStyle === 'pill' ? '999px' : formState.buttonStyle === 'square' ? '8px' : '14px', padding: '0.45rem 0.8rem', fontWeight: 700 }}>Botão principal</button>
+              </div>
+            </div>
+          </div>
+        </Card>
+
         {/* Section toggles */}
         <Card title="Seções visíveis" subtitle="Escolha quais blocos aparecem na sua vitrine" variant="layered">
           <div className="stack" style={{ gap: '0.5rem' }}>
