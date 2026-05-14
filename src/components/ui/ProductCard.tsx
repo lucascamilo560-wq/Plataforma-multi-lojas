@@ -55,7 +55,7 @@ export function ProductCard({ product, store, actionLabel, onAction }: ProductCa
         <img src={product.imageUrl} alt={product.name} className="product-image" loading="lazy" />
         {product.sponsoredLabel && <Badge variant="danger">Destaque</Badge>}
       </div>
-      <p className="muted">{product.description}</p>
+      <p className="muted product-desc">{product.description}</p>
       <div className="inline-info">
         <Badge variant="store" storeColor={theme.primaryColor}>
           <Icon name="package" className="icon-sm" />
