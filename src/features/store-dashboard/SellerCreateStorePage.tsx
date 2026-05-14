@@ -51,7 +51,7 @@ export function SellerCreateStorePage() {
         coverUrl: coverUrl || undefined,
       })
       setStoreId(store.id)
-      navigate('/lojista')
+      navigate('/lojista', { state: { justCreated: true } })
     } catch (error) {
       console.error('Erro ao criar loja:', error)
       setErrorMessage(error instanceof Error ? error.message : 'Não foi possível criar a loja. Tente novamente.')
