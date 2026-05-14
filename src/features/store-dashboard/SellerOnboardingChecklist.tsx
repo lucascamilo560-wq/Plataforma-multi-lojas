@@ -140,7 +140,7 @@ export function SellerOnboardingChecklist({ status, storefrontUrl, onCopyLink, c
                   {step.title}
                 </span>
                 {!step.required && (
-                  <Badge variant="muted" className="">Recomendado</Badge>
+                  <Badge variant="muted">Recomendado</Badge>
                 )}
               </div>
               <p
@@ -176,7 +176,7 @@ export function SellerOnboardingChecklist({ status, storefrontUrl, onCopyLink, c
               <Icon name="storefront" className="icon-sm" />
               Copiar link da vitrine
             </Button>
-            <Link to={nextStep ? nextStep.to : '/lojista/minha-vitrine'}>
+            <Link to="/lojista/minha-vitrine">
               <Button variant="secondary" size="md">
                 Ver vitrine
               </Button>
