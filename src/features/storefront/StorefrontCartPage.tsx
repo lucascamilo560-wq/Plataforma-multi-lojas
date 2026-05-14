@@ -57,7 +57,7 @@ export function StorefrontCartPage() {
   }
 
   return (
-    <section className="stack-xl">
+    <section className="stack-xl container">
       <SectionHeader
         kicker="Carrinho"
         icon="cart"

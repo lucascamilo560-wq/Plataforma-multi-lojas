@@ -169,7 +169,7 @@ export function StorefrontPage() {
       ? 'store-product-list'
       : storeTheme.productLayout === 'cards-wide'
         ? 'store-product-wide'
-        : 'grid'
+        : 'store-product-grid-2'
 
   return (
     <div

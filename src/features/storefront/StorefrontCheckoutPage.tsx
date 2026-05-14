@@ -216,14 +216,14 @@ export function StorefrontCheckoutPage() {
 
   if (!store) {
     return (
-      <section className="stack-lg">
+      <section className="stack-lg container">
         <SectionHeader kicker="Checkout" icon="check" title="Loja não encontrada" description="" />
       </section>
     )
   }
 
   return (
-    <section className="stack-xl">
+    <section className="stack-xl container">
       <SectionHeader
         kicker="Checkout"
         icon="check"
