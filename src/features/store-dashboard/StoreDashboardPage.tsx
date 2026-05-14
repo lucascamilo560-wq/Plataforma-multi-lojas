@@ -1,32 +1,38 @@
 import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { ActionTile } from '../../components/ui/ActionTile'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { KpiCard } from '../../components/ui/KpiCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { useMockSession } from '../../hooks/useMockSession'
-import { getProductsByStore, getStoreById, getStoreCustomers, getStoreOrders } from '../../services/mockData'
-import type { CustomerSummary } from '../../services/mockData'
+import { getProductsByStore, getSellerOnboardingStatus, getStoreById, getStoreCustomers, getStoreOrders } from '../../services/mockData'
+import type { CustomerSummary, SellerOnboardingStatus } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 import { buildPublicUrl } from '../../utils/publicUrl'
+import { SellerOnboardingChecklist } from './SellerOnboardingChecklist'
 
 export function StoreDashboardPage() {
   const { storeId } = useMockSession()
+  const location = useLocation()
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [store, setStore] = useState<Store | undefined>()
   const [customers, setCustomers] = useState<CustomerSummary[]>([])
   const [shareMessage, setShareMessage] = useState('')
+  const [onboardingStatus, setOnboardingStatus] = useState<SellerOnboardingStatus | undefined>()
+
+  const justCreated = (location.state as { justCreated?: boolean } | null)?.justCreated === true
 
   useEffect(() => {
     getStoreOrders(storeId).then(setOrders)
     getProductsByStore(storeId, { includeInactive: true }).then(setProducts)
     getStoreById(storeId).then(setStore)
     getStoreCustomers(storeId).then(setCustomers)
+    getSellerOnboardingStatus(storeId).then(setOnboardingStatus)
   }, [storeId])
 
   const todayStr = new Date().toDateString()
@@ -155,6 +161,30 @@ export function StoreDashboardPage() {
           )}
         </div>
       </article>
+
+      {/* Onboarding checklist */}
+      {justCreated && (
+        <article
+          className="card card-default"
+          style={{
+            background: 'color-mix(in srgb, var(--accent-violet) 8%, var(--surface))',
+            border: '1px solid color-mix(in srgb, var(--accent-violet) 25%, transparent)',
+          }}
+        >
+          <p style={{ margin: 0, fontWeight: 600, color: 'var(--accent-violet)', fontSize: '0.96rem' }}>
+            🎉 Loja criada! Agora complete sua configuração para começar a vender.
+          </p>
+        </article>
+      )}
+
+      {onboardingStatus && (
+        <SellerOnboardingChecklist
+          status={onboardingStatus}
+          storefrontUrl={storefrontUrl}
+          onCopyLink={handleShareStore}
+          copyMessage={shareMessage}
+        />
+      )}
 
       <div className="grid grid-metrics">
         <KpiCard label="Pedidos hoje" value={ordersToday.length} icon="clock" />

@@ -1230,6 +1230,146 @@ export async function updateStorePlan(storeId: string, planId: string): Promise<
 }
 
 // ---------------------------------------------------------------------------
+// Seller onboarding checklist
+// ---------------------------------------------------------------------------
+
+export interface OnboardingStep {
+  id: string
+  title: string
+  description: string
+  completed: boolean
+  required: boolean
+  actionLabel: string
+  to: string
+}
+
+export interface SellerOnboardingStatus {
+  steps: OnboardingStep[]
+  completedCount: number
+  totalCount: number
+  progressPercent: number
+  isReadyToShare: boolean
+}
+
+/**
+ * Calcula o status de onboarding do lojista para um dado storeId.
+ * Verifica dados da loja, identidade visual, produtos, pagamentos e entrega.
+ */
+export async function getSellerOnboardingStatus(storeId: string): Promise<SellerOnboardingStatus> {
+  const store = getStoresCollection().find((s) => s.id === storeId)
+  const products = getProductsCollection().filter((p) => p.store_id === storeId && p.isActive)
+  const paymentMethods = getPaymentMethodsCollection().filter((pm) => pm.store_id === storeId && pm.enabled)
+  const deliverySettings = getDeliverySettingsCollection().find((ds) => ds.store_id === storeId)
+
+  const storeDataDone = Boolean(
+    store?.name?.trim() &&
+      store?.category?.trim() &&
+      (store?.city?.trim() || store?.description?.trim()),
+  )
+
+  const brandDone = Boolean(
+    store?.themePreset ||
+      store?.primaryColor ||
+      store?.logoUrl ||
+      store?.coverUrl ||
+      store?.slogan,
+  )
+
+  const productDone = products.length > 0
+
+  const paymentDone = paymentMethods.length > 0
+
+  const deliveryDone = Boolean(
+    deliverySettings?.deliveryEnabled ||
+      deliverySettings?.pickupEnabled ||
+      deliverySettings?.combineDelivery,
+  )
+
+  const storefrontDone = storeDataDone && productDone && paymentDone && deliveryDone && Boolean(store?.isActive)
+
+  const steps: OnboardingStep[] = [
+    {
+      id: 'store-data',
+      title: 'Dados da loja',
+      description: storeDataDone
+        ? 'Nome, categoria e cidade configurados.'
+        : 'Preencha as informações básicas da sua loja.',
+      completed: storeDataDone,
+      required: true,
+      actionLabel: 'Editar dados',
+      to: '/lojista/minha-loja',
+    },
+    {
+      id: 'brand',
+      title: 'Identidade visual',
+      description: brandDone
+        ? 'Visual da loja personalizado.'
+        : 'Adicione logo, cores e slogan da sua loja.',
+      completed: brandDone,
+      required: false,
+      actionLabel: 'Personalizar marca',
+      to: '/lojista/marca',
+    },
+    {
+      id: 'product',
+      title: 'Primeiro produto',
+      description: productDone
+        ? `${products.length} produto${products.length > 1 ? 's' : ''} ativo${products.length > 1 ? 's' : ''} no catálogo.`
+        : 'Cadastre seu primeiro produto para começar a vender.',
+      completed: productDone,
+      required: true,
+      actionLabel: productDone ? 'Ver produtos' : 'Cadastrar produto',
+      to: productDone ? '/lojista/produtos' : '/lojista/produtos/novo',
+    },
+    {
+      id: 'payment',
+      title: 'Formas de pagamento',
+      description: paymentDone
+        ? 'Pelo menos uma forma de pagamento configurada.'
+        : 'Configure como você quer receber seus pagamentos.',
+      completed: paymentDone,
+      required: true,
+      actionLabel: 'Configurar pagamentos',
+      to: '/lojista/pagamentos',
+    },
+    {
+      id: 'delivery',
+      title: 'Entrega ou retirada',
+      description: deliveryDone
+        ? 'Logística de entrega configurada.'
+        : 'Defina retirada, entrega ou combinar com cliente.',
+      completed: deliveryDone,
+      required: true,
+      actionLabel: 'Configurar entrega',
+      to: '/lojista/entrega',
+    },
+    {
+      id: 'storefront',
+      title: 'Vitrine pronta',
+      description: storefrontDone
+        ? 'Sua vitrine está pronta para compartilhar!'
+        : 'Complete as etapas anteriores para liberar sua vitrine.',
+      completed: storefrontDone,
+      required: true,
+      actionLabel: 'Ver minha vitrine',
+      to: '/lojista/minha-vitrine',
+    },
+  ]
+
+  const completedCount = steps.filter((s) => s.completed).length
+  const totalCount = steps.length
+  const progressPercent = Math.round((completedCount / totalCount) * 100)
+
+  return Promise.resolve({
+    steps,
+    completedCount,
+    totalCount,
+    progressPercent,
+    isReadyToShare: storefrontDone,
+  })
+}
+
+// ---------------------------------------------------------------------------
 // Demo session utilities
 // ---------------------------------------------------------------------------
 

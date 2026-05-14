@@ -36,6 +36,7 @@ export {
   getProductsByStore,
   getPromotionsByStore,
   getPublicStorefront,
+  getSellerOnboardingStatus,
   getStoreById,
   getStoreBySlug,
   getStoreCustomerByPhone,
@@ -69,7 +70,7 @@ export {
   updateAdminPlan,
   validateCoupon,
 } from './localMockStore'
-export type { CreateStorePayload, CustomerSummary, RepeatOrderResult, ValidateCouponResult, ReportPeriod, StoreReportSummary, TopProduct, CouponPerformance, PaymentStatusEntry, OrderStatusEntry } from './localMockStore'
+export type { CreateStorePayload, CustomerSummary, RepeatOrderResult, ValidateCouponResult, ReportPeriod, StoreReportSummary, TopProduct, CouponPerformance, PaymentStatusEntry, OrderStatusEntry, OnboardingStep, SellerOnboardingStatus } from './localMockStore'
 
 export {
   getCouponPerformanceByStore,
