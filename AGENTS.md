@@ -157,10 +157,65 @@ Não deve parecer:
 - protótipo com lojas aleatórias;
 - catálogo público global.
 
+## Workflow obrigatório antes de qualquer PR
+
+Antes de sugerir, iniciar ou finalizar qualquer PR, o agent **deve**:
+
+1. Verificar PRs recentes para evitar retrabalho e sobreposição de escopo.
+2. Confirmar o número **real** da próxima PR antes de citar número no título/texto.
+3. Validar se a tarefa já foi implementada (total ou parcialmente) em PR anterior.
+4. Abrir e ler os arquivos diretamente afetados antes de alterar qualquer coisa.
+5. Não recriar sistemas/fluxos já existentes sem lacuna objetiva comprovada.
+6. Não repetir prompt, tema ou escopo de PR já mesclado.
+7. Manter PR pequena, focada em uma dor real e com objetivo verificável.
+8. Evitar misturar visual + regra de negócio + banco + refatoração estrutural na mesma PR.
+
+Regra de segurança de escopo:
+
+- Se o pedido estiver amplo, quebrar em etapas menores e propor primeiro a menor entrega útil.
+- Se houver dúvida entre “mudar” e “preservar”, preservar o comportamento existente.
+
+## Estado recente do produto
+
+Resumo dos blocos entregues recentemente (usar como referência para não repetir trabalho):
+
+- PR #27/#28: Super Admin funcional.
+- PR #28: checkout com cards de pagamento e instruções de pagamento manual.
+- PR #29: sistema de tema/personalização visual da loja.
+- PR #30: refinamento premium inicial da vitrine.
+- PR #31: responsividade mobile.
+- PR #32: limpeza do bloco de fidelização e ajustes de textos.
+- PR #33: lapidação visual fina da vitrine.
+- PR #34: onboarding guiado do lojista.
+
+Observação importante:
+
+- Já houve divergência entre número citado no título e número real no GitHub.
+- Sempre conferir a numeração real no GitHub antes de mencionar número de PR.
+
+## Princípios de economia de uso dos agents
+
+- Fazer PRs pequenas e objetivas.
+- Não investigar o projeto inteiro sem necessidade do escopo.
+- Usar os arquivos afetados como fonte primária de verdade.
+- Evitar prompts amplos/genéricos como “melhore tudo”.
+- Preferir mudanças incrementais e testáveis.
+- Em caso de dúvida, preservar comportamento existente.
+- Não trocar arquitetura inteira sem pedido explícito.
+
 ## Checklist obrigatório antes de PR
 
 Antes de abrir ou finalizar um PR, confirme:
 
+- O escopo ficou pequeno e focado?
+- A tarefa já não havia sido feita em PR anterior?
+- O fluxo por convite foi preservado?
+- Cliente sem convite continua sem ver lojas fake?
+- Lojista continua isolado na própria loja?
+- Super Admin continua sendo o único que vê tudo?
+- localStorage/localMockStore foi preservado?
+- Não conectou Supabase sem pedido explícito?
+- Não implementou pagamento/anúncio real sem pedido explícito?
 - `npm run lint` passa.
 - `npm run build` passa.
 - Cliente sem convite não vê lojas fake.
@@ -170,6 +225,31 @@ Antes de abrir ou finalizar um PR, confirme:
 - O PR não reintroduz “Explorar lojas” como fluxo principal.
 - O PR não conecta Supabase sem solicitação explícita.
 - O PR não implementa pagamento/anúncio real sem solicitação explícita.
+
+## Como propor próximos PRs
+
+Toda proposta de próxima PR deve incluir, no mínimo:
+
+- número real da PR (conferido no GitHub);
+- nome claro e específico;
+- problema atual (dor real);
+- objetivo da entrega;
+- arquivos prováveis a alterar;
+- tarefas planejadas;
+- critérios de aceitação verificáveis;
+- o que **não** será feito nessa PR (limites de escopo).
+
+## Quando parar e pedir revisão humana
+
+Interrompa implementação e peça revisão humana quando houver necessidade de:
+
+- pagamento real (gateway, adquirente, split, tokenização real);
+- Supabase real (migração de dados, políticas, autenticação ou produção);
+- mudança de modelo de negócio da plataforma;
+- reabrir fluxo de marketplace público para cliente comum;
+- afetar dados financeiros reais;
+- exigir política de privacidade/termos legais novos;
+- resolver conflito entre README e comportamento real do código sem decisão explícita.
 
 ## Frase guia
 
