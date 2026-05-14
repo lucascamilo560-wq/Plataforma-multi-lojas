@@ -87,7 +87,7 @@ export function StorefrontOrderPage() {
 
   if (!order || !store) {
     return (
-      <section className="stack-lg">
+      <section className="stack-lg container">
         <SectionHeader
           kicker="Pedido"
           icon="clock"
@@ -122,7 +122,7 @@ export function StorefrontOrderPage() {
     : null
 
   return (
-    <section className="stack-xl">
+    <section className="stack-xl container">
       <SectionHeader
         kicker="Pedido confirmado"
         icon="check"
