@@ -314,7 +314,7 @@ export function StorefrontPage() {
                     variant="store"
                     size="sm"
                     storeColor={storeTheme.primaryColor}
-                    style={{ borderRadius: storeTheme.buttonRadius, width: '100%' } as React.CSSProperties}
+                    style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
                   >
                     Meus pedidos
                   </Button>
