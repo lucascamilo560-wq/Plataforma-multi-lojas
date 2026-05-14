@@ -192,7 +192,7 @@ export function StoreProductsPage() {
 
       {products.length === 0 ? (
         <div className="products-empty-state">
-          <div className="products-empty-icon">📦</div>
+          <div className="products-empty-icon" aria-hidden="true">📦</div>
           <h3 className="products-empty-title">Nenhum produto cadastrado ainda</h3>
           <p className="products-empty-desc">
             Produtos físicos aparecem na vitrine e podem gerar pedido diretamente pela plataforma.

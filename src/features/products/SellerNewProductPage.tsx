@@ -118,11 +118,19 @@ function getPreviewBadge(form: ProductFormState): string {
   return 'Afiliado'
 }
 
+function isSafeImageUrl(url: string): boolean {
+  const trimmed = url.trim()
+  if (!trimmed) return false
+  // Only allow http/https URLs and relative paths; reject javascript: and data: protocols
+  return /^https?:\/\//i.test(trimmed) || trimmed.startsWith('/')
+}
+
 function ProductPreview({ form }: { form: ProductFormState }) {
   const [failedImageUrl, setFailedImageUrl] = useState('')
 
-  const imageHasFailed = failedImageUrl === form.imageUrl && form.imageUrl.trim() !== ''
-  const showImg = form.imageUrl.trim() && !imageHasFailed
+  const safeUrl = isSafeImageUrl(form.imageUrl) ? form.imageUrl : ''
+  const imageHasFailed = failedImageUrl === safeUrl && safeUrl !== ''
+  const showImg = safeUrl && !imageHasFailed
 
   return (
     <div className="product-preview-wrap">
@@ -131,14 +139,14 @@ function ProductPreview({ form }: { form: ProductFormState }) {
         <div className="product-preview-img-wrap">
           {showImg ? (
             <img
-              src={form.imageUrl}
+              src={safeUrl}
               alt="Prévia do produto"
               className="product-preview-img"
-              onError={() => setFailedImageUrl(form.imageUrl)}
+              onError={() => setFailedImageUrl(safeUrl)}
             />
           ) : (
             <div className="product-preview-placeholder">
-              <span>🖼️</span>
+              <span aria-hidden="true">🖼️</span>
               <span>{imageHasFailed ? 'Imagem inválida' : 'Imagem do produto'}</span>
             </div>
           )}
@@ -292,14 +300,14 @@ export function SellerNewProductPage() {
                   }))
                 }
               >
-                <option value="physical">🛍️ Produto físico</option>
-                <option value="service">🔧 Serviço local</option>
-                <option value="external_link">🔗 Produto por link</option>
-                <option value="affiliate">📣 Oferta externa / afiliado</option>
+                <option value="physical">Produto físico</option>
+                <option value="service">Serviço local</option>
+                <option value="external_link">Produto por link</option>
+                <option value="affiliate">Oferta externa / afiliado</option>
               </Select>
 
               <div className="type-hint-banner" style={{ background: hint.color }}>
-                <span className="type-hint-icon">{hint.icon}</span>
+                <span className="type-hint-icon" aria-hidden="true">{hint.icon}</span>
                 <p className="type-hint-text">{hint.text}</p>
               </div>
             </Card>
@@ -487,8 +495,8 @@ export function SellerNewProductPage() {
                   }))
                 }
               >
-                <option value="active">✅ Ativo — aparece na vitrine</option>
-                <option value="paused">⏸ Pausado — oculto na vitrine</option>
+                <option value="active">Ativo — aparece na vitrine</option>
+                <option value="paused">Pausado — oculto na vitrine</option>
               </Select>
             </Card>
           </div>
