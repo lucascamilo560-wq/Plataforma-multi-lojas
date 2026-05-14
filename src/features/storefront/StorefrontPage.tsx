@@ -252,7 +252,7 @@ export function StorefrontPage() {
         })}
       </div>
 
-      <div className="stack-xl store-vitrine-content" style={{ padding: '0 0 5rem' }}>
+      <div className="stack-xl store-vitrine-content" style={{ padding: '0 0 9rem' }}>
         {/* Promotions section */}
         {storeTheme.showPromotionsSection && activePromos.length > 0 && (
           <div className="stack" style={{ gap: '0.5rem' }}>
@@ -356,13 +356,12 @@ export function StorefrontPage() {
               {hasPhysicalProducts && (
                 <Link to={`/loja/${slug}/carrinho`}>
                   <Button
-                    variant="store"
+                    variant="ghost"
                     size="sm"
-                    storeColor={storeTheme.primaryColor}
                     style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
+                    aria-label="Ver carrinho"
                   >
                     <Icon name="cart" className="icon-sm" />
-                    Carrinho
                   </Button>
                 </Link>
               )}
