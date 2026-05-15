@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { APP_BRAND } from '../../config/brand'
 import { AppHeader } from '../ui/AppHeader'
 
 const adminNavigation = [
@@ -15,8 +16,8 @@ export function AdminLayout() {
     <div className="app-shell">
       <AppHeader
         navigation={adminNavigation}
-        brandKicker="Super Admin"
-        brandTitle="Acompanhe lojas, usuários e operação da plataforma em uma visão central"
+        brandKicker={APP_BRAND.adminKicker}
+        brandTitle="Operação, lojas e crescimento da plataforma em uma visão central."
       />
       <main className="container app-main">
         <Outlet />
