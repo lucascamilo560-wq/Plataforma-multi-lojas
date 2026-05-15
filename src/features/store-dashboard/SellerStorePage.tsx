@@ -59,9 +59,9 @@ const DAYS: { slug: StoreBusinessDay; label: string }[] = [
   { slug: 'sunday', label: 'Domingo' },
 ]
 
-const DEFAULT_HOURS: StoreBusinessHours[] = DAYS.map((d, i) => ({
+const DEFAULT_HOURS: StoreBusinessHours[] = DAYS.map((d) => ({
   day: d.slug,
-  enabled: i < 5, // segunda a sexta
+  enabled: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(d.slug),
   openTime: '08:00',
   closeTime: '18:00',
 }))
@@ -163,9 +163,11 @@ export function SellerStorePage() {
           setHoursSuccessMessage('⚠️ Preencha abertura e fechamento para todos os dias ativos.')
           return
         }
-        const openMin = Number(bh.openTime.replace(':', ''))
-        const closeMin = Number(bh.closeTime.replace(':', ''))
-        if (closeMin <= openMin) {
+        const toMinutes = (t: string) => {
+          const [h, m] = t.split(':').map(Number)
+          return (h ?? 0) * 60 + (m ?? 0)
+        }
+        if (toMinutes(bh.closeTime) <= toMinutes(bh.openTime)) {
           const dayLabel = DAYS.find((d) => d.slug === bh.day)?.label ?? bh.day
           setHoursSuccessMessage(`⚠️ ${dayLabel}: horário de fechamento deve ser depois da abertura.`)
           return

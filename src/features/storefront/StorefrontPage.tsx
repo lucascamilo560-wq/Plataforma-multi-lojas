@@ -207,7 +207,11 @@ export function StorefrontPage() {
             <div className="store-vitrine-hero-meta">
               {(() => {
                 const openStatus = getStoreOpenStatus(store)
-                const badgeVariant: 'success' | 'muted' | 'danger' = openStatus.isOpenNow ? 'success' : 'muted'
+                const badgeVariant: 'success' | 'muted' | 'danger' = openStatus.isOpenNow
+                  ? 'success'
+                  : openStatus.statusLabel === 'Pausada' || openStatus.statusLabel === 'Em férias'
+                    ? 'danger'
+                    : 'muted'
                 return (
                   <>
                     <Badge variant={badgeVariant}>
