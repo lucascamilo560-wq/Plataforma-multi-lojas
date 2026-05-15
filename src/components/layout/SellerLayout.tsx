@@ -1,4 +1,5 @@
 import { Outlet } from 'react-router-dom'
+import { APP_BRAND } from '../../config/brand'
 import { AppHeader } from '../ui/AppHeader'
 
 const sellerNavigation = [
@@ -16,8 +17,8 @@ export function SellerLayout() {
     <div className="app-shell">
       <AppHeader
         navigation={sellerNavigation}
-        brandKicker="Área do lojista"
-        brandTitle="Gerencie sua loja, catálogo, pedidos e relacionamento com clientes"
+        brandKicker={APP_BRAND.sellerKicker}
+        brandTitle={APP_BRAND.slogan}
       />
       <main className="container app-main">
         <Outlet />

@@ -22,7 +22,11 @@ export function AppHeader({ navigation, brandKicker, brandTitle, brandLogoUrl }:
       <div className="container">
         <div className="header-content">
           <div className="header-brand">
-            {brandLogoUrl && <img src={brandLogoUrl} alt="" className="header-brand-logo" loading="lazy" />}
+            {brandLogoUrl ? (
+              <img src={brandLogoUrl} alt="" className="header-brand-logo" loading="lazy" />
+            ) : (
+              <Icon name="hub" className="icon-md header-brand-icon" aria-hidden="true" />
+            )}
             <p className="brand-kicker">{brandKicker}</p>
             <h1 className="brand-title">{brandTitle}</h1>
           </div>

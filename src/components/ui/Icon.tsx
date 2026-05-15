@@ -18,6 +18,7 @@ interface IconProps extends SVGProps<SVGSVGElement> {
     | 'wallet'
     | 'palette'
     | 'close'
+    | 'hub'
 }
 
 const iconPaths: Record<IconProps['name'], string> = {
@@ -40,6 +41,7 @@ const iconPaths: Record<IconProps['name'], string> = {
   palette:
     'M12 3a9 9 0 00-9 9c0 3.3 2.7 6 6 6h1a2 2 0 002-2c0-1.1.9-2 2-2h2a5 5 0 000-10h-4z',
   close: 'M6 6l12 12M6 18L18 6',
+  hub: 'M12 12m-2 0a2 2 0 104 0 2 2 0 10-4 0M12 5a2 2 0 100 4 2 2 0 000-4M12 15a2 2 0 100 4 2 2 0 000-4M5 8.5a2 2 0 100 4 2 2 0 000-4M19 8.5a2 2 0 100 4 2 2 0 000-4M10.3 10.7L6.8 10M13.7 10.7L17.2 10M10.8 13.5L7.5 16M13.2 13.5L16.5 16',
 }
 
 export function Icon({ name, className = '', ...props }: IconProps) {

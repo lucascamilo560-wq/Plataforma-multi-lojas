@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Outlet } from 'react-router-dom'
+import { APP_BRAND } from '../../config/brand'
 import { getActiveStore } from '../../services/mockData'
 import type { Store } from '../../types'
 import { AppHeader } from '../ui/AppHeader'
@@ -34,11 +35,11 @@ export function CustomerLayout() {
     <div className="app-shell">
       <AppHeader
         navigation={customerNavigation}
-        brandKicker={activeStore ? 'Loja salva' : 'Cliente'}
+        brandKicker={activeStore ? APP_BRAND.customerKicker : APP_BRAND.customerKicker}
         brandTitle={
           activeStore
             ? `Você está comprando em ${activeStore.name}`
-            : 'Suas lojas e pedidos em um só lugar'
+            : 'Suas lojas salvas, pedidos e vitrines em um só lugar.'
         }
         brandLogoUrl={activeStore?.logoUrl}
       />
