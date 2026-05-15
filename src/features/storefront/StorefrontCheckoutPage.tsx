@@ -19,6 +19,8 @@ import type { CartItem, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 import type { DeliverySettings, PaymentMethod } from '../../services/localMockStore'
 
+type DeliveryMode = 'pickup' | 'delivery' | 'arrange'
+
 function PaymentMethodCard({
   method,
   selected,
@@ -100,6 +102,69 @@ function PaymentMethodCard({
   )
 }
 
+function DeliveryModeCard({
+  icon,
+  title,
+  subtitle,
+  selected,
+  onSelect,
+  disabled,
+  disabledReason,
+  children,
+}: {
+  icon: string
+  title: string
+  subtitle: string
+  selected: boolean
+  onSelect: () => void
+  disabled?: boolean
+  disabledReason?: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      onClick={disabled ? undefined : onSelect}
+      onKeyDown={(e) => !disabled && e.key === 'Enter' && onSelect()}
+      style={{
+        border: selected
+          ? '2px solid var(--color-accent, #3A86FF)'
+          : '1.5px solid var(--color-border)',
+        borderRadius: '0.75rem',
+        padding: '0.85rem 1rem',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        background: disabled
+          ? 'var(--color-surface-raised, #f9fafb)'
+          : selected
+            ? 'var(--color-accent-subtle, #f0f7ff)'
+            : 'var(--color-surface, #fff)',
+        outline: 'none',
+        opacity: disabled ? 0.6 : 1,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem' }}>
+        <span style={{ fontSize: '1.3rem', marginTop: '0.05rem' }}>{icon}</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{title}</div>
+          <p className="muted" style={{ margin: '0.1rem 0 0', fontSize: '0.82rem' }}>{subtitle}</p>
+          {disabled && disabledReason && (
+            <p style={{ margin: '0.3rem 0 0', fontSize: '0.8rem', color: 'var(--color-error, #dc2626)' }}>
+              {disabledReason}
+            </p>
+          )}
+          {selected && children && (
+            <div style={{ marginTop: '0.5rem' }}>{children}</div>
+          )}
+        </div>
+        {selected && !disabled && (
+          <span style={{ color: 'var(--color-accent, #3A86FF)', fontSize: '1rem' }}>✓</span>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function StorefrontCheckoutPage() {
   const { slug = '' } = useParams()
   const navigate = useNavigate()
@@ -112,7 +177,7 @@ export function StorefrontCheckoutPage() {
   const [customerPhone, setCustomerPhone] = useState('')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
-  const [deliveryType, setDeliveryType] = useState<'delivery' | 'pickup'>('pickup')
+  const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('pickup')
   const [selectedPaymentId, setSelectedPaymentId] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -133,10 +198,15 @@ export function StorefrontCheckoutPage() {
       })
       getDeliverySettings(nextStore.id).then((settings) => {
         setDeliverySettings(settings)
-        if (settings?.deliveryEnabled && !settings?.pickupEnabled) {
-          setDeliveryType('delivery')
+        // Select the first available mode
+        if (settings?.pickupEnabled) {
+          setDeliveryMode('pickup')
+        } else if (settings?.deliveryEnabled) {
+          setDeliveryMode('delivery')
+        } else if (settings?.combineDelivery) {
+          setDeliveryMode('arrange')
         } else {
-          setDeliveryType('pickup')
+          setDeliveryMode('pickup') // no mode configured, default shown but not enforced
         }
       })
     })
@@ -147,14 +217,28 @@ export function StorefrontCheckoutPage() {
     [items],
   )
 
-  const deliveryFee = deliveryType === 'delivery' && deliverySettings?.deliveryEnabled ? deliverySettings.fee : 0
+  const deliveryFee =
+    deliveryMode === 'delivery' && deliverySettings?.deliveryEnabled ? (deliverySettings.fee ?? 0) : 0
+
   const discountAmount = couponApplied && couponResult?.valid ? couponResult.discountAmount : 0
   const total = Math.max(0, subtotal + deliveryFee - discountAmount)
+
+  const minOrder = deliverySettings?.minOrder ?? 0
+  const deliveryBlockedByMinOrder =
+    deliveryMode === 'delivery' &&
+    deliverySettings?.deliveryEnabled &&
+    minOrder > 0 &&
+    subtotal < minOrder
 
   const storeTheme = getStoreTheme(store)
   const selectedMethod = paymentMethods.length === 1
     ? paymentMethods[0]
     : paymentMethods.find((m) => m.id === selectedPaymentId)
+
+  const hasAnyDelivery =
+    deliverySettings?.pickupEnabled ||
+    deliverySettings?.deliveryEnabled ||
+    deliverySettings?.combineDelivery
 
   const handleApplyCoupon = async () => {
     if (!store || !couponInput.trim()) return
@@ -179,8 +263,12 @@ export function StorefrontCheckoutPage() {
       setErrorMessage('Selecione uma forma de pagamento.')
       return
     }
-    if (deliveryType === 'delivery' && !address.trim()) {
+    if (deliveryMode === 'delivery' && !address.trim()) {
       setErrorMessage('Informe o endereço de entrega.')
+      return
+    }
+    if (deliveryBlockedByMinOrder) {
+      setErrorMessage(`Pedido mínimo para entrega própria é ${formatCurrency(minOrder)}. Escolha retirada ou combinar entrega.`)
       return
     }
     if (items.length === 0) {
@@ -195,9 +283,9 @@ export function StorefrontCheckoutPage() {
         storeId: store.id,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim() || undefined,
-        address: deliveryType === 'delivery' ? address.trim() : undefined,
+        address: deliveryMode === 'delivery' ? address.trim() : undefined,
         notes: notes.trim() || undefined,
-        deliveryType,
+        deliveryType: deliveryMode,
         paymentMethod: selectedMethod.name,
         paymentMethodKey: selectedMethod.type,
         paymentInstructions: selectedMethod.instructions || undefined,
@@ -205,6 +293,14 @@ export function StorefrontCheckoutPage() {
         pixKey: selectedMethod.pixKey || undefined,
         couponCode: couponApplied && couponResult?.valid ? couponResult.coupon.code : undefined,
         deliveryFee: deliveryFee > 0 ? deliveryFee : undefined,
+        pickupAddress:
+          deliveryMode === 'pickup' && deliverySettings?.pickupAddress
+            ? deliverySettings.pickupAddress
+            : undefined,
+        estimatedMinutes:
+          deliveryMode === 'delivery' && deliverySettings?.estimatedMinutes
+            ? deliverySettings.estimatedMinutes
+            : undefined,
       })
       navigate(`/loja/${slug}/pedido/${order.id}`)
     } catch (error) {
@@ -247,12 +343,12 @@ export function StorefrontCheckoutPage() {
               <span className="muted">Subtotal</span>
               <strong>{formatCurrency(subtotal)}</strong>
             </div>
-            {deliveryType === 'delivery' && deliverySettings?.deliveryEnabled && (
+            {deliveryMode === 'delivery' && deliverySettings?.deliveryEnabled && (
               <div className="inline-info">
                 <span className="muted">
-                  Entrega (~{deliverySettings.estimatedMinutes} min)
+                  Entrega {deliverySettings.estimatedMinutes ? `(~${deliverySettings.estimatedMinutes} min)` : ''}
                 </span>
-                <strong>{formatCurrency(deliverySettings.fee)}</strong>
+                <strong>{deliveryFee > 0 ? formatCurrency(deliveryFee) : 'Grátis'}</strong>
               </div>
             )}
             {discountAmount > 0 && (
@@ -305,32 +401,74 @@ export function StorefrontCheckoutPage() {
           )}
         </Card>
 
-        {(deliverySettings?.deliveryEnabled || deliverySettings?.pickupEnabled) && (
+        {hasAnyDelivery && (
           <Card title="Entrega ou retirada" subtitle="Escolha como receber seu pedido" variant="layered">
-            <div className="stack" style={{ gap: '0.5rem' }}>
-              {deliverySettings.pickupEnabled && (
-                <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="deliveryType"
-                    value="pickup"
-                    checked={deliveryType === 'pickup'}
-                    onChange={() => setDeliveryType('pickup')}
-                  />
-                  Retirar na loja
-                </label>
+            <div className="stack" style={{ gap: '0.6rem' }}>
+              {deliverySettings?.pickupEnabled && (
+                <DeliveryModeCard
+                  icon="🏪"
+                  title="Retirada no local"
+                  subtitle={
+                    deliverySettings.pickupAddress
+                      ? `📍 ${deliverySettings.pickupAddress}`
+                      : 'Retire diretamente na loja.'
+                  }
+                  selected={deliveryMode === 'pickup'}
+                  onSelect={() => setDeliveryMode('pickup')}
+                />
               )}
-              {deliverySettings.deliveryEnabled && (
-                <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="deliveryType"
-                    value="delivery"
-                    checked={deliveryType === 'delivery'}
-                    onChange={() => setDeliveryType('delivery')}
-                  />
-                  Receber em casa (+{formatCurrency(deliverySettings.fee)})
-                </label>
+
+              {deliverySettings?.deliveryEnabled && (
+                <DeliveryModeCard
+                  icon="🛵"
+                  title={`Entrega própria${deliverySettings.fee > 0 ? ` — +${formatCurrency(deliverySettings.fee)}` : ' — Grátis'}`}
+                  subtitle={[
+                    deliverySettings.estimatedMinutes ? `⏱ ~${deliverySettings.estimatedMinutes} min` : '',
+                    deliverySettings.neighborhoods ? `🗺 ${deliverySettings.neighborhoods}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join('  •  ') || 'Entrega feita pela loja.'}
+                  selected={deliveryMode === 'delivery'}
+                  onSelect={() => setDeliveryMode('delivery')}
+                  disabled={
+                    deliveryMode !== 'delivery' &&
+                    minOrder > 0 &&
+                    subtotal < minOrder
+                  }
+                  disabledReason={
+                    minOrder > 0 && subtotal < minOrder
+                      ? `Pedido mínimo de ${formatCurrency(minOrder)} para entrega própria.`
+                      : undefined
+                  }
+                >
+                  {deliveryBlockedByMinOrder && (
+                    <p style={{ fontSize: '0.82rem', color: 'var(--color-error, #dc2626)', margin: 0 }}>
+                      ❌ Subtotal abaixo do pedido mínimo ({formatCurrency(minOrder)}) para entrega própria.
+                    </p>
+                  )}
+                </DeliveryModeCard>
+              )}
+
+              {deliverySettings?.combineDelivery && (
+                <DeliveryModeCard
+                  icon="💬"
+                  title="Combinar entrega"
+                  subtitle="Você combinará entrega com a loja após confirmar o pedido."
+                  selected={deliveryMode === 'arrange'}
+                  onSelect={() => setDeliveryMode('arrange')}
+                />
+              )}
+
+              {deliverySettings?.deliveryNotes && (
+                <p className="muted" style={{ fontSize: '0.82rem', fontStyle: 'italic', margin: '0.25rem 0 0' }}>
+                  📝 {deliverySettings.deliveryNotes}
+                </p>
+              )}
+
+              {minOrder > 0 && deliverySettings?.deliveryEnabled && (
+                <p className="muted" style={{ fontSize: '0.82rem' }}>
+                  📦 Pedido mínimo para entrega própria: <strong>{formatCurrency(minOrder)}</strong>
+                </p>
               )}
             </div>
           </Card>
@@ -376,7 +514,7 @@ export function StorefrontCheckoutPage() {
               onChange={(e) => setCustomerPhone(e.target.value)}
               placeholder="(11) 99999-0000"
             />
-            {deliveryType === 'delivery' && (
+            {deliveryMode === 'delivery' && (
               <Input
                 label="Endereço de entrega"
                 value={address}
@@ -402,7 +540,7 @@ export function StorefrontCheckoutPage() {
           size="lg"
           storeColor={storeTheme.primaryColor}
           onClick={handleConfirm}
-          disabled={submitting}
+          disabled={submitting || deliveryBlockedByMinOrder}
         >
           <Icon name="check" className="icon-sm" />
           {submitting ? 'Confirmando…' : 'Confirmar pedido'}

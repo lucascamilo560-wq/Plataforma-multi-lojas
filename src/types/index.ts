@@ -83,7 +83,7 @@ export interface Order {
   customerPhone?: string
   address?: string
   notes?: string
-  deliveryType?: 'delivery' | 'pickup'
+  deliveryType?: 'delivery' | 'pickup' | 'arrange'
   paymentMethod?: string
   paymentMethodKey?: OrderPaymentMethod
   items?: OrderItem[]
@@ -98,6 +98,8 @@ export interface Order {
   paymentInstructions?: string
   externalPaymentUrl?: string
   pixKey?: string
+  pickupAddress?: string
+  estimatedMinutes?: number
   createdAt: string
 }
 

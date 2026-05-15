@@ -146,8 +146,21 @@ export function StorefrontOrderPage() {
           )}
           {order.deliveryType && (
             <p className="muted">
-              {order.deliveryType === 'delivery' ? 'Entrega em domicílio' : 'Retirada na loja'}
-              {order.address ? ` — ${order.address}` : ''}
+              {order.deliveryType === 'delivery'
+                ? '🛵 Entrega em domicílio'
+                : order.deliveryType === 'arrange'
+                  ? '💬 Entrega a combinar com a loja'
+                  : '🏪 Retirada no local'}
+              {order.deliveryType === 'delivery' && order.address ? ` — ${order.address}` : ''}
+              {order.deliveryType === 'pickup' && order.pickupAddress ? ` — ${order.pickupAddress}` : ''}
+            </p>
+          )}
+          {order.deliveryType === 'delivery' && order.estimatedMinutes != null && order.estimatedMinutes > 0 && (
+            <p className="muted">⏱ Tempo estimado: ~{order.estimatedMinutes} min</p>
+          )}
+          {order.deliveryType === 'arrange' && (
+            <p className="muted" style={{ color: 'var(--color-accent, #3A86FF)' }}>
+              💡 Combine a entrega com a loja pelo WhatsApp ou telefone após confirmar o pedido.
             </p>
           )}
           {order.notes && <p className="muted">Obs: {order.notes}</p>}
