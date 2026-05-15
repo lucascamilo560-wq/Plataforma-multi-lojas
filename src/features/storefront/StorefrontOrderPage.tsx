@@ -8,6 +8,8 @@ import { buildOrderTimeline, getOrderById, getStoreBySlug, derivePaymentMethodKe
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, OrderPaymentMethod, OrderStatus, PaymentStatus, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
+import { buildPublicUrl } from '../../utils/publicUrl'
+import { shareOrCopy } from '../../utils/share'
 import { OrderTimeline } from '../orders/components/OrderTimeline'
 
 const statusLabel: Record<OrderStatus, string> = {
@@ -80,6 +82,25 @@ export function StorefrontOrderPage() {
   const { slug = '', orderId = '' } = useParams()
   const [store, setStore] = useState<Store | undefined>()
   const [order, setOrder] = useState<Order | undefined>()
+  const [shareFeedback, setShareFeedback] = useState<'shared' | 'copied' | 'cancelled' | 'failed' | null>(null)
+
+  const SHARE_FEEDBACK_MESSAGES = {
+    shared: '🔗 Compartilhamento aberto',
+    copied: '✅ Link copiado!',
+    cancelled: 'Compartilhamento cancelado',
+    failed: 'Não foi possível compartilhar',
+  }
+
+  const handleShareStore = async (currentStore: Store) => {
+    const url = buildPublicUrl(`/loja/${currentStore.slug}`)
+    const result = await shareOrCopy({
+      title: currentStore.name,
+      text: `Acabei de conhecer a ${currentStore.name}. Veja a vitrine:`,
+      url,
+    })
+    setShareFeedback(result)
+    setTimeout(() => setShareFeedback(null), 3000)
+  }
 
   useEffect(() => {
     getStoreBySlug(slug).then(setStore)
@@ -309,6 +330,29 @@ export function StorefrontOrderPage() {
             <Link to={`/loja/${slug}`}>
               <Button variant="secondary">Continuar comprando</Button>
             </Link>
+
+            <div style={{
+              borderTop: '1px solid var(--color-border)',
+              paddingTop: '0.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+            }}>
+              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Gostou da loja?</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleShareStore(store)}
+                style={{ alignSelf: 'flex-start', color: 'var(--text-secondary)', fontSize: '0.84rem' }}
+              >
+                🔗 Compartilhar loja
+              </Button>
+              {shareFeedback && (
+                <p style={{ margin: 0, fontSize: '0.82rem', color: shareFeedback === 'failed' ? 'var(--color-error, #dc2626)' : 'var(--text-secondary)' }}>
+                  {SHARE_FEEDBACK_MESSAGES[shareFeedback]}
+                </p>
+              )}
+            </div>
 
             {order.status === 'delivered' && (
               <Link to={`/cliente/pedidos/${order.id}`}>
