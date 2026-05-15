@@ -93,6 +93,9 @@ const STORAGE_KEYS = {
 
   // Dados do lojista
   sellerStoreId: 'marketplace:seller:store-id',
+
+  // CRM do lojista
+  customerRelationships: 'marketplace:crm:relationships',
 } as const
 
 const defaultStores: Store[] = [
@@ -2005,4 +2008,78 @@ export async function getOrderStatusSummaryByStore(storeId: string, period: Repo
   })
 
   return Promise.resolve(result)
+}
+
+// ---------------------------------------------------------------------------
+// CRM — Relacionamento com o cliente
+// ---------------------------------------------------------------------------
+
+export interface CustomerRelationship {
+  storeId: string
+  customerKey: string
+  notes?: string
+  tags?: string[]
+  preferences?: string
+  preferredContactTime?: string
+  nextFollowUpAt?: string
+  lastContactedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+function getCustomerRelationshipsCollection(): CustomerRelationship[] {
+  const raw = window.localStorage.getItem(STORAGE_KEYS.customerRelationships)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as CustomerRelationship[]) : []
+  } catch {
+    return []
+  }
+}
+
+function setCustomerRelationshipsCollection(relationships: CustomerRelationship[]): void {
+  window.localStorage.setItem(STORAGE_KEYS.customerRelationships, JSON.stringify(relationships))
+}
+
+export async function getCustomerRelationship(
+  storeId: string,
+  customerKey: string,
+): Promise<CustomerRelationship | undefined> {
+  const all = getCustomerRelationshipsCollection()
+  return Promise.resolve(all.find((r) => r.storeId === storeId && r.customerKey === customerKey))
+}
+
+export async function updateCustomerRelationship(
+  storeId: string,
+  customerKey: string,
+  updates: Partial<Omit<CustomerRelationship, 'storeId' | 'customerKey' | 'createdAt' | 'updatedAt'>>,
+): Promise<CustomerRelationship> {
+  const all = getCustomerRelationshipsCollection()
+  const now = new Date().toISOString()
+  const index = all.findIndex((r) => r.storeId === storeId && r.customerKey === customerKey)
+
+  let updated: CustomerRelationship
+  if (index >= 0) {
+    updated = { ...all[index], ...updates, updatedAt: now }
+    const next = [...all]
+    next[index] = updated
+    setCustomerRelationshipsCollection(next)
+  } else {
+    updated = {
+      storeId,
+      customerKey,
+      ...updates,
+      createdAt: now,
+      updatedAt: now,
+    }
+    setCustomerRelationshipsCollection([...all, updated])
+  }
+
+  return Promise.resolve(updated)
+}
+
+export async function getCustomerRelationshipsByStore(storeId: string): Promise<CustomerRelationship[]> {
+  const all = getCustomerRelationshipsCollection()
+  return Promise.resolve(all.filter((r) => r.storeId === storeId))
 }
