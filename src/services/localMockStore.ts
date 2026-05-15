@@ -759,7 +759,7 @@ export async function updateProductStock(productId: string, stock: number): Prom
 
 export async function updateStoreProfile(
   storeId: string,
-  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive' | 'whatsapp' | 'primaryColor' | 'secondaryColor' | 'accentColor' | 'adminStatus' | 'planId' | 'slogan' | 'shortDescription' | 'themePreset' | 'buttonStyle' | 'cardStyle' | 'productLayout' | 'navigationStyle' | 'heroStyle' | 'showHero' | 'showLoyaltyBlock' | 'showPromotionsSection' | 'showBestSellersSection' | 'showWhatsappFloat'>>,
+  updates: Partial<Pick<Store, 'name' | 'description' | 'category' | 'city' | 'logoUrl' | 'coverUrl' | 'isActive' | 'whatsapp' | 'primaryColor' | 'secondaryColor' | 'accentColor' | 'adminStatus' | 'planId' | 'slogan' | 'shortDescription' | 'themePreset' | 'buttonStyle' | 'cardStyle' | 'productLayout' | 'navigationStyle' | 'heroStyle' | 'showHero' | 'showLoyaltyBlock' | 'showPromotionsSection' | 'showBestSellersSection' | 'showWhatsappFloat' | 'businessHours' | 'acceptOrdersWhenClosed' | 'vacationMode' | 'vacationMessage'>>,
 ): Promise<Store | undefined> {
   let updatedStore: Store | undefined
 
@@ -1029,6 +1029,7 @@ export interface CreateOrderPayload {
   deliveryFee?: number
   pickupAddress?: string
   estimatedMinutes?: number
+  orderPlacedWhileClosed?: boolean
 }
 
 function derivePaymentStatus(paymentMethodKey?: OrderPaymentMethod, paymentMethodName?: string): PaymentStatus {
@@ -1110,6 +1111,7 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
     paymentStatus,
     pickupAddress: payload.pickupAddress,
     estimatedMinutes: payload.estimatedMinutes,
+    orderPlacedWhileClosed: payload.orderPlacedWhileClosed || undefined,
     createdAt: new Date().toISOString(),
   }
 
