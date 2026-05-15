@@ -11,6 +11,8 @@ interface ProductCardProps {
   store?: Store
   actionLabel?: string
   onAction?: () => void
+  onShare?: () => void
+  shareFeedback?: 'shared' | 'copied' | 'cancelled' | 'failed' | null
 }
 
 function getExternalNotice(productType: Product['productType']) {
@@ -36,7 +38,14 @@ function getProductPriceLabel(product: Product) {
   return formatCurrency(product.price)
 }
 
-export function ProductCard({ product, store, actionLabel, onAction }: ProductCardProps) {
+const SHARE_FEEDBACK_LABELS: Record<NonNullable<ProductCardProps['shareFeedback']>, string> = {
+  shared: '🔗 Compartilhamento aberto',
+  copied: '✅ Link copiado!',
+  cancelled: 'Cancelado',
+  failed: 'Não foi possível compartilhar',
+}
+
+export function ProductCard({ product, store, actionLabel, onAction, onShare, shareFeedback }: ProductCardProps) {
   const theme = getStoreTheme(store)
   const actionButtonLabel = actionLabel ?? product.ctaLabel ?? 'Adicionar ao carrinho'
   const isPhysical = product.productType === 'physical'
@@ -71,6 +80,18 @@ export function ProductCard({ product, store, actionLabel, onAction }: ProductCa
           <Icon name={isPhysical ? 'cart' : 'arrowRight'} className="icon-sm" />
           {actionButtonLabel}
         </Button>
+      )}
+      {onShare && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+          <Button type="button" variant="ghost" size="sm" onClick={onShare} style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+            🔗 Compartilhar
+          </Button>
+          {shareFeedback && (
+            <p style={{ margin: 0, fontSize: '0.78rem', color: shareFeedback === 'failed' ? 'var(--color-error, #dc2626)' : 'var(--text-secondary)' }}>
+              {SHARE_FEEDBACK_LABELS[shareFeedback]}
+            </p>
+          )}
+        </div>
       )}
     </Card>
   )

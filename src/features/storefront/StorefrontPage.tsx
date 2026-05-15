@@ -1,6 +1,6 @@
 import type React from 'react'
-import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon'
@@ -19,10 +19,14 @@ import type { Promotion } from '../../services/localMockStore'
 import type { StoreReviewSummary } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import { getStoreOpenStatus } from '../../utils/storeStatus'
+import { buildPublicUrl } from '../../utils/publicUrl'
+import { shareOrCopy } from '../../utils/share'
 import type { Product, Store } from '../../types'
 
 const FOLLOW_SUCCESS_MESSAGE = 'Loja salva! Agora você acompanha pedidos e novidades.'
 const WHATSAPP_COLOR = '#25D366'
+
+type ShareFeedback = 'shared' | 'copied' | 'cancelled' | 'failed' | null
 
 type StoreNavTab = 'inicio' | 'produtos' | 'promocoes' | 'pedidos' | 'sobre'
 
@@ -34,8 +38,16 @@ const STORE_NAV_ITEMS: { id: StoreNavTab; label: string; icon: string }[] = [
   { id: 'sobre', label: 'Sobre', icon: 'sparkles' },
 ]
 
+const SHARE_FEEDBACK_MESSAGES: Record<NonNullable<ShareFeedback>, string> = {
+  shared: '🔗 Compartilhamento aberto',
+  copied: '✅ Link copiado!',
+  cancelled: 'Compartilhamento cancelado',
+  failed: 'Não foi possível compartilhar',
+}
+
 export function StorefrontPage() {
   const { slug = '' } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const [store, setStore] = useState<Store | undefined>()
   const [products, setProducts] = useState<Product[]>([])
@@ -45,6 +57,10 @@ export function StorefrontPage() {
   const [infoMessage, setInfoMessage] = useState('')
   const [activeTab, setActiveTab] = useState<StoreNavTab>('inicio')
   const [reviewSummary, setReviewSummary] = useState<StoreReviewSummary | undefined>()
+  const [storeFeedback, setStoreFeedback] = useState<ShareFeedback>(null)
+  const [productFeedback, setProductFeedback] = useState<Record<string, ShareFeedback>>({})
+  const highlightedProductId = searchParams.get('produto')
+  const highlightRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -82,6 +98,47 @@ export function StorefrontPage() {
       cancelled = true
     }
   }, [slug])
+
+  // Scroll to highlighted product when loaded via ?produto=:id
+  useEffect(() => {
+    if (!highlightedProductId || products.length === 0) return
+    const timer = setTimeout(() => {
+      if (highlightRef.current) {
+        highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [highlightedProductId, products])
+
+  const showStoreFeedback = useCallback((result: NonNullable<ShareFeedback>) => {
+    setStoreFeedback(result)
+    setTimeout(() => setStoreFeedback(null), 3000)
+  }, [])
+
+  const handleShareStore = useCallback(async () => {
+    if (!store) return
+    const url = buildPublicUrl(`/loja/${store.slug}`)
+    const result = await shareOrCopy({
+      title: store.name,
+      text: `Conheça a vitrine da ${store.name}:`,
+      url,
+    })
+    showStoreFeedback(result)
+  }, [store, showStoreFeedback])
+
+  const handleShareProduct = useCallback(async (product: Product) => {
+    if (!store) return
+    const url = buildPublicUrl(`/loja/${store.slug}?produto=${product.id}`)
+    const result = await shareOrCopy({
+      title: product.name,
+      text: `Olha esse produto da ${store.name}: ${product.name} —`,
+      url,
+    })
+    setProductFeedback((prev) => ({ ...prev, [product.id]: result }))
+    setTimeout(() => {
+      setProductFeedback((prev) => ({ ...prev, [product.id]: null }))
+    }, 3000)
+  }, [store])
 
   const handleAddToCart = async (product: Product) => {
     try {
@@ -404,6 +461,21 @@ export function StorefrontPage() {
               )}
             </div>
             {infoMessage && <p className="muted" style={{ margin: 0 }}>{infoMessage}</p>}
+            <div style={{ borderTop: `1px solid ${storeTheme.primaryColor}22`, paddingTop: '0.6rem' }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleShareStore}
+                style={{ borderRadius: storeTheme.buttonRadius, color: 'var(--text-secondary)', fontSize: '0.84rem' } as React.CSSProperties}
+              >
+                🔗 Compartilhar loja
+              </Button>
+              {storeFeedback && (
+                <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: storeFeedback === 'failed' ? 'var(--color-error, #dc2626)' : 'var(--text-secondary)' }}>
+                  {SHARE_FEEDBACK_MESSAGES[storeFeedback]}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -440,14 +512,42 @@ export function StorefrontPage() {
               </div>
             ) : (
               <div className={productGridClass}>
-                {productsToDisplay.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    store={store}
-                    onAction={() => handleProductAction(product)}
-                  />
-                ))}
+                {productsToDisplay.map((product) => {
+                  const isHighlighted = product.id === highlightedProductId
+                  const pFeedback = productFeedback[product.id]
+                  return (
+                    <div
+                      key={product.id}
+                      ref={isHighlighted ? highlightRef : null}
+                      style={isHighlighted ? {
+                        outline: `2px solid ${storeTheme.primaryColor}`,
+                        borderRadius: storeTheme.borderRadius,
+                        boxShadow: `0 0 0 4px ${storeTheme.primaryColor}22`,
+                      } : undefined}
+                    >
+                      {isHighlighted && (
+                        <div style={{
+                          background: storeTheme.primaryColor,
+                          color: '#fff',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: `${storeTheme.borderRadius} ${storeTheme.borderRadius} 0 0`,
+                          textAlign: 'center',
+                        }}>
+                          Produto compartilhado
+                        </div>
+                      )}
+                      <ProductCard
+                        product={product}
+                        store={store}
+                        onAction={() => handleProductAction(product)}
+                        onShare={() => handleShareProduct(product)}
+                        shareFeedback={pFeedback ?? null}
+                      />
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
