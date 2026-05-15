@@ -26,6 +26,8 @@ export {
   getCurrentSellerStoreId,
   getCustomerOrders,
   getCustomerOrdersByKey,
+  getCustomerRelationship,
+  getCustomerRelationshipsByStore,
   getDeliverySettings,
   getFollowedStores,
   getInvitedStoreSlug,
@@ -57,6 +59,7 @@ export {
   unfollowStore,
   updateCartItemQuantity,
   updateCoupon,
+  updateCustomerRelationship,
   updateDeliverySettings,
   updateOrderPaymentStatus,
   updateOrderStatus,
@@ -71,7 +74,7 @@ export {
   updateAdminPlan,
   validateCoupon,
 } from './localMockStore'
-export type { CreateStorePayload, CustomerSummary, RepeatOrderResult, ValidateCouponResult, ReportPeriod, StoreReportSummary, TopProduct, CouponPerformance, PaymentStatusEntry, OrderStatusEntry, OnboardingStep, SellerOnboardingStatus } from './localMockStore'
+export type { CreateStorePayload, CustomerRelationship, CustomerSummary, RepeatOrderResult, ValidateCouponResult, ReportPeriod, StoreReportSummary, TopProduct, CouponPerformance, PaymentStatusEntry, OrderStatusEntry, OnboardingStep, SellerOnboardingStatus } from './localMockStore'
 
 export {
   getCouponPerformanceByStore,
