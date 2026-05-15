@@ -205,6 +205,8 @@ export function StorefrontCheckoutPage() {
           setDeliveryMode('delivery')
         } else if (settings?.combineDelivery) {
           setDeliveryMode('arrange')
+        } else {
+          setDeliveryMode('pickup') // no mode configured, default shown but not enforced
         }
       })
     })

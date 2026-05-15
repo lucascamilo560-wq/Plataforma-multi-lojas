@@ -312,7 +312,7 @@ export function StoreOrdersPage() {
                   {order.deliveryType === 'pickup' && order.pickupAddress && (
                     <small className="muted">📍 Retirada em: {order.pickupAddress}</small>
                   )}
-                  {order.deliveryType === 'delivery' && order.estimatedMinutes != null && order.estimatedMinutes > 0 && (
+                  {order.deliveryType === 'delivery' && order.estimatedMinutes != null && (
                     <small className="muted">⏱ Tempo estimado: ~{order.estimatedMinutes} min</small>
                   )}
                   {order.deliveryType === 'arrange' && (
