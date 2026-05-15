@@ -4,16 +4,34 @@ import { Link, useLocation } from 'react-router-dom'
 import { ActionTile } from '../../components/ui/ActionTile'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
+import { Icon } from '../../components/ui/Icon'
 import { KpiCard } from '../../components/ui/KpiCard'
-import { SectionHeader } from '../../components/ui/SectionHeader'
+import { APP_BRAND } from '../../config/brand'
 import { useMockSession } from '../../hooks/useMockSession'
-import { getProductsByStore, getSellerOnboardingStatus, getStoreById, getStoreCustomers, getStoreOrders, getStoreReviewSummary } from '../../services/mockData'
+import {
+  getProductsByStore,
+  getSellerOnboardingStatus,
+  getStoreById,
+  getStoreCustomers,
+  getStoreOrders,
+  getStoreReviewSummary,
+} from '../../services/mockData'
 import type { CustomerSummary, SellerOnboardingStatus, StoreReviewSummary } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 import { buildPublicUrl } from '../../utils/publicUrl'
+import { shareOrCopy } from '../../utils/share'
 import { SellerOnboardingChecklist } from './SellerOnboardingChecklist'
+
+interface Recommendation {
+  id: string
+  icon: Parameters<typeof Icon>[0]['name']
+  title: string
+  description: string
+  to: string
+  label: string
+}
 
 export function StoreDashboardPage() {
   const { storeId } = useMockSession()
@@ -74,36 +92,95 @@ export function StoreDashboardPage() {
     return customers.reduce((best, c) => (c.totalSpent > best.totalSpent ? c : best))
   }, [customers])
 
+  const activeProducts = useMemo(() => products.filter((p) => p.isActive).length, [products])
+
   const storeTheme = getStoreTheme(store)
   const storefrontPath = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
   const storefrontUrl = buildPublicUrl(storefrontPath)
 
   const handleShareStore = async () => {
-    try {
-      setShareMessage('')
-      await window.navigator.clipboard.writeText(storefrontUrl)
+    setShareMessage('')
+    const result = await shareOrCopy({
+      title: `${store?.name ?? 'Minha loja'} — ${APP_BRAND.name}`,
+      text: `Confira a vitrine de ${store?.name ?? 'minha loja'}`,
+      url: storefrontUrl,
+    })
+    if (result === 'shared' || result === 'copied') {
       setShareMessage('Link da vitrine copiado para compartilhar.')
-    } catch {
+    } else if (result === 'failed') {
       setShareMessage('Não foi possível copiar automaticamente. Use o botão de ver vitrine para abrir o link.')
     }
   }
 
+  const recommendations = useMemo<Recommendation[]>(() => {
+    const list: Recommendation[] = []
+
+    if (onboardingStatus && !onboardingStatus.isReadyToShare) {
+      const nextStep = onboardingStatus.steps.find((s) => !s.completed)
+      list.push({
+        id: 'onboarding',
+        icon: 'check',
+        title: 'Concluir configuração da loja',
+        description: 'Complete as etapas para começar a vender com mais resultado.',
+        to: nextStep?.to ?? '/lojista/minha-loja',
+        label: 'Continuar',
+      })
+    }
+
+    if (activeProducts === 0) {
+      list.push({
+        id: 'products',
+        icon: 'package',
+        title: 'Cadastrar primeiro produto',
+        description: 'Sua vitrine está vazia. Adicione produtos para começar a vender.',
+        to: '/lojista/produtos/novo',
+        label: 'Adicionar produto',
+      })
+    }
+
+    if (pendingOrders > 0) {
+      list.push({
+        id: 'orders',
+        icon: 'cart',
+        title: 'Responder pedidos pendentes',
+        description: `${pendingOrders} pedido${pendingOrders > 1 ? 's' : ''} aguardando sua resposta.`,
+        to: '/lojista/pedidos',
+        label: 'Ver pedidos',
+      })
+    }
+
+    if (toBeArrangedPayments > 0) {
+      list.push({
+        id: 'payments',
+        icon: 'wallet',
+        title: 'Combinar pagamentos',
+        description: `${toBeArrangedPayments} pagamento${toBeArrangedPayments > 1 ? 's' : ''} aguardando combinação.`,
+        to: '/lojista/pedidos',
+        label: 'Ver pedidos',
+      })
+    }
+
+    if (list.length === 0) {
+      list.push({
+        id: 'share',
+        icon: 'storefront',
+        title: 'Compartilhar vitrine e vender mais',
+        description: 'Sua loja está pronta. Envie o link para seus clientes e aumente suas vendas.',
+        to: '/lojista/minha-vitrine',
+        label: 'Ver minha vitrine',
+      })
+    }
+
+    return list
+  }, [onboardingStatus, activeProducts, pendingOrders, toBeArrangedPayments])
+
   return (
     <section className="stack-xl">
-      <SectionHeader
-        kicker="Painel do lojista"
-        icon="chart"
-        title={store?.name ? `Painel da loja ${store.name}` : 'Painel da sua loja'}
-        description="Acompanhe suas vendas, produtos e pedidos em tempo real."
-      />
-
-      {/* Store header card with gradient based on store theme */}
+      {/* ─── Central da loja – header premium ─── */}
       <article
-        className="card card-default seller-store-header"
+        className="seller-store-header"
         style={{
-          background: `linear-gradient(135deg, ${storeTheme.primaryColor} 0%, ${storeTheme.accentColor}aa 100%)`,
-          color: '#fff',
-          border: 'none',
+          background: `linear-gradient(135deg, ${storeTheme.primaryColor} 0%, ${storeTheme.accentColor}cc 100%)`,
         }}
       >
         {storeTheme.coverUrl && (
@@ -113,58 +190,90 @@ export function StoreDashboardPage() {
           />
         )}
         <div className="seller-store-header-content">
-          <div className="inline-info">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              {storeTheme.logoUrl && (
-                <img
-                  src={storeTheme.logoUrl}
-                  alt={`Logo da loja ${store?.name ?? 'Minha loja'}`}
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '14px',
-                    border: '2px solid rgba(255,255,255,0.5)',
-                    objectFit: 'cover',
-                    background: 'rgba(255,255,255,0.15)',
-                  }}
-                />
+          {/* HubMascate kicker */}
+          <p className="seller-hub-kicker">
+            <Icon name="hub" className="icon-sm" style={{ opacity: 0.75 }} />
+            {APP_BRAND.sellerKicker}
+          </p>
+
+          {/* Identity row */}
+          <div className="seller-header-identity">
+            {storeTheme.logoUrl ? (
+              <img
+                src={storeTheme.logoUrl}
+                alt={`Logo da loja ${store?.name ?? 'Minha loja'}`}
+                className="seller-header-logo"
+              />
+            ) : (
+              <span className="seller-header-logo-placeholder">
+                <Icon name="storefront" className="icon-md" style={{ opacity: 0.8 }} />
+              </span>
+            )}
+            <div className="seller-header-info">
+              <h1 className="seller-header-name">{store?.name ?? 'Minha loja'}</h1>
+              {(store?.category || store?.city) && (
+                <p className="seller-header-meta">
+                  {[store.category, store.city].filter(Boolean).join(' · ')}
+                </p>
               )}
-              <div>
-                <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>{store?.name ?? 'Minha loja'}</h2>
-                <div style={{ marginTop: '0.25rem' }}>
-                  <Badge variant={store?.isActive ? 'success' : 'muted'}>
-                    {store?.isActive ? 'Loja ativa' : 'Loja pausada'}
-                  </Badge>
-                </div>
+              <div style={{ marginTop: '0.35rem' }}>
+                <Badge variant={store?.isActive ? 'success' : 'muted'}>
+                  {store?.isActive ? '● Loja ativa' : '○ Loja pausada'}
+                </Badge>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-              <Link to={storefrontPath}>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  style={{ background: 'rgba(255,255,255,0.9)', color: storeTheme.primaryColor } as React.CSSProperties}
-                >
-                  Ver vitrine
-                </Button>
-              </Link>
+          </div>
+
+          {/* Action buttons */}
+          <div className="seller-header-actions">
+            <Link to={storefrontPath}>
+              <Button
+                variant="secondary"
+                size="sm"
+                style={{ background: 'rgba(255,255,255,0.92)', color: storeTheme.primaryColor } as React.CSSProperties}
+              >
+                <Icon name="storefront" className="icon-sm" />
+                Ver vitrine
+              </Button>
+            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleShareStore}
+              style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.38)' } as React.CSSProperties}
+            >
+              <Icon name="hub" className="icon-sm" />
+              Compartilhar
+            </Button>
+            <Link to="/lojista/produtos/novo">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleShareStore}
-                style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.4)' } as React.CSSProperties}
+                style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.38)' } as React.CSSProperties}
               >
-                Compartilhar
+                <Icon name="package" className="icon-sm" />
+                Novo produto
               </Button>
-            </div>
+            </Link>
+            <Link to="/lojista/pedidos">
+              <Button
+                variant="ghost"
+                size="sm"
+                style={{ color: '#fff', borderColor: 'rgba(255,255,255,0.38)' } as React.CSSProperties}
+              >
+                <Icon name="cart" className="icon-sm" />
+                Pedidos
+              </Button>
+            </Link>
           </div>
+
           {shareMessage && (
-            <p style={{ margin: 0, fontSize: '0.84rem', opacity: 0.88 }}>{shareMessage}</p>
+            <p style={{ margin: 0, fontSize: '0.84rem', opacity: 0.9 }}>{shareMessage}</p>
           )}
         </div>
       </article>
 
-      {/* Onboarding checklist */}
+      {/* ─── Loja recém-criada ─── */}
       {justCreated && (
         <article
           className="card card-default"
@@ -179,6 +288,7 @@ export function StoreDashboardPage() {
         </article>
       )}
 
+      {/* ─── Onboarding ─── */}
       {onboardingStatus && (
         <SellerOnboardingChecklist
           status={onboardingStatus}
@@ -188,49 +298,172 @@ export function StoreDashboardPage() {
         />
       )}
 
-      <div className="grid grid-metrics">
-        <KpiCard label="Pedidos hoje" value={ordersToday.length} icon="clock" />
-        <KpiCard label="Pedidos pendentes" value={pendingOrders} icon="cart" />
-        <KpiCard label="Pagamentos a combinar" value={toBeArrangedPayments} icon="wallet" />
-        <KpiCard label="Faturamento confirmado" value={formatCurrency(confirmedRevenue)} icon="wallet" />
-        <KpiCard label="A receber" value={formatCurrency(pendingRevenue)} icon="tag" />
-        <KpiCard label="Produtos" value={products.length} icon="package" />
-        <KpiCard label="Clientes únicos" value={uniqueCustomers} icon="user" />
-        <KpiCard label="Clientes recorrentes" value={recurringCustomers} icon="user" />
-        <KpiCard label="Ticket médio" value={formatCurrency(averageTicket)} icon="wallet" />
-        {topCustomer && (
-          <KpiCard label="Maior comprador" value={topCustomer.name} icon="user" />
-        )}
+      {/* ─── Hoje na loja ─── */}
+      <div className="stack">
+        <p className="seller-section-label">
+          <Icon name="clock" className="icon-sm" />
+          Hoje na loja
+        </p>
+        <div className="seller-today-strip">
+          <div className="seller-today-item">
+            <span className="seller-today-value">{ordersToday.length}</span>
+            <span className="seller-today-label">Pedidos hoje</span>
+          </div>
+          <div className="seller-today-item">
+            <span className={`seller-today-value${pendingOrders > 0 ? ' seller-today-value--alert' : ''}`}>
+              {pendingOrders}
+            </span>
+            <span className="seller-today-label">Pendentes</span>
+          </div>
+          <div className="seller-today-item">
+            <span className="seller-today-value">{formatCurrency(pendingRevenue)}</span>
+            <span className="seller-today-label">A receber</span>
+          </div>
+          <div className="seller-today-item">
+            <span className={`seller-today-value${toBeArrangedPayments > 0 ? ' seller-today-value--alert' : ''}`}>
+              {toBeArrangedPayments}
+            </span>
+            <span className="seller-today-label">A combinar</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Próximas ações recomendadas ─── */}
+      <div className="stack">
+        <p className="seller-section-label">
+          <Icon name="hub" className="icon-sm" />
+          Próximas ações recomendadas
+        </p>
+        <div className="seller-rec-list">
+          {recommendations.map((rec) => (
+            <div key={rec.id} className="seller-rec-item">
+              <span className="seller-rec-icon">
+                <Icon name={rec.icon} className="icon-md" />
+              </span>
+              <div className="seller-rec-content">
+                <p className="seller-rec-title">{rec.title}</p>
+                <p className="seller-rec-description">{rec.description}</p>
+              </div>
+              <Link to={rec.to} style={{ flexShrink: 0 }}>
+                <Button variant="accent" size="sm">
+                  {rec.label}
+                  <Icon name="arrowRight" className="icon-sm" />
+                </Button>
+              </Link>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ─── KPIs agrupados ─── */}
+      <div className="stack-lg">
+        {/* Operação */}
+        <div className="stack">
+          <p className="seller-section-label">
+            <Icon name="chart" className="icon-sm" />
+            Operação
+          </p>
+          <div className="grid grid-metrics">
+            <KpiCard label="Pedidos hoje" value={ordersToday.length} icon="clock" />
+            <KpiCard label="Pedidos pendentes" value={pendingOrders} icon="cart" />
+            <KpiCard label="Pagamentos a combinar" value={toBeArrangedPayments} icon="wallet" />
+          </div>
+        </div>
+
+        {/* Financeiro */}
+        <div className="stack">
+          <p className="seller-section-label">
+            <Icon name="wallet" className="icon-sm" />
+            Financeiro
+          </p>
+          <div className="grid grid-metrics">
+            <KpiCard label="Faturamento confirmado" value={formatCurrency(confirmedRevenue)} icon="wallet" />
+            <KpiCard label="A receber" value={formatCurrency(pendingRevenue)} icon="tag" />
+            <KpiCard label="Ticket médio" value={formatCurrency(averageTicket)} icon="chart" />
+          </div>
+        </div>
+
+        {/* Catálogo e clientes */}
+        <div className="stack">
+          <p className="seller-section-label">
+            <Icon name="user" className="icon-sm" />
+            Catálogo e clientes
+          </p>
+          <div className="grid grid-metrics">
+            <KpiCard label="Produtos" value={products.length} icon="package" />
+            <KpiCard label="Clientes únicos" value={uniqueCustomers} icon="user" />
+            <KpiCard label="Clientes recorrentes" value={recurringCustomers} icon="user" />
+            {topCustomer && (
+              <KpiCard label="Maior comprador" value={topCustomer.name} icon="star" />
+            )}
+          </div>
+        </div>
+
+        {/* Reputação */}
         {reviewSummary && reviewSummary.totalReviews > 0 && (
-          <KpiCard
-            label="Avaliação média"
-            value={`⭐ ${reviewSummary.averageRating.toFixed(1)} · ${reviewSummary.totalReviews} avaliação${reviewSummary.totalReviews > 1 ? 'ões' : ''}`}
-            icon="sparkles"
-          />
+          <div className="stack">
+            <p className="seller-section-label">
+              <Icon name="star" className="icon-sm" />
+              Reputação
+            </p>
+            <div className="grid grid-metrics">
+              <KpiCard
+                label="Avaliação média"
+                value={`⭐ ${reviewSummary.averageRating.toFixed(1)} · ${reviewSummary.totalReviews} avaliação${reviewSummary.totalReviews > 1 ? 'ões' : ''}`}
+                icon="star"
+              />
+            </div>
+          </div>
         )}
       </div>
 
-      <SectionHeader
-        kicker="Atalhos"
-        icon="sparkles"
-        title="Ferramentas da sua loja"
-        description="Acesse as áreas que você usa no dia a dia para vender mais."
-      />
+      {/* ─── Ferramentas organizadas por categoria ─── */}
+      <div className="stack-lg">
+        <p className="seller-section-label seller-section-label--lg">
+          <Icon name="hub" className="icon-sm" />
+          Ferramentas da sua loja
+        </p>
 
-      <div className="grid grid-tiles">
-        <ActionTile title="Produtos" description="Gerencie catálogo" icon="package" to="/lojista/produtos" />
-        <ActionTile title="Pedidos" description="Acompanhe entregas" icon="cart" to="/lojista/pedidos" />
-        <ActionTile title="Promoções" description="Crie campanhas" icon="tag" to="/lojista/promocoes" />
-        <ActionTile title="Cupons" description="Controle descontos" icon="tag" to="/lojista/cupons" />
-        <ActionTile title="Clientes" description="Veja sua base" icon="user" to="/lojista/clientes" />
-        <ActionTile title="Pagamentos" description="Formas aceitas" icon="wallet" to="/lojista/pagamentos" />
-        <ActionTile title="Entrega/Retirada" description="Defina logística" icon="clock" to="/lojista/entrega" />
-        <ActionTile title="Minha marca" description="Visual da loja" icon="palette" to="/lojista/marca" />
-        <ActionTile title="Minha loja" description="Dados e configurações" icon="storefront" to="/lojista/minha-loja" />
-        <ActionTile title="Minha vitrine" description="Link, QR Code e prévia" icon="storefront" to="/lojista/minha-vitrine" />
-        <ActionTile title="Relatórios" description="Análises da loja" icon="chart" to="/lojista/relatorios" />
-        <ActionTile title="Avaliações" description="Feedback de clientes" icon="sparkles" to="/lojista/avaliacoes" />
-        <ActionTile title="Ajuda" description="Suporte e orientações" icon="check" to="/lojista/ajuda" />
+        {/* Vender */}
+        <div className="stack">
+          <p className="seller-tiles-cat-label">Vender</p>
+          <div className="grid grid-tiles">
+            <ActionTile title="Produtos" description="Gerencie catálogo" icon="package" to="/lojista/produtos" />
+            <ActionTile title="Promoções" description="Crie campanhas" icon="tag" to="/lojista/promocoes" />
+            <ActionTile title="Cupons" description="Controle descontos" icon="tag" to="/lojista/cupons" />
+            <ActionTile title="Minha vitrine" description="Link, QR Code e prévia" icon="storefront" to="/lojista/minha-vitrine" />
+          </div>
+        </div>
+
+        {/* Atender */}
+        <div className="stack">
+          <p className="seller-tiles-cat-label">Atender</p>
+          <div className="grid grid-tiles">
+            <ActionTile title="Pedidos" description="Acompanhe entregas" icon="cart" to="/lojista/pedidos" />
+            <ActionTile title="Clientes" description="Veja sua base" icon="user" to="/lojista/clientes" />
+            <ActionTile title="Avaliações" description="Feedback de clientes" icon="star" to="/lojista/avaliacoes" />
+          </div>
+        </div>
+
+        {/* Configurar */}
+        <div className="stack">
+          <p className="seller-tiles-cat-label">Configurar</p>
+          <div className="grid grid-tiles">
+            <ActionTile title="Minha loja" description="Dados e configurações" icon="storefront" to="/lojista/minha-loja" />
+            <ActionTile title="Minha marca" description="Visual da loja" icon="palette" to="/lojista/marca" />
+            <ActionTile title="Pagamentos" description="Formas aceitas" icon="wallet" to="/lojista/pagamentos" />
+            <ActionTile title="Entrega/Retirada" description="Defina logística" icon="clock" to="/lojista/entrega" />
+          </div>
+        </div>
+
+        {/* Acompanhar */}
+        <div className="stack">
+          <p className="seller-tiles-cat-label">Acompanhar</p>
+          <div className="grid grid-tiles">
+            <ActionTile title="Relatórios" description="Análises da loja" icon="chart" to="/lojista/relatorios" />
+            <ActionTile title="Ajuda" description="Suporte e orientações" icon="shield" to="/lojista/ajuda" />
+          </div>
+        </div>
       </div>
     </section>
   )

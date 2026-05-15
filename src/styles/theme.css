@@ -1032,6 +1032,8 @@ img {
   border-radius: var(--radius-lg);
   overflow: hidden;
   position: relative;
+  color: #fff;
+  box-shadow: var(--shadow-lift);
 }
 
 .seller-store-header-bg {
@@ -1262,5 +1264,211 @@ img {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+/* ===== Seller Dashboard Premium ===== */
+
+/* Enhanced store header */
+.seller-store-header-content {
+  padding: 1.4rem 1.4rem 1.2rem;
+  gap: 1rem;
+}
+
+.seller-hub-kicker {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.72);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.seller-header-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.seller-header-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  border: 2.5px solid rgba(255, 255, 255, 0.55);
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.seller-header-logo-placeholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.18);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.seller-header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: #fff;
+}
+
+.seller-header-name {
+  margin: 0;
+  font-size: clamp(1.2rem, 4vw, 1.6rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.seller-header-meta {
+  margin: 0;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 500;
+}
+
+.seller-header-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+/* Section labels */
+.seller-section-label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.seller-section-label--lg {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+
+/* Today strip */
+.seller-today-strip {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.7rem;
+}
+
+.seller-today-item {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.seller-today-value {
+  font-size: clamp(1.3rem, 4vw, 1.8rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.seller-today-value--alert {
+  color: var(--warning);
+}
+
+.seller-today-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Recommendations */
+.seller-rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.seller-rec-item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.seller-rec-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent-violet) 12%, var(--surface));
+  color: var(--accent-violet);
+  flex-shrink: 0;
+}
+
+.seller-rec-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.seller-rec-title {
+  margin: 0 0 0.18rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.seller-rec-description {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Tile category label */
+.seller-tiles-cat-label {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  padding: 0.3rem 0.1rem;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+@media (min-width: 740px) {
+  .seller-today-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .seller-store-header-content {
+    padding: 1.6rem 1.8rem 1.4rem;
+  }
+
+  .seller-rec-item {
+    padding: 1rem 1.2rem;
+  }
 }
 
