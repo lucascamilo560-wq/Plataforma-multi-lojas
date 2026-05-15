@@ -5,11 +5,23 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Icon } from '../../components/ui/Icon'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { buildOrderTimeline, derivePaymentMethodKey, getOrderWithStore } from '../../services/mockData'
+import { buildOrderTimeline, createOrUpdateReview, derivePaymentMethodKey, getOrderWithStore, getReviewByOrder } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, OrderPaymentMethod, OrderStatus, PaymentStatus, Store } from '../../types'
+import type { StoreReview } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 import { OrderTimeline } from '../orders/components/OrderTimeline'
+
+const REVIEW_TAGS = [
+  'Atendimento rápido',
+  'Produto bom',
+  'Entrega boa',
+  'Preço justo',
+  'Demorou',
+  'Produto diferente',
+  'Atendimento ruim',
+  'Problema na entrega',
+]
 
 const statusLabel: Record<OrderStatus, string> = {
   pending: 'Aguardando confirmação',
@@ -50,6 +62,12 @@ export function CustomerOrderDetailPage() {
   const [order, setOrder] = useState<Order | undefined>()
   const [store, setStore] = useState<Store | undefined>()
   const [pixCopied, setPixCopied] = useState(false)
+  const [review, setReview] = useState<StoreReview | undefined>()
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewTags, setReviewTags] = useState<string[]>([])
+  const [reviewSaved, setReviewSaved] = useState(false)
+  const [reviewEditing, setReviewEditing] = useState(false)
 
   useEffect(() => {
     getOrderWithStore(orderId).then((result) => {
@@ -58,7 +76,38 @@ export function CustomerOrderDetailPage() {
         setStore(result.store)
       }
     })
+    getReviewByOrder(orderId).then((existing) => {
+      if (existing) {
+        setReview(existing)
+        setReviewRating(existing.rating)
+        setReviewComment(existing.comment ?? '')
+        setReviewTags(existing.tags ?? [])
+      }
+    })
   }, [orderId])
+
+  const handleToggleTag = (tag: string) => {
+    setReviewTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    )
+  }
+
+  const handleSaveReview = async () => {
+    if (!order || reviewRating < 1) return
+    const saved = await createOrUpdateReview({
+      storeId: order.store_id,
+      orderId: order.id,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      rating: reviewRating,
+      comment: reviewComment.trim() || undefined,
+      tags: reviewTags.length ? reviewTags : undefined,
+    })
+    setReview(saved)
+    setReviewEditing(false)
+    setReviewSaved(true)
+    setTimeout(() => setReviewSaved(false), 3000)
+  }
 
   if (!order) {
     return (
@@ -221,6 +270,154 @@ export function CustomerOrderDetailPage() {
             </Link>
           </div>
         </Card>
+
+        {/* Review block */}
+        {order.status === 'delivered' ? (
+          <Card
+            title={review && !reviewEditing ? 'Sua avaliação' : 'Avaliar pedido'}
+            subtitle={review && !reviewEditing ? 'Obrigado pelo seu feedback!' : 'Como foi a sua experiência?'}
+            variant="layered"
+          >
+            {review && !reviewEditing ? (
+              <div className="stack" style={{ gap: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      style={{ fontSize: '1.5rem', color: star <= review.rating ? '#f59e0b' : 'var(--color-border)' }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                {review.tags && review.tags.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {review.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        style={{
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '999px',
+                          background: 'var(--color-surface-raised, #f3f4f6)',
+                          fontSize: '0.8rem',
+                          color: 'var(--text-secondary)',
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {review.comment && <p className="muted" style={{ margin: 0 }}>{review.comment}</p>}
+                {reviewSaved && (
+                  <p style={{ color: 'var(--color-success, #16a34a)', margin: 0, fontSize: '0.88rem' }}>
+                    ✓ Avaliação salva!
+                  </p>
+                )}
+                <Button variant="secondary" size="sm" onClick={() => setReviewEditing(true)}>
+                  Editar avaliação
+                </Button>
+              </div>
+            ) : (
+              <div className="stack" style={{ gap: '0.75rem' }}>
+                <div>
+                  <p className="muted" style={{ margin: '0 0 0.4rem', fontSize: '0.88rem' }}>Nota:</p>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setReviewRating(star)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '0.1rem',
+                          fontSize: '2rem',
+                          color: star <= reviewRating ? '#f59e0b' : 'var(--color-border)',
+                          lineHeight: 1,
+                        }}
+                        aria-label={`${star} estrela${star > 1 ? 's' : ''}`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="muted" style={{ margin: '0 0 0.4rem', fontSize: '0.88rem' }}>Tags rápidas:</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {REVIEW_TAGS.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleToggleTag(tag)}
+                        style={{
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '999px',
+                          border: `1px solid ${reviewTags.includes(tag) ? 'var(--color-accent, #3A86FF)' : 'var(--color-border)'}`,
+                          background: reviewTags.includes(tag) ? 'var(--color-accent, #3A86FF)' : 'transparent',
+                          color: reviewTags.includes(tag) ? '#fff' : 'var(--text-secondary)',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="muted" style={{ margin: '0 0 0.4rem', fontSize: '0.88rem' }}>Comentário (opcional):</p>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Conte como foi sua experiência..."
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '0.6rem',
+                      borderRadius: '0.5rem',
+                      border: '1px solid var(--color-border)',
+                      background: 'var(--color-surface-raised, #f9fafb)',
+                      fontSize: '0.9rem',
+                      resize: 'vertical',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+                {reviewSaved && (
+                  <p style={{ color: 'var(--color-success, #16a34a)', margin: 0, fontSize: '0.88rem' }}>
+                    ✓ Avaliação salva!
+                  </p>
+                )}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <Button
+                    variant="accent"
+                    onClick={handleSaveReview}
+                    disabled={reviewRating < 1}
+                  >
+                    Salvar avaliação
+                  </Button>
+                  {reviewEditing && (
+                    <Button variant="secondary" onClick={() => setReviewEditing(false)}>
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </Card>
+        ) : (
+          order.status !== 'cancelled' && (
+            <Card title="Avaliação" subtitle="" variant="layered">
+              <p className="muted" style={{ margin: 0, fontSize: '0.9rem' }}>
+                Você poderá avaliar este pedido após a entrega.
+              </p>
+            </Card>
+          )
+        )}
       </div>
     </section>
   )

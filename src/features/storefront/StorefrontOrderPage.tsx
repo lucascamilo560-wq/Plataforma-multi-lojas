@@ -309,6 +309,17 @@ export function StorefrontOrderPage() {
             <Link to={`/loja/${slug}`}>
               <Button variant="secondary">Continuar comprando</Button>
             </Link>
+
+            {order.status === 'delivered' && (
+              <Link to={`/cliente/pedidos/${order.id}`}>
+                <Button variant="accent">Avaliar pedido</Button>
+              </Link>
+            )}
+            {order.status !== 'delivered' && order.status !== 'cancelled' && (
+              <p className="muted" style={{ fontSize: '0.86rem', margin: 0 }}>
+                Após a entrega, você poderá avaliar sua experiência.
+              </p>
+            )}
           </div>
         </Card>
       </div>

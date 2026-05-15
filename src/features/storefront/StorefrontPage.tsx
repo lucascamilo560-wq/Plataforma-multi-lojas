@@ -11,10 +11,12 @@ import {
   getActivePromotionsByStore,
   getProductsByStore,
   getPublicStorefront,
+  getStoreReviewSummary,
   isStoreFollowed,
   registerStoreVisit,
 } from '../../services/mockData'
 import type { Promotion } from '../../services/localMockStore'
+import type { StoreReviewSummary } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import { getStoreOpenStatus } from '../../utils/storeStatus'
 import type { Product, Store } from '../../types'
@@ -42,6 +44,7 @@ export function StorefrontPage() {
   const [isFollowed, setIsFollowed] = useState(false)
   const [infoMessage, setInfoMessage] = useState('')
   const [activeTab, setActiveTab] = useState<StoreNavTab>('inicio')
+  const [reviewSummary, setReviewSummary] = useState<StoreReviewSummary | undefined>()
 
   useEffect(() => {
     let cancelled = false
@@ -68,6 +71,10 @@ export function StorefrontPage() {
       setProducts(nextProducts)
       setIsFollowed(followed)
       setPromotions(activePromos)
+
+      getStoreReviewSummary(nextStore.id).then((rs) => {
+        if (!cancelled) setReviewSummary(rs)
+      })
     }
 
     loadStorefront()
@@ -232,6 +239,11 @@ export function StorefrontPage() {
               })()}
               {store.category && (
                 <span className="store-vitrine-hero-category">{store.category}</span>
+              )}
+              {reviewSummary && reviewSummary.totalReviews > 0 && (
+                <span style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.92)' }}>
+                  ⭐ {reviewSummary.averageRating.toFixed(1)} · {reviewSummary.totalReviews} avaliação{reviewSummary.totalReviews > 1 ? 'ões' : ''}
+                </span>
               )}
             </div>
             {whatsappUrl && (
@@ -495,6 +507,11 @@ export function StorefrontPage() {
                 <Badge variant={store.isActive ? 'success' : 'muted'}>
                   {store.isActive ? 'Aberta' : 'Em breve'}
                 </Badge>
+                {reviewSummary && reviewSummary.totalReviews > 0 && (
+                  <Badge variant="muted">
+                    ⭐ {reviewSummary.averageRating.toFixed(1)} · {reviewSummary.totalReviews} avaliação{reviewSummary.totalReviews > 1 ? 'ões' : ''}
+                  </Badge>
+                )}
               </div>
               {whatsappUrl && (
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ alignSelf: 'flex-start' }}>

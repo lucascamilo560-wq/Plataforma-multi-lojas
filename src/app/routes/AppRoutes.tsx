@@ -26,6 +26,7 @@ import { SellerHelpPage } from '../../features/store-dashboard/SellerHelpPage'
 import { SellerPaymentsPage } from '../../features/store-dashboard/SellerPaymentsPage'
 import { SellerPromotionsPage } from '../../features/store-dashboard/SellerPromotionsPage'
 import { SellerReportsPage } from '../../features/store-dashboard/SellerReportsPage'
+import { SellerReviewsPage } from '../../features/store-dashboard/SellerReviewsPage'
 import { SellerStorePage } from '../../features/store-dashboard/SellerStorePage'
 import { SellerStorefrontPage } from '../../features/store-dashboard/SellerStorefrontPage'
 import { StorefrontCartPage } from '../../features/storefront/StorefrontCartPage'
@@ -130,6 +131,7 @@ export function AppRoutes() {
           <Route path="entrega" element={<SellerDeliveryPage />} />
           <Route path="marca" element={<SellerBrandPage />} />
           <Route path="relatorios" element={<SellerReportsPage />} />
+          <Route path="avaliacoes" element={<SellerReviewsPage />} />
           <Route path="ajuda" element={<SellerHelpPage />} />
         </Route>
       </Route>

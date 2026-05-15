@@ -10,6 +10,7 @@ import type {
   PlatformPlan,
   Product,
   Store,
+  StoreReview,
 } from '../types'
 
 export interface Coupon {
@@ -96,6 +97,9 @@ const STORAGE_KEYS = {
 
   // CRM do lojista
   customerRelationships: 'marketplace:crm:relationships',
+
+  // Avaliações pós-compra
+  reviews: 'marketplace:reviews',
 } as const
 
 const defaultStores: Store[] = [
@@ -2082,4 +2086,113 @@ export async function updateCustomerRelationship(
 export async function getCustomerRelationshipsByStore(storeId: string): Promise<CustomerRelationship[]> {
   const all = getCustomerRelationshipsCollection()
   return Promise.resolve(all.filter((r) => r.storeId === storeId))
+}
+
+// ---------------------------------------------------------------------------
+// Avaliações pós-compra
+// ---------------------------------------------------------------------------
+
+function getReviewsCollection(): StoreReview[] {
+  const raw = window.localStorage.getItem(STORAGE_KEYS.reviews)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as StoreReview[]) : []
+  } catch {
+    return []
+  }
+}
+
+function setReviewsCollection(reviews: StoreReview[]): void {
+  window.localStorage.setItem(STORAGE_KEYS.reviews, JSON.stringify(reviews))
+}
+
+export async function getReviewsByStore(storeId: string): Promise<StoreReview[]> {
+  const all = getReviewsCollection()
+  return Promise.resolve(
+    [...all.filter((r) => r.storeId === storeId)].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    ),
+  )
+}
+
+export async function getReviewByOrder(orderId: string): Promise<StoreReview | undefined> {
+  return Promise.resolve(getReviewsCollection().find((r) => r.orderId === orderId))
+}
+
+export interface CreateOrUpdateReviewPayload {
+  storeId: string
+  orderId: string
+  customerName: string
+  customerPhone?: string
+  rating: number
+  comment?: string
+  tags?: string[]
+}
+
+export async function createOrUpdateReview(payload: CreateOrUpdateReviewPayload): Promise<StoreReview> {
+  const normalizedRating = Math.min(5, Math.max(1, Math.round(payload.rating)))
+  const all = getReviewsCollection()
+  const now = new Date().toISOString()
+  const existingIndex = all.findIndex((r) => r.orderId === payload.orderId)
+
+  let review: StoreReview
+  if (existingIndex >= 0) {
+    review = {
+      ...all[existingIndex],
+      rating: normalizedRating,
+      comment: payload.comment?.trim() || undefined,
+      tags: payload.tags?.length ? payload.tags : undefined,
+      updatedAt: now,
+    }
+    const next = [...all]
+    next[existingIndex] = review
+    setReviewsCollection(next)
+  } else {
+    review = {
+      id: getNextId('review'),
+      storeId: payload.storeId,
+      orderId: payload.orderId,
+      customerName: payload.customerName,
+      customerPhone: payload.customerPhone?.trim() || undefined,
+      rating: normalizedRating,
+      comment: payload.comment?.trim() || undefined,
+      tags: payload.tags?.length ? payload.tags : undefined,
+      createdAt: now,
+      updatedAt: now,
+    }
+    setReviewsCollection([...all, review])
+  }
+
+  return Promise.resolve(review)
+}
+
+export interface StoreReviewSummary {
+  averageRating: number
+  totalReviews: number
+  ratingCounts: Record<1 | 2 | 3 | 4 | 5, number>
+  latestReviews: StoreReview[]
+}
+
+export async function getStoreReviewSummary(storeId: string): Promise<StoreReviewSummary> {
+  const reviews = getReviewsCollection().filter((r) => r.storeId === storeId)
+  const totalReviews = reviews.length
+  const ratingCounts: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+
+  let ratingSum = 0
+  for (const r of reviews) {
+    const rating = r.rating as 1 | 2 | 3 | 4 | 5
+    if (rating >= 1 && rating <= 5) {
+      ratingCounts[rating] = (ratingCounts[rating] ?? 0) + 1
+    }
+    ratingSum += r.rating
+  }
+
+  const averageRating = totalReviews > 0 ? Math.round((ratingSum / totalReviews) * 10) / 10 : 0
+
+  const latestReviews = [...reviews]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 10)
+
+  return Promise.resolve({ averageRating, totalReviews, ratingCounts, latestReviews })
 }
