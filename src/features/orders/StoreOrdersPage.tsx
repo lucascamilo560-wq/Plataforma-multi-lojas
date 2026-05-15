@@ -241,7 +241,15 @@ export function StoreOrdersPage() {
               <div className="inline-info" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
                 <Badge variant={getOrderBadgeVariant(order.status)}>{statusLabel[order.status]}</Badge>
                 <Badge variant={getPaymentBadgeVariant(order.paymentStatus)}>{paymentStatusLabel[order.paymentStatus]}</Badge>
-                <Badge variant="muted">{order.deliveryType === 'pickup' ? 'Retirada' : 'Entrega'}</Badge>
+                <Badge variant="muted">
+                  {order.deliveryType === 'pickup'
+                    ? '🏪 Retirada'
+                    : order.deliveryType === 'arrange'
+                      ? '💬 Combinar entrega'
+                      : order.deliveryType === 'delivery'
+                        ? '🛵 Entrega'
+                        : '—'}
+                </Badge>
                 {order.paymentMethod && <Badge variant="muted">{order.paymentMethod}</Badge>}
               </div>
 
@@ -300,6 +308,15 @@ export function StoreOrdersPage() {
                   <small className="muted">Subtotal: {formatCurrency(order.subtotal ?? order.total)}</small>
                   {order.deliveryFee != null && order.deliveryFee > 0 && (
                     <small className="muted">Entrega: {formatCurrency(order.deliveryFee)}</small>
+                  )}
+                  {order.deliveryType === 'pickup' && order.pickupAddress && (
+                    <small className="muted">📍 Retirada em: {order.pickupAddress}</small>
+                  )}
+                  {order.deliveryType === 'delivery' && order.estimatedMinutes != null && order.estimatedMinutes > 0 && (
+                    <small className="muted">⏱ Tempo estimado: ~{order.estimatedMinutes} min</small>
+                  )}
+                  {order.deliveryType === 'arrange' && (
+                    <small className="muted">💬 Entrega a combinar com o cliente.</small>
                   )}
                   {order.couponCode && (
                     <small className="muted" style={{ color: 'var(--color-success, #16a34a)' }}>

@@ -1019,7 +1019,7 @@ export interface CreateOrderPayload {
   customerPhone?: string
   address?: string
   notes?: string
-  deliveryType?: 'delivery' | 'pickup'
+  deliveryType?: 'delivery' | 'pickup' | 'arrange'
   paymentMethod?: string
   paymentMethodKey?: OrderPaymentMethod
   paymentInstructions?: string
@@ -1027,6 +1027,8 @@ export interface CreateOrderPayload {
   pixKey?: string
   couponCode?: string
   deliveryFee?: number
+  pickupAddress?: string
+  estimatedMinutes?: number
 }
 
 function derivePaymentStatus(paymentMethodKey?: OrderPaymentMethod, paymentMethodName?: string): PaymentStatus {
@@ -1106,6 +1108,8 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
     total,
     status: 'pending',
     paymentStatus,
+    pickupAddress: payload.pickupAddress,
+    estimatedMinutes: payload.estimatedMinutes,
     createdAt: new Date().toISOString(),
   }
 
