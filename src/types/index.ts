@@ -162,3 +162,16 @@ export interface PlatformPlan {
   features: string[]
   isActive: boolean
 }
+
+export interface StoreReview {
+  id: string
+  storeId: string
+  orderId: string
+  customerName: string
+  customerPhone?: string
+  rating: number
+  comment?: string
+  tags?: string[]
+  createdAt: string
+  updatedAt: string
+}

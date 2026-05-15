@@ -7,8 +7,8 @@ import { Button } from '../../components/ui/Button'
 import { KpiCard } from '../../components/ui/KpiCard'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { useMockSession } from '../../hooks/useMockSession'
-import { getProductsByStore, getSellerOnboardingStatus, getStoreById, getStoreCustomers, getStoreOrders } from '../../services/mockData'
-import type { CustomerSummary, SellerOnboardingStatus } from '../../services/mockData'
+import { getProductsByStore, getSellerOnboardingStatus, getStoreById, getStoreCustomers, getStoreOrders, getStoreReviewSummary } from '../../services/mockData'
+import type { CustomerSummary, SellerOnboardingStatus, StoreReviewSummary } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
@@ -24,6 +24,7 @@ export function StoreDashboardPage() {
   const [customers, setCustomers] = useState<CustomerSummary[]>([])
   const [shareMessage, setShareMessage] = useState('')
   const [onboardingStatus, setOnboardingStatus] = useState<SellerOnboardingStatus | undefined>()
+  const [reviewSummary, setReviewSummary] = useState<StoreReviewSummary | undefined>()
 
   const justCreated = (location.state as { justCreated?: boolean } | null)?.justCreated === true
 
@@ -33,6 +34,7 @@ export function StoreDashboardPage() {
     getStoreById(storeId).then(setStore)
     getStoreCustomers(storeId).then(setCustomers)
     getSellerOnboardingStatus(storeId).then(setOnboardingStatus)
+    getStoreReviewSummary(storeId).then(setReviewSummary)
   }, [storeId])
 
   const todayStr = new Date().toDateString()
@@ -199,6 +201,13 @@ export function StoreDashboardPage() {
         {topCustomer && (
           <KpiCard label="Maior comprador" value={topCustomer.name} icon="user" />
         )}
+        {reviewSummary && reviewSummary.totalReviews > 0 && (
+          <KpiCard
+            label="Avaliação média"
+            value={`⭐ ${reviewSummary.averageRating.toFixed(1)} · ${reviewSummary.totalReviews} avaliação${reviewSummary.totalReviews > 1 ? 'ões' : ''}`}
+            icon="sparkles"
+          />
+        )}
       </div>
 
       <SectionHeader
@@ -220,6 +229,7 @@ export function StoreDashboardPage() {
         <ActionTile title="Minha loja" description="Dados e configurações" icon="storefront" to="/lojista/minha-loja" />
         <ActionTile title="Minha vitrine" description="Link, QR Code e prévia" icon="storefront" to="/lojista/minha-vitrine" />
         <ActionTile title="Relatórios" description="Análises da loja" icon="chart" to="/lojista/relatorios" />
+        <ActionTile title="Avaliações" description="Feedback de clientes" icon="sparkles" to="/lojista/avaliacoes" />
         <ActionTile title="Ajuda" description="Suporte e orientações" icon="check" to="/lojista/ajuda" />
       </div>
     </section>
