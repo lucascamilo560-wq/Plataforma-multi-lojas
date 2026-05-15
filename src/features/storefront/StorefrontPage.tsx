@@ -16,6 +16,7 @@ import {
 } from '../../services/mockData'
 import type { Promotion } from '../../services/localMockStore'
 import { getStoreTheme } from '../../styles/storeTheme'
+import { getStoreOpenStatus } from '../../utils/storeStatus'
 import type { Product, Store } from '../../types'
 
 const FOLLOW_SUCCESS_MESSAGE = 'Loja salva! Agora você acompanha pedidos e novidades.'
@@ -204,9 +205,27 @@ export function StorefrontPage() {
               </div>
             </div>
             <div className="store-vitrine-hero-meta">
-              <Badge variant={store.isActive ? 'success' : 'muted'}>
-                {store.isActive ? '● Aberta agora' : '○ Em breve'}
-              </Badge>
+              {(() => {
+                const openStatus = getStoreOpenStatus(store)
+                const badgeVariant: 'success' | 'muted' | 'danger' = openStatus.isOpenNow ? 'success' : 'muted'
+                return (
+                  <>
+                    <Badge variant={badgeVariant}>
+                      {openStatus.isOpenNow ? '● ' : '○ '}{openStatus.statusLabel}
+                    </Badge>
+                    {!openStatus.isOpenNow && openStatus.nextOpeningLabel && (
+                      <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)' }}>
+                        {openStatus.nextOpeningLabel}
+                      </span>
+                    )}
+                    {!openStatus.isOpenNow && openStatus.canAcceptOrders && (
+                      <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.85)' }}>
+                        Aceita pedidos fora do horário
+                      </span>
+                    )}
+                  </>
+                )
+              })()}
               {store.category && (
                 <span className="store-vitrine-hero-category">{store.category}</span>
               )}
@@ -222,6 +241,32 @@ export function StorefrontPage() {
           </div>
         </div>
       )}
+
+      {/* Store Status Notice (when closed) */}
+      {(() => {
+        const openStatus = getStoreOpenStatus(store)
+        if (openStatus.isOpenNow) return null
+        return (
+          <div style={{
+            padding: '0.75rem 1rem',
+            background: openStatus.statusLabel === 'Em férias' ? 'var(--color-warning-subtle, #fffbeb)' : 'var(--color-surface-raised, #f9fafb)',
+            borderBottom: '1px solid var(--color-border)',
+            fontSize: '0.88rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            color: 'var(--text-secondary)',
+          }}>
+            <span>{openStatus.statusLabel === 'Em férias' ? '🏖️' : '🕐'}</span>
+            <span>
+              {openStatus.statusDescription}
+              {openStatus.nextOpeningLabel && (
+                <> · <strong>{openStatus.nextOpeningLabel}</strong></>
+              )}
+            </span>
+          </div>
+        )
+      })()}
 
       {/* Store Navigation */}
       <div

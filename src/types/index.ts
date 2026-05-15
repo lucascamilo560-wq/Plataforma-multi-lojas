@@ -1,5 +1,14 @@
 export type UserRole = 'customer' | 'store_admin' | 'super_admin'
 
+export type StoreBusinessDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
+
+export interface StoreBusinessHours {
+  day: StoreBusinessDay
+  enabled: boolean
+  openTime: string
+  closeTime: string
+}
+
 export type StoreButtonStyle = 'rounded' | 'pill' | 'square'
 export type StoreCardStyle = 'elevated' | 'flat' | 'outlined' | 'glass'
 export type StoreProductLayout = 'grid-2' | 'list' | 'cards-wide'
@@ -37,6 +46,11 @@ export interface Store {
   showPromotionsSection?: boolean
   showBestSellersSection?: boolean
   showWhatsappFloat?: boolean
+  // Business hours & smart status
+  businessHours?: StoreBusinessHours[]
+  acceptOrdersWhenClosed?: boolean
+  vacationMode?: boolean
+  vacationMessage?: string
 }
 
 export interface Product {
@@ -101,6 +115,7 @@ export interface Order {
   pickupAddress?: string
   estimatedMinutes?: number
   createdAt: string
+  orderPlacedWhileClosed?: boolean
 }
 
 export interface CartItem {

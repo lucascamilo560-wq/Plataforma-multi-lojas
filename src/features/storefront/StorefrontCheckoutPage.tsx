@@ -15,6 +15,7 @@ import {
 } from '../../services/mockData'
 import type { ValidateCouponResult } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
+import { getStoreOpenStatus } from '../../utils/storeStatus'
 import type { CartItem, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 import type { DeliverySettings, PaymentMethod } from '../../services/localMockStore'
@@ -231,6 +232,7 @@ export function StorefrontCheckoutPage() {
     subtotal < minOrder
 
   const storeTheme = getStoreTheme(store)
+  const storeOpenStatus = store ? getStoreOpenStatus(store) : null
   const selectedMethod = paymentMethods.length === 1
     ? paymentMethods[0]
     : paymentMethods.find((m) => m.id === selectedPaymentId)
@@ -255,6 +257,11 @@ export function StorefrontCheckoutPage() {
 
   const handleConfirm = async () => {
     if (!store) return
+    // Block if store cannot accept orders
+    if (storeOpenStatus && !storeOpenStatus.canAcceptOrders) {
+      setErrorMessage('Esta loja está fechada no momento e não aceita pedidos fora do horário.')
+      return
+    }
     if (!customerName.trim()) {
       setErrorMessage('Informe seu nome para continuar.')
       return
@@ -275,6 +282,8 @@ export function StorefrontCheckoutPage() {
       setErrorMessage('Seu carrinho está vazio.')
       return
     }
+
+    const placedWhileClosed = storeOpenStatus ? !storeOpenStatus.isOpenNow : false
 
     try {
       setErrorMessage('')
@@ -301,6 +310,7 @@ export function StorefrontCheckoutPage() {
           deliveryMode === 'delivery' && deliverySettings?.estimatedMinutes
             ? deliverySettings.estimatedMinutes
             : undefined,
+        orderPlacedWhileClosed: placedWhileClosed || undefined,
       })
       navigate(`/loja/${slug}/pedido/${order.id}`)
     } catch (error) {
@@ -326,6 +336,34 @@ export function StorefrontCheckoutPage() {
         title={`Finalizar pedido — ${store.name}`}
         description="Preencha seus dados e confirme o pedido."
       />
+
+      {/* Store closed notice */}
+      {storeOpenStatus && !storeOpenStatus.isOpenNow && (
+        <div style={{
+          padding: '0.85rem 1rem',
+          borderRadius: '0.6rem',
+          border: `1px solid ${storeOpenStatus.canAcceptOrders ? 'var(--color-warning, #d97706)' : 'var(--color-error, #dc2626)'}`,
+          background: storeOpenStatus.canAcceptOrders ? 'var(--color-warning-subtle, #fffbeb)' : 'var(--color-error-subtle, #fef2f2)',
+          display: 'flex',
+          gap: '0.5rem',
+          alignItems: 'flex-start',
+          fontSize: '0.9rem',
+        }}>
+          <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>{storeOpenStatus.canAcceptOrders ? '⚠️' : '🚫'}</span>
+          <div>
+            <strong>{storeOpenStatus.statusLabel}</strong>
+            {' — '}
+            {storeOpenStatus.canAcceptOrders
+              ? 'A loja está fechada agora. Seu pedido será atendido no próximo horário de funcionamento.'
+              : 'Esta loja está fechada no momento e não aceita pedidos fora do horário.'}
+            {storeOpenStatus.nextOpeningLabel && (
+              <span style={{ display: 'block', fontSize: '0.83rem', marginTop: '0.2rem', opacity: 0.8 }}>
+                {storeOpenStatus.nextOpeningLabel}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid">
         <Card title="Itens do pedido" subtitle="Resumo da sua seleção" variant="accentCorner">
@@ -540,7 +578,7 @@ export function StorefrontCheckoutPage() {
           size="lg"
           storeColor={storeTheme.primaryColor}
           onClick={handleConfirm}
-          disabled={submitting || deliveryBlockedByMinOrder}
+          disabled={submitting || deliveryBlockedByMinOrder || (storeOpenStatus !== null && !storeOpenStatus.canAcceptOrders)}
         >
           <Icon name="check" className="icon-sm" />
           {submitting ? 'Confirmando…' : 'Confirmar pedido'}
