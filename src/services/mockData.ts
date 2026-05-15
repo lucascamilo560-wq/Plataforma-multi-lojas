@@ -1,5 +1,6 @@
 export {
   addProductToCart,
+  buildOrderTimeline,
   clearActiveStoreSlug,
   clearAllDemoData,
   clearCartByStore,

@@ -5,10 +5,11 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Icon } from '../../components/ui/Icon'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { derivePaymentMethodKey, getOrderWithStore } from '../../services/mockData'
+import { buildOrderTimeline, derivePaymentMethodKey, getOrderWithStore } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, OrderPaymentMethod, OrderStatus, PaymentStatus, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
+import { OrderTimeline } from '../orders/components/OrderTimeline'
 
 const statusLabel: Record<OrderStatus, string> = {
   pending: 'Aguardando confirmação',
@@ -122,11 +123,21 @@ export function CustomerOrderDetailPage() {
           {order.deliveryType && (
             <p className="muted">
               <Icon name="package" className="icon-sm" />{' '}
-              {order.deliveryType === 'delivery' ? 'Entrega em domicílio' : 'Retirada na loja'}
+              {order.deliveryType === 'delivery' ? 'Entrega em domicílio' : order.deliveryType === 'pickup' ? 'Retirada na loja' : 'Entrega a combinar'}
               {order.address ? ` — ${order.address}` : ''}
+              {order.deliveryType === 'pickup' && order.pickupAddress ? ` — ${order.pickupAddress}` : ''}
             </p>
           )}
           {order.notes && <p className="muted">Obs: {order.notes}</p>}
+          {order.orderPlacedWhileClosed && (
+            <p className="muted" style={{ color: 'var(--color-accent, #3A86FF)' }}>
+              ⏰ Pedido enviado fora do horário. A loja atenderá no próximo horário de funcionamento.
+            </p>
+          )}
+        </Card>
+
+        <Card title="Linha do tempo" subtitle="Histórico do pedido" variant="layered">
+          <OrderTimeline entries={buildOrderTimeline(order)} />
         </Card>
 
         {order.items && order.items.length > 0 && (

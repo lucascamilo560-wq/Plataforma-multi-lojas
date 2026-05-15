@@ -4,10 +4,11 @@ import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { getOrderById, getStoreBySlug, derivePaymentMethodKey } from '../../services/mockData'
+import { buildOrderTimeline, getOrderById, getStoreBySlug, derivePaymentMethodKey } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import type { Order, OrderPaymentMethod, OrderStatus, PaymentStatus, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
+import { OrderTimeline } from '../orders/components/OrderTimeline'
 
 const statusLabel: Record<OrderStatus, string> = {
   pending: 'Aguardando confirmação',
@@ -164,6 +165,15 @@ export function StorefrontOrderPage() {
             </p>
           )}
           {order.notes && <p className="muted">Obs: {order.notes}</p>}
+          {order.orderPlacedWhileClosed && (
+            <p className="muted" style={{ color: 'var(--color-accent, #3A86FF)' }}>
+              ⏰ Pedido enviado fora do horário. A loja atenderá no próximo horário de funcionamento.
+            </p>
+          )}
+        </Card>
+
+        <Card title="Linha do tempo" subtitle="Histórico do pedido" variant="layered">
+          <OrderTimeline entries={buildOrderTimeline(order)} />
         </Card>
 
         {order.items && order.items.length > 0 && (
