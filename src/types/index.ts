@@ -1,5 +1,15 @@
 export type UserRole = 'customer' | 'store_admin' | 'super_admin'
 
+export type OrderTimelineEntryType = 'status' | 'payment' | 'note'
+
+export interface OrderTimelineEntry {
+  id: string
+  type: OrderTimelineEntryType
+  label: string
+  description?: string
+  createdAt: string
+}
+
 export type StoreBusinessDay = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday'
 
 export interface StoreBusinessHours {
@@ -116,6 +126,7 @@ export interface Order {
   estimatedMinutes?: number
   createdAt: string
   orderPlacedWhileClosed?: boolean
+  timeline?: OrderTimelineEntry[]
 }
 
 export interface CartItem {

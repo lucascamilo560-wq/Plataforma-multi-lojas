@@ -5,6 +5,7 @@ import type {
   OrderItem,
   OrderPaymentMethod,
   OrderStatus,
+  OrderTimelineEntry,
   PaymentStatus,
   PlatformPlan,
   Product,
@@ -516,6 +517,41 @@ function getNextId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`
 }
 
+function makeTimelineEntry(
+  type: OrderTimelineEntry['type'],
+  label: string,
+  description?: string,
+  createdAt?: string,
+): OrderTimelineEntry {
+  return {
+    id: getNextId('tl'),
+    type,
+    label,
+    description,
+    createdAt: createdAt ?? new Date().toISOString(),
+  }
+}
+
+function appendTimelineEntry(order: Order, entry: OrderTimelineEntry): Order {
+  const existing = order.timeline ?? []
+  return { ...order, timeline: [...existing, entry] }
+}
+
+const statusTimelineLabel: Partial<Record<OrderStatus, { label: string; description?: string }>> = {
+  paid: { label: 'Pedido confirmado', description: 'A loja confirmou o recebimento do pedido.' },
+  preparing: { label: 'Pedido em preparo', description: 'A loja está preparando o pedido.' },
+  delivered: { label: 'Pedido entregue', description: 'O pedido foi marcado como entregue.' },
+  cancelled: { label: 'Pedido cancelado', description: 'O pedido foi cancelado.' },
+}
+
+const paymentTimelineLabel: Partial<Record<PaymentStatus, { label: string; description?: string }>> = {
+  paid: { label: 'Pagamento confirmado', description: 'O pagamento foi confirmado pelo lojista.' },
+  failed: { label: 'Pagamento falhou', description: 'O pagamento não foi concluído.' },
+  refunded: { label: 'Pagamento estornado', description: 'O pagamento foi estornado.' },
+  awaiting_payment: { label: 'Pagamento aguardando', description: 'Aguardando confirmação de pagamento.' },
+  to_be_arranged: { label: 'Pagamento a combinar', description: 'Pagamento será combinado com o cliente.' },
+}
+
 export async function getStores(): Promise<Store[]> {
   return Promise.resolve(getStoresCollection())
 }
@@ -796,7 +832,15 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
       return order
     }
 
-    updatedOrder = { ...order, status }
+    if (order.status === status) {
+      updatedOrder = order
+      return order
+    }
+
+    const tlInfo = statusTimelineLabel[status]
+    const entry = tlInfo ? makeTimelineEntry('status', tlInfo.label, tlInfo.description) : undefined
+    const withStatus = { ...order, status }
+    updatedOrder = entry ? appendTimelineEntry(withStatus, entry) : withStatus
     return updatedOrder
   })
 
@@ -816,11 +860,19 @@ export async function updateOrderPaymentStatus(
       return order
     }
 
-    updatedOrder = {
+    if (order.paymentStatus === paymentStatus) {
+      updatedOrder = order
+      return order
+    }
+
+    const withPayment: Order = {
       ...order,
       paymentStatus,
       paidAt: paymentStatus === 'paid' ? (order.paidAt ?? now) : order.paidAt,
     }
+    const tlInfo = paymentTimelineLabel[paymentStatus]
+    const entry = tlInfo ? makeTimelineEntry('payment', tlInfo.label, tlInfo.description) : undefined
+    updatedOrder = entry ? appendTimelineEntry(withPayment, entry) : withPayment
     return updatedOrder
   })
 
@@ -1115,6 +1167,17 @@ export async function createOrderFromCart(payload: CreateOrderPayload): Promise<
     createdAt: new Date().toISOString(),
   }
 
+  const createdAt = order.createdAt
+  const initialTimeline: OrderTimelineEntry[] = [
+    makeTimelineEntry('status', 'Pedido criado', 'Pedido recebido pela vitrine da loja.', createdAt),
+  ]
+  if (payload.orderPlacedWhileClosed) {
+    initialTimeline.push(
+      makeTimelineEntry('note', 'Pedido enviado fora do horário', 'A loja atenderá no próximo horário de funcionamento.', createdAt),
+    )
+  }
+  order.timeline = initialTimeline
+
   const orders = getOrdersCollection()
   setOrdersCollection([...orders, order])
 
@@ -1401,6 +1464,63 @@ export function clearAllDemoData(): void {
 // ---------------------------------------------------------------------------
 // Customer order helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Constrói a linha do tempo de um pedido.
+ * Se o pedido já tiver timeline, retorna ordenada por data.
+ * Caso contrário, sintetiza uma timeline mínima para compatibilidade com pedidos antigos.
+ * A timeline sintetizada é apenas para exibição — não é persistida.
+ */
+export function buildOrderTimeline(order: Order): OrderTimelineEntry[] {
+  if (order.timeline && order.timeline.length > 0) {
+    return [...order.timeline].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+  }
+
+  // Synthetic fallback for old orders without timeline
+  const entries: OrderTimelineEntry[] = [
+    {
+      id: `${order.id}-synth-created`,
+      type: 'status',
+      label: 'Pedido criado',
+      description: 'Pedido recebido pela vitrine da loja.',
+      createdAt: order.createdAt,
+    },
+  ]
+
+  if (order.orderPlacedWhileClosed) {
+    entries.push({
+      id: `${order.id}-synth-closed`,
+      type: 'note',
+      label: 'Pedido enviado fora do horário',
+      description: 'A loja atenderá no próximo horário de funcionamento.',
+      createdAt: order.createdAt,
+    })
+  }
+
+  const statusInfo = statusTimelineLabel[order.status]
+  if (statusInfo) {
+    entries.push({
+      id: `${order.id}-synth-status`,
+      type: 'status',
+      label: statusInfo.label,
+      description: statusInfo.description,
+      createdAt: order.createdAt,
+    })
+  }
+
+  const paymentInfo = paymentTimelineLabel[order.paymentStatus]
+  if (paymentInfo && order.paymentStatus !== 'awaiting_payment') {
+    entries.push({
+      id: `${order.id}-synth-payment`,
+      type: 'payment',
+      label: paymentInfo.label,
+      description: paymentInfo.description,
+      createdAt: order.paidAt ?? order.createdAt,
+    })
+  }
+
+  return entries.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+}
 
 /**
  * Retorna todos os pedidos do cliente mock atual.

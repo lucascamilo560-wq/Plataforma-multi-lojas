@@ -5,9 +5,12 @@ import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { useMockSession } from '../../hooks/useMockSession'
-import { getStoreById, getStoreOrders, updateOrderPaymentStatus, updateOrderStatus } from '../../services/mockData'
+import { buildOrderTimeline, getStoreById, getStoreOrders, updateOrderPaymentStatus, updateOrderStatus } from '../../services/mockData'
 import type { Order, OrderStatus, PaymentStatus, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
+import { NextActionHint } from './components/NextActionHint'
+import { OrderTimeline } from './components/OrderTimeline'
+import { WhatsAppQuickMessages } from './components/WhatsAppQuickMessages'
 
 type OrderFilterKey =
   | 'all'
@@ -298,35 +301,45 @@ export function StoreOrdersPage() {
               </div>
 
               {(isExpanded || order.status === 'pending' || order.status === 'preparing') && (
-                <div className="stack" style={{ marginTop: '0.75rem', gap: '0.4rem' }}>
-                  <small className="muted" style={{ fontWeight: 600 }}>Detalhes do pedido</small>
-                  {(order.items ?? []).map((item) => (
-                    <small key={item.product_id} className="muted">
-                      {item.productName} × {item.quantity} — {formatCurrency(item.quantity * item.price)}
-                    </small>
-                  ))}
-                  <small className="muted">Subtotal: {formatCurrency(order.subtotal ?? order.total)}</small>
-                  {order.deliveryFee != null && order.deliveryFee > 0 && (
-                    <small className="muted">Entrega: {formatCurrency(order.deliveryFee)}</small>
-                  )}
-                  {order.deliveryType === 'pickup' && order.pickupAddress && (
-                    <small className="muted">📍 Retirada em: {order.pickupAddress}</small>
-                  )}
-                  {order.deliveryType === 'delivery' && order.estimatedMinutes != null && (
-                    <small className="muted">⏱ Tempo estimado: ~{order.estimatedMinutes} min</small>
-                  )}
-                  {order.deliveryType === 'arrange' && (
-                    <small className="muted">💬 Entrega a combinar com o cliente.</small>
-                  )}
-                  {order.couponCode && (
-                    <small className="muted" style={{ color: 'var(--color-success, #16a34a)' }}>
-                      Cupom: {order.couponCode} — -{formatCurrency(order.discountTotal ?? 0)}
-                    </small>
-                  )}
-                  <small className="muted">Total: {formatCurrency(order.total)}</small>
-                  {order.address && <small className="muted">Endereço: {order.address}</small>}
-                  {order.paymentInstructions && <small className="muted">Instruções: {order.paymentInstructions}</small>}
-                  <small className="muted">Histórico: criado em {new Date(order.createdAt).toLocaleString('pt-BR')}.</small>
+                <div className="stack" style={{ marginTop: '0.75rem', gap: '0.75rem' }}>
+                  <div className="stack" style={{ gap: '0.4rem' }}>
+                    <small className="muted" style={{ fontWeight: 600 }}>Detalhes do pedido</small>
+                    {(order.items ?? []).map((item) => (
+                      <small key={item.product_id} className="muted">
+                        {item.productName} × {item.quantity} — {formatCurrency(item.quantity * item.price)}
+                      </small>
+                    ))}
+                    <small className="muted">Subtotal: {formatCurrency(order.subtotal ?? order.total)}</small>
+                    {order.deliveryFee != null && order.deliveryFee > 0 && (
+                      <small className="muted">Entrega: {formatCurrency(order.deliveryFee)}</small>
+                    )}
+                    {order.deliveryType === 'pickup' && order.pickupAddress && (
+                      <small className="muted">📍 Retirada em: {order.pickupAddress}</small>
+                    )}
+                    {order.deliveryType === 'delivery' && order.estimatedMinutes != null && (
+                      <small className="muted">⏱ Tempo estimado: ~{order.estimatedMinutes} min</small>
+                    )}
+                    {order.deliveryType === 'arrange' && (
+                      <small className="muted">💬 Entrega a combinar com o cliente.</small>
+                    )}
+                    {order.couponCode && (
+                      <small className="muted" style={{ color: 'var(--color-success, #16a34a)' }}>
+                        Cupom: {order.couponCode} — -{formatCurrency(order.discountTotal ?? 0)}
+                      </small>
+                    )}
+                    <small className="muted">Total: {formatCurrency(order.total)}</small>
+                    {order.address && <small className="muted">Endereço: {order.address}</small>}
+                    {order.paymentInstructions && <small className="muted">Instruções: {order.paymentInstructions}</small>}
+                  </div>
+
+                  <NextActionHint order={order} />
+
+                  <div className="stack" style={{ gap: '0.25rem' }}>
+                    <small className="muted" style={{ fontWeight: 600 }}>Linha do tempo</small>
+                    <OrderTimeline entries={buildOrderTimeline(order)} />
+                  </div>
+
+                  <WhatsAppQuickMessages order={order} store={store} />
                 </div>
               )}
             </Card>
