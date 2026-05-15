@@ -51,6 +51,7 @@ const orderStatusLabel: Record<Order['status'], string> = {
 const INACTIVE_DAYS = 30
 const VIP_SPENT_THRESHOLD = 300
 const VIP_ORDERS_THRESHOLD = 5
+const SAVE_FEEDBACK_DURATION_MS = 2000
 
 const PREDEFINED_TAGS = [
   'VIP',
@@ -129,6 +130,15 @@ function getSuggestedAction(
   return 'Enviar mensagem de boas-vindas.'
 }
 
+interface CustomerCRMDraft {
+  notes: string
+  preferences: string
+  preferredContactTime: string
+  nextFollowUpAt: string
+  tags: string[]
+  customTagInput: string
+}
+
 export function SellerCustomersPage() {
   const { storeId } = useMockSession()
   const navigate = useNavigate()
@@ -143,9 +153,7 @@ export function SellerCustomersPage() {
   const [customerOrders, setCustomerOrders] = useState<Record<string, Order[]>>({})
 
   // CRM edit state per customer
-  const [crmDraft, setCrmDraft] = useState<
-    Record<string, { notes: string; preferences: string; preferredContactTime: string; nextFollowUpAt: string; tags: string[]; customTagInput: string }>
-  >({})
+  const [crmDraft, setCrmDraft] = useState<Record<string, CustomerCRMDraft>>({})
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set())
 
   const refresh = useCallback(() => {
@@ -172,7 +180,7 @@ export function SellerCustomersPage() {
           notes: rel?.notes ?? '',
           preferences: rel?.preferences ?? '',
           preferredContactTime: rel?.preferredContactTime ?? '',
-          nextFollowUpAt: rel?.nextFollowUpAt ? rel.nextFollowUpAt.substring(0, 10) : '',
+          nextFollowUpAt: rel?.nextFollowUpAt ? new Date(rel.nextFollowUpAt).toISOString().split('T')[0] : '',
           tags: rel?.tags ?? [],
           customTagInput: '',
         },
@@ -287,7 +295,7 @@ export function SellerCustomersPage() {
         next.delete(customerKey)
         return next
       })
-    }, 2000)
+    }, SAVE_FEEDBACK_DURATION_MS)
   }
 
   const toggleTag = (customerKey: string, tag: string) => {
@@ -304,7 +312,8 @@ export function SellerCustomersPage() {
       const d = prev[customerKey]
       if (!d) return prev
       const tag = d.customTagInput.trim()
-      if (!tag || d.tags.includes(tag)) return { ...prev, [customerKey]: { ...d, customTagInput: '' } }
+      if (!tag) return { ...prev, [customerKey]: { ...d, customTagInput: '' } }
+      if (d.tags.includes(tag)) return { ...prev, [customerKey]: { ...d, customTagInput: '' } }
       return { ...prev, [customerKey]: { ...d, tags: [...d.tags, tag], customTagInput: '' } }
     })
   }
