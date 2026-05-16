@@ -51,6 +51,43 @@ Rotas principais:
 - `/lojista/marca`
 - `/lojista/relatorios`
 
+## Fluxo oficial cliente-first por convite
+
+O HubMascate começa pela loja que convidou o cliente, não por uma vitrine global de lojas.
+
+### Princípio central
+
+- Cliente entra no HubMascate principalmente porque **recebeu um link ou QR Code de uma loja**.
+- O link da loja deve carregar e preservar o contexto da loja convidante.
+- O login/cadastro deve preservar esse contexto — o cliente não perde a referência da loja ao se autenticar.
+- O cliente deve ver a loja convidante imediatamente depois de autenticar.
+- Lojista não é o fluxo principal do app/navegador para o cliente; é uma **entrada secundária**.
+- Cliente sem convite continua sem ver lojas fake ou catálogo global.
+
+### Fluxo desejado passo a passo
+
+1. Lojista compartilha o link da loja (ex.: `hubmascate.app/loja/minha-loja`).
+2. Cliente abre o link no navegador.
+3. O app identifica a loja convidante pelo `slug` na URL.
+4. Se o cliente **não estiver autenticado**:
+   - Exibe tela de login/cadastro com contexto da loja:
+     - `"Você foi convidado para acessar {store.name}"`
+     - `"Uma loja HubMascate"`
+5. Cliente cria conta ou faz login.
+6. Cliente completa perfil obrigatório antes da primeira compra (ver seção “Perfil completo do cliente”).
+7. Depois de autenticado e com perfil completo:
+   - Ação principal: **"Ver loja {store.name}"**
+   - Ação secundária: **"Baixar o app"**
+8. Ao baixar o app e fazer login:
+   - O usuário deve ser reconhecido (requer backend real — ver seção “Autenticação real futura”).
+   - A loja convidante/salva deve abrir ou ficar destacada.
+
+### Posição do cadastro de lojista
+
+- No login e na tela inicial, o fluxo **cliente** é o caminho principal.
+- O cadastro de lojista deve ser discreto: entrada secundária tipo “Tenho uma loja” ou “Quero vender pelo HubMascate”.
+- No futuro, lojistas terão fluxo de cadastro separado e específico.
+
 ## Fluxo correto do cliente
 
 1. Cliente recebe link ou QR Code do lojista.
@@ -79,6 +116,100 @@ Rotas principais:
 - `/loja/:slug/pedido/:orderId`
 
 A rota `/cliente/explorar` não deve ser o fluxo principal. No MVP, ela pode permanecer como “em breve” para lojas públicas futuras.
+
+## Perfil completo do cliente
+
+O cliente precisa ter perfil completo antes de realizar a primeira compra, para reduzir atrito no checkout.
+
+### Campos obrigatórios antes da primeira compra
+
+- nome completo
+- telefone / WhatsApp
+- endereço principal:
+  - logradouro e número
+  - complemento (opcional)
+  - bairro
+  - cidade
+  - estado
+  - CEP
+  - referência de entrega (opcional)
+
+### Regras
+
+- O perfil serve para evitar preencher dados em todo checkout.
+- O checkout deve reaproveitar os dados salvos no perfil.
+- O cliente pode editar os dados antes de confirmar cada pedido.
+- Não pedir dados desnecessários no primeiro contato.
+- Exigir perfil completo antes da **primeira compra** (não no cadastro inicial).
+- Não bloquear navegação da loja por causa de perfil incompleto — apenas bloquear a confirmação do pedido.
+
+## Vínculo cliente ↔ loja
+
+### Conceito
+
+Cada cliente se vincula a lojas específicas que acessou por convite, QR Code ou de forma manual.
+
+### Estrutura futura (`customer_store_links`)
+
+```ts
+interface CustomerStoreLink {
+  customer_id: string;
+  store_id: string;
+  source: 'invite_link' | 'qr_code' | 'manual';
+  invited_at: string;       // ISO 8601
+  accepted_at: string;      // ISO 8601
+  last_accessed_at: string; // ISO 8601
+  is_active: boolean;
+}
+```
+
+### Regras
+
+- O cliente só vê lojas que acessou, aceitou ou salvou.
+- A loja convidante deve ser priorizada logo após o login.
+- Nunca listar todas as lojas do sistema para o cliente comum.
+- Super Admin continua sendo o único perfil que vê todas as lojas por padrão.
+
+## Autenticação real futura
+
+### Limitação atual (localStorage)
+
+O fluxo navegador → app baixado **não funciona de forma confiável** apenas com `localStorage`:
+
+- O `localStorage` do navegador não é o mesmo ambiente do app instalado (PWA ou nativo).
+- Sessões não são compartilhadas automaticamente entre navegador e app.
+- Não há como reconhecer o mesmo usuário em dispositivos diferentes sem backend real.
+
+### O que será necessário
+
+Para reconhecer o usuário entre navegador, app instalado e múltiplos dispositivos, será necessário:
+
+- **Supabase Auth** (ou equivalente) para autenticação persistente baseada em JWT.
+- Tabelas dedicadas: `profiles`, `customer_addresses`, `customer_store_links`.
+- O contexto da loja convidante deve ser preservado no fluxo de auth (ex.: parâmetro de redirect ou state no OAuth).
+
+### Candidato futuro
+
+```ts
+// Supabase Auth + tabelas de perfil
+supabase.auth.signUp({ email, password })
+supabase.from('profiles').upsert({ ... })
+supabase.from('customer_store_links').insert({ customer_id, store_id, source: 'invite_link' })
+```
+
+**Não implementar Supabase sem PR específica e aprovação explícita.**
+
+## Comportamento mock atual (localStorage)
+
+O app está em modo mock/localStorage. Enquanto isso:
+
+- PRs futuras podem **simular** o convite e o perfil localmente via `localMockStore`.
+- A simulação não deve fingir segurança real (não simular JWT, tokens ou criptografia real).
+- Sempre deixar claro nos comentários/componentes que o backend real virá em fase própria.
+- Não misturar lógica mock com chamadas reais à API sem PR específica.
+
+> Para documentação detalhada do fluxo completo do produto, ver [`docs/PRODUCT_FLOW.md`](docs/PRODUCT_FLOW.md).
+> Para o modelo de dados futuro com Supabase, ver [`docs/SUPABASE_FUTURE_MODEL.md`](docs/SUPABASE_FUTURE_MODEL.md).
 
 ## Fluxo correto do Super Admin
 
@@ -117,7 +248,7 @@ Regras:
 
 ## Arquitetura de dados atual
 
-O app ainda está em modo mock/localStorage.
+O app ainda está em modo mock/localStorage. Ver seção “Comportamento mock atual” para as regras de simulação.
 
 Arquivos importantes:
 
@@ -127,6 +258,7 @@ Arquivos importantes:
 - `src/utils/publicUrl.ts`
 
 Não conecte Supabase em PRs de fluxo/visual sem pedido explícito.
+Ver modelo futuro detalhado em [`docs/SUPABASE_FUTURE_MODEL.md`](docs/SUPABASE_FUTURE_MODEL.md).
 
 ## Futuro Supabase
 
@@ -139,6 +271,8 @@ getPublicStorefront(slug)
 ```
 
 Não buscar todas as lojas/produtos para a experiência do cliente.
+
+Ver modelo de dados completo em [`docs/SUPABASE_FUTURE_MODEL.md`](docs/SUPABASE_FUTURE_MODEL.md).
 
 ## Regras visuais
 
@@ -187,6 +321,7 @@ Resumo dos blocos entregues recentemente (usar como referência para não repeti
 - PR #32: limpeza do bloco de fidelização e ajustes de textos.
 - PR #33: lapidação visual fina da vitrine.
 - PR #34: onboarding guiado do lojista.
+- PR #52: documentação do fluxo oficial cliente-first por convite e perfil completo.
 
 Observação importante:
 
