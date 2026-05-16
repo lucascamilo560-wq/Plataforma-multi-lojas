@@ -8,7 +8,7 @@ import { clearAllDemoData, clearCustomerSession, clearSellerSession, getCurrentS
 import { APP_BRAND } from '../../config/brand'
 import type { UserRole } from '../../types'
 
-const roleOptions: { key: UserRole; title: string; description: string; icon: 'cart' | 'storefront' | 'shield' }[] = [
+const roleOptions: { key: UserRole; title: string; description: string; icon: 'cart' | 'storefront' }[] = [
   {
     key: 'customer',
     title: 'Comprar em uma loja',
@@ -20,12 +20,6 @@ const roleOptions: { key: UserRole; title: string; description: string; icon: 'c
     title: 'Gerenciar minha loja',
     description: 'Cadastre produtos, receba pedidos, compartilhe sua vitrine e fidelize clientes.',
     icon: 'storefront',
-  },
-  {
-    key: 'super_admin',
-    title: 'Administrar plataforma',
-    description: 'Acompanhe lojas, planos, operação e suporte.',
-    icon: 'shield',
   },
 ]
 
@@ -127,7 +121,7 @@ export function LoginPage() {
         <div className="login-form-card">
           <div className="login-form-head">
             <h2 className="login-form-title">Bem-vindo</h2>
-            <p className="login-form-subtitle">Escolha o perfil e continue.</p>
+            <p className="login-form-subtitle">Escolha como quer continuar. Acesse uma loja por convite ou gerencie sua vitrine.</p>
           </div>
 
           {/* Seleção de perfil */}
@@ -204,6 +198,16 @@ export function LoginPage() {
                     Resetar dados demo
                   </Button>
                 </div>
+
+                <p className="login-demo-section-title" style={{ marginTop: '0.4rem' }}>Acesso interno</p>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  onClick={() => { setRole('super_admin'); navigate('/admin') }}
+                >
+                  <Icon name="shield" className="icon-sm" />
+                  Entrar como Super Admin (demo)
+                </Button>
                 {utilityMessage && <p className="muted" style={{ fontSize: '0.82rem' }}>{utilityMessage}</p>}
                 <p className="muted" style={{ fontSize: '0.78rem' }}>
                   "Resetar" apaga lojas, produtos, pedidos e sessões. Use para testes limpos.
