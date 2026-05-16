@@ -867,6 +867,7 @@ export function StorefrontPage() {
         className="store-bottom-nav"
         style={{ '--bottom-primary': storeTheme.primaryColor } as React.CSSProperties}
         aria-label="Navegação da loja"
+        translate="no"
       >
         {STORE_NAV_ITEMS.filter((item) => {
           if (item.id === 'promocoes' && activePromos.length === 0 && !hasPromoProducts) return false
@@ -881,14 +882,14 @@ export function StorefrontPage() {
               className={`store-bottom-nav-item${isActive ? ' store-bottom-nav-item--active' : ''}`}
             >
               <Icon name={item.icon as Parameters<typeof Icon>[0]['name']} className="icon-sm" />
-              <span>{item.label}</span>
+              <span className="store-bottom-nav-label">{item.label}</span>
             </button>
           )
         })}
         {hasPhysicalProducts && (
           <Link to={`/loja/${slug}/carrinho`} className="store-bottom-nav-item store-bottom-nav-item--cart">
             <Icon name="cart" className="icon-sm" />
-            <span>Sacola</span>
+            <span className="store-bottom-nav-label">Sacola</span>
           </Link>
         )}
       </nav>
