@@ -1210,9 +1210,7 @@ img {
   border-bottom: 1px solid var(--border-soft);
   overflow-x: auto;
   scrollbar-width: none;
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  margin-bottom: 0.75rem;
 }
 
 .store-vitrine-nav::-webkit-scrollbar {
@@ -1364,7 +1362,7 @@ img {
 .store-vitrine-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,15,34,.08),rgba(7,15,34,.7));}
 .store-vitrine-hero-inner{padding:2rem 1rem 1.5rem;gap:1rem;max-width:1100px;margin:0 auto;width:100%;}
 .store-vitrine-hero-logo{box-shadow:0 16px 34px rgba(0,0,0,.25);margin-top:1rem;background:#fff;}
-.store-vitrine-nav{top:0;border-radius:16px;margin: -1rem auto 0.8rem;max-width:1040px;width:100%;box-shadow:var(--shadow-soft)}
+.store-vitrine-nav{border-radius:16px;margin:0 auto 0;max-width:1040px;width:100%;box-shadow:var(--shadow-soft)}
 .store-nav-item--active{transform:translateY(-1px)}
 .store-empty-state{border:1px dashed var(--border);border-radius:18px;padding:1rem;background:linear-gradient(180deg,var(--surface),var(--surface-alt));}
 .store-about-card{box-shadow:var(--shadow-soft)}
@@ -1394,7 +1392,7 @@ img {
 .store-product-grid-2 .inline-info{gap:.35rem;}
 .store-product-grid-2 .badge{font-size:.66rem;padding:.18rem .45rem;}
 .store-product-grid-2 .btn-lg{min-height:36px;padding:.35rem .65rem;font-size:.8rem;border-radius:12px;width:100%;}
-@media (min-width:760px){.store-vitrine-content{padding-inline:1.2rem}.store-vitrine-nav{margin-top:-1.3rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr));}.store-product-grid-2{gap:1rem;}.store-product-grid-2 .product-image{height:190px;aspect-ratio:unset;}}
+@media (min-width:760px){.store-vitrine-content{padding-inline:1.2rem}.grid{grid-template-columns:repeat(2,minmax(0,1fr));}.store-product-grid-2{gap:1rem;}.store-product-grid-2 .product-image{height:190px;aspect-ratio:unset;}}
 
 
 /* ===== PR #50 — Vitrine comercial ===== */
@@ -1475,7 +1473,7 @@ img {
 /* Search area */
 .store-search-area {
   padding-top: 0.9rem;
-  padding-bottom: 0.1rem;
+  padding-bottom: 0.65rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -1695,16 +1693,18 @@ img {
   border-top: 1px solid var(--border-soft);
   box-shadow: 0 -8px 24px rgba(16, 32, 57, 0.09);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  height: calc(52px + env(safe-area-inset-bottom, 0px));
 }
 
 .store-bottom-nav-item {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.22rem;
-  padding: 0.6rem 0.3rem;
+  padding: 0.5rem 0.2rem;
   background: none;
   border: none;
   cursor: pointer;
@@ -1714,7 +1714,16 @@ img {
   font-family: inherit;
   text-decoration: none;
   transition: color 0.18s ease;
-  min-height: 52px;
+  overflow: hidden;
+}
+
+.store-bottom-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  display: block;
+  line-height: 1.2;
 }
 
 .store-bottom-nav-item:hover {
@@ -1731,7 +1740,7 @@ img {
 
 /* Reposition WhatsApp float above bottom nav */
 .store-whatsapp-float {
-  bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 /* Search area on desktop */
