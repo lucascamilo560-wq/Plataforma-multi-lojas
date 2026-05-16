@@ -1,6 +1,6 @@
-# Plataforma Multi-lojas
+# HubMascate
 
-Plataforma de vitrines digitais exclusivas por lojista, voltada para pequenos negócios, vendedores locais e vendedores porta a porta que precisam divulgar uma loja própria, receber pedidos e fidelizar clientes pelo link da própria vitrine.
+HubMascate é uma plataforma de vitrines digitais para vendedores locais criarem, compartilharem e gerenciarem sua própria loja no celular.
 
 > Direção atual do produto: este app **não** deve ser tratado como marketplace aberto, shopping público, Mercado Livre, Shopee ou catálogo global de todas as lojas. O cliente entra principalmente pelo convite/link de um lojista e vê somente aquela loja.
 
