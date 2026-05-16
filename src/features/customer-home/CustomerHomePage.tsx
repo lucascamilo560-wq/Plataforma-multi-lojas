@@ -5,7 +5,6 @@ import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Icon } from '../../components/ui/Icon'
 import { Input } from '../../components/ui/Input'
-import { SectionHeader } from '../../components/ui/SectionHeader'
 import {
   followStore,
   getActiveStore,
@@ -90,7 +89,7 @@ export function CustomerHomePage() {
 
     await followStore(activeStore.id)
     setIsActiveStoreFollowed(true)
-    setInfoMessage(`Você começou a receber promoções da ${activeStore.name}.`)
+    setInfoMessage(`Promoções de ${activeStore.name} ativadas.`)
   }
 
   const handleOpenByLink = async () => {
@@ -120,13 +119,7 @@ export function CustomerHomePage() {
 
     return (
       <section className="stack-xl">
-        <SectionHeader
-          kicker="Sua loja salva"
-          icon="storefront"
-          title={`Continue comprando com ${activeStore.name}`}
-          description={`Você está na loja ${activeStore.name}.`}
-        />
-
+        {/* Active store compact hero */}
         <article
           className="store-hero"
           style={{
@@ -134,29 +127,37 @@ export function CustomerHomePage() {
           }}
         >
           <div className="store-hero-content">
-            <img src={theme.logoUrl} alt={`Logo da loja ${activeStore.name}`} className="store-hero-logo" />
+            <img src={theme.logoUrl} alt={`Logo ${activeStore.name}`} className="store-hero-logo" />
             <div>
               <h2 className="section-title" style={{ margin: 0 }}>
                 {activeStore.name}
               </h2>
-              <p style={{ margin: '0.2rem 0 0' }}>{activeStore.description}</p>
+              <span style={{ marginTop: '0.3rem' }}>
+                <Badge variant={activeStore.isActive ? 'success' : 'muted'}>
+                  {activeStore.isActive ? 'Aberta' : 'Em breve'}
+                </Badge>
+              </span>
             </div>
-            <Badge variant={activeStore.isActive ? 'success' : 'muted'}>
-              {activeStore.isActive ? 'Loja aberta para pedidos' : 'Loja em breve'}
-            </Badge>
           </div>
         </article>
 
-        <Card variant="layered" title="Ações rápidas" subtitle={`Você está na loja ${activeStore.name}`}>
-          <div className="inline-info">
+        {/* Quick actions */}
+        <Card variant="layered">
+          <div className="ch-actions">
             <Link to={`/loja/${activeStore.slug}`}>
-              <Button variant="accent">Abrir loja</Button>
+              <Button variant="accent">
+                <Icon name="storefront" className="icon-sm" />
+                Abrir loja
+              </Button>
             </Link>
             <Link to={`/loja/${activeStore.slug}?tab=ofertas`}>
               <Button variant="secondary">Ver ofertas</Button>
             </Link>
             <Link to={`/loja/${activeStore.slug}/carrinho`}>
-              <Button variant="secondary">Ver carrinho</Button>
+              <Button variant="secondary">Carrinho</Button>
+            </Link>
+            <Link to="/cliente/pedidos">
+              <Button variant="secondary">Meus pedidos</Button>
             </Link>
             <Button variant="ghost" onClick={handleReceivePromotions} disabled={isActiveStoreFollowed}>
               {isActiveStoreFollowed ? 'Promoções ativas' : 'Receber promoções'}
@@ -165,29 +166,37 @@ export function CustomerHomePage() {
           {infoMessage && <p className="muted">{infoMessage}</p>}
         </Card>
 
+        {/* Products */}
         {activeStoreProducts.length > 0 && (
-          <Card variant="accentCorner" title={`Produtos da ${activeStore.name}`} subtitle="Destaques para continuar comprando">
+          <Card variant="accentCorner" title="Produtos">
             <div className="stack" style={{ gap: '0.6rem' }}>
               {activeStoreProducts.map((product) => (
                 <div key={product.id} className="inline-info">
-                  <span className="muted">{product.name}</span>
-                  <strong>{formatCurrency(product.price)}</strong>
+                  <span>{product.name}</span>
+                  <span className="ch-row-right">
+                    <strong>{formatCurrency(product.price)}</strong>
+                    <Link to={`/loja/${activeStore.slug}`}>
+                      <Button variant="ghost" size="md">Ver</Button>
+                    </Link>
+                  </span>
                 </div>
               ))}
             </div>
+            <Link to={`/loja/${activeStore.slug}`}>
+              <Button variant="ghost">Ver todos</Button>
+            </Link>
           </Card>
         )}
 
+        {/* Offers */}
         {activeStoreOffers.length > 0 && (
-          <Card variant="accentCorner" title={`Ofertas da ${activeStore.name}`} subtitle="Campanhas e links ativos da loja">
+          <Card variant="accentCorner" title="Ofertas">
             <div className="stack" style={{ gap: '0.6rem' }}>
               {activeStoreOffers.map((product) => (
                 <div key={product.id} className="inline-info">
-                  <span className="muted">{product.name}</span>
+                  <span>{product.name}</span>
                   <Link to={`/loja/${activeStore.slug}?tab=ofertas`}>
-                    <Button variant="ghost" size="md">
-                      Ver oferta
-                    </Button>
+                    <Button variant="ghost" size="md">Abrir</Button>
                   </Link>
                 </div>
               ))}
@@ -195,20 +204,27 @@ export function CustomerHomePage() {
           </Card>
         )}
 
-        <Card variant="default" title="Pedidos recentes da loja" subtitle={`Histórico recente em ${activeStore.name}`}>
+        {/* Recent orders */}
+        <Card variant="default" title="Pedidos recentes">
           {recentOrders.length === 0 ? (
-            <p className="muted">Você ainda não tem pedidos recentes nesta loja.</p>
+            <p className="muted">Nenhum pedido recente.</p>
           ) : (
-            <div className="stack" style={{ gap: '0.6rem' }}>
-              {recentOrders.map((order) => (
-                <div key={order.id} className="inline-info">
-                  <span className="muted">
-                    {order.customerName} · {new Date(order.createdAt).toLocaleDateString('pt-BR')}
+            <>
+              <div className="stack" style={{ gap: '0.6rem' }}>
+                {recentOrders.map((order) => (
+                  <div key={order.id} className="inline-info">
+                    <span className="muted">
+                    {new Date(order.createdAt).toLocaleDateString('pt-BR')} ·{' '}
+                    <Badge variant={order.status === 'delivered' ? 'success' : 'muted'}>{order.status}</Badge>
                   </span>
-                  <strong>{formatCurrency(order.total)}</strong>
-                </div>
-              ))}
-            </div>
+                    <strong>{formatCurrency(order.total)}</strong>
+                  </div>
+                ))}
+              </div>
+              <Link to="/cliente/pedidos">
+                <Button variant="ghost">Ver pedidos</Button>
+              </Link>
+            </>
           )}
         </Card>
       </section>
@@ -219,40 +235,36 @@ export function CustomerHomePage() {
 
   return (
     <section className="stack-xl">
-      <SectionHeader
-        kicker="Suas lojas"
-        icon="sparkles"
-        title="Acesse sua loja pelo convite"
-        description="Entre pelo link enviado pelo lojista ou escaneie o QR Code da vitrine para começar."
-      />
-
-      <Card
-        variant="accentCorner"
-        title="Abrir loja por link ou código"
-        subtitle="Cole o link ou código recebido do lojista"
-      >
-        <div className="stack" style={{ gap: '0.75rem' }}>
-          <div className="inline-info">
-            <Input
-              id="store-link"
-              placeholder="/loja/nome-da-loja ou código da loja"
-              value={storeLink}
-              onChange={(event) => setStoreLink(event.target.value)}
-              onKeyDown={(event) => { if (event.key === 'Enter') { void handleOpenByLink() } }}
-            />
-            <Button variant="accent" onClick={() => { void handleOpenByLink() }}>
-              <Icon name="arrowRight" className="icon-sm" />
-              Abrir
-            </Button>
-          </div>
-          {linkError && <p className="error-text">{linkError}</p>}
-          <p className="muted">Peça ao lojista o link ou QR Code da vitrine para acessar a loja.</p>
+      {/* Open store card */}
+      <Card variant="accentCorner">
+        <h2 className="card-title" style={{ fontSize: '1.15rem' }}>Abrir uma loja</h2>
+        <p className="muted" style={{ margin: 0 }}>Cole o link da loja.</p>
+        <div className="ch-link-row">
+          <Input
+            id="store-link"
+            placeholder="Link ou código da loja"
+            value={storeLink}
+            onChange={(event) => setStoreLink(event.target.value)}
+            onKeyDown={(event) => { if (event.key === 'Enter') { void handleOpenByLink() } }}
+          />
+          <Button variant="accent" onClick={() => { void handleOpenByLink() }}>
+            Abrir loja
+          </Button>
+        </div>
+        {linkError && <p className="error-text">{linkError}</p>}
+        <div className="ch-actions">
+          <Link to="/cliente/minhas-lojas">
+            <Button variant="secondary">Minhas lojas</Button>
+          </Link>
+          <Link to="/cliente/pedidos">
+            <Button variant="secondary">Meus pedidos</Button>
+          </Link>
         </div>
       </Card>
 
+      {/* Last visited store */}
       {lastVisitedStore && (
-        <Card variant="layered" title="Última loja acessada" subtitle={lastVisitedStore.name}>
-          <p className="muted">{lastVisitedStore.description}</p>
+        <Card variant="layered" title="Última loja acessada" subtitle={`${lastVisitedStore.category} · ${lastVisitedStore.city}`}>
           <div className="inline-info">
             <Link to={`/loja/${lastVisitedStore.slug}`}>
               <Button variant="accent">
@@ -261,23 +273,23 @@ export function CustomerHomePage() {
               </Button>
             </Link>
             <Link to="/cliente/minhas-lojas">
-              <Button variant="secondary">Suas lojas salvas</Button>
+              <Button variant="secondary">Minhas lojas</Button>
             </Link>
           </div>
         </Card>
       )}
 
+      {/* Followed stores */}
       {followedStores.length > 0 && (
         <div className="grid">
           {followedStores.map((store) => (
             <Card key={store.id} variant="accentCorner" title={store.name} subtitle={`${store.category} · ${store.city}`}>
-              <p className="muted">{store.description}</p>
               <div className="inline-info">
                 <Link to={`/loja/${store.slug}`}>
-                  <Button variant="store">Abrir loja</Button>
+                  <Button variant="store">Abrir</Button>
                 </Link>
                 <Link to={`/loja/${store.slug}?tab=ofertas`}>
-                  <Button variant="ghost">Ver ofertas</Button>
+                  <Button variant="ghost">Ofertas</Button>
                 </Link>
               </div>
             </Card>
@@ -285,15 +297,13 @@ export function CustomerHomePage() {
         </div>
       )}
 
+      {/* Empty state */}
       {!hasStores && (
-        <Card
-          variant="default"
-          title="Você ainda não tem lojas salvas"
-          subtitle="Acesse o link enviado por um lojista ou escaneie o QR Code da loja"
-        >
-          <p className="muted">
-            Quando você entrar pelo link de um lojista, a loja ficará salva aqui e sua tela inicial passará a mostrar o contexto dela.
-          </p>
+        <Card variant="default" title="Nenhuma loja salva">
+          <p className="muted">Cole um link ou leia o QR da loja.</p>
+          <Link to="/cliente/pedidos">
+            <Button variant="ghost">Meus pedidos</Button>
+          </Link>
         </Card>
       )}
     </section>
