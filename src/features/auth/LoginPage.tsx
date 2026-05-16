@@ -1,20 +1,50 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
-import { Card } from '../../components/ui/Card'
 import { Icon } from '../../components/ui/Icon'
 import { Input } from '../../components/ui/Input'
-import { Select } from '../../components/ui/Select'
-import { SectionHeader } from '../../components/ui/SectionHeader'
-import { Tabs } from '../../components/ui/Tabs'
 import { useMockSession } from '../../hooks/useMockSession'
 import { clearAllDemoData, clearCustomerSession, clearSellerSession, getCurrentSellerStoreId } from '../../services/mockData'
+import { APP_BRAND } from '../../config/brand'
 import type { UserRole } from '../../types'
 
-const roleTabs = [
-  { key: 'customer', label: 'Cliente', icon: 'cart' as const },
-  { key: 'store_admin', label: 'Lojista', icon: 'storefront' as const },
-  { key: 'super_admin', label: 'Super Admin', icon: 'shield' as const },
+const roleOptions: { key: UserRole; title: string; description: string; icon: 'cart' | 'storefront' | 'shield' }[] = [
+  {
+    key: 'customer',
+    title: 'Comprar em uma loja',
+    description: 'Acesse vitrines que você recebeu por link e acompanhe seus pedidos.',
+    icon: 'cart',
+  },
+  {
+    key: 'store_admin',
+    title: 'Gerenciar minha loja',
+    description: 'Cadastre produtos, receba pedidos, compartilhe sua vitrine e fidelize clientes.',
+    icon: 'storefront',
+  },
+  {
+    key: 'super_admin',
+    title: 'Administrar plataforma',
+    description: 'Acompanhe lojas, planos, operação e suporte.',
+    icon: 'shield',
+  },
+]
+
+const valueProps = [
+  {
+    icon: 'storefront' as const,
+    title: 'Vitrine própria',
+    description: 'Cada lojista compartilha sua própria loja por link.',
+  },
+  {
+    icon: 'package' as const,
+    title: 'Pedidos organizados',
+    description: 'Cliente compra, lojista acompanha e atende com clareza.',
+  },
+  {
+    icon: 'star' as const,
+    title: 'Relacionamento',
+    description: 'CRM, avaliações e mensagens ajudam a fidelizar.',
+  },
 ]
 
 export function LoginPage() {
@@ -23,6 +53,7 @@ export function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
   const [errorMessage, setErrorMessage] = useState('')
   const [utilityMessage, setUtilityMessage] = useState('')
+  const [showDemoTools, setShowDemoTools] = useState(false)
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -61,96 +92,127 @@ export function LoginPage() {
   }
 
   return (
-    <main className="container login-shell">
-      <section className="stack-lg login-card">
-        <SectionHeader
-          kicker="Ambiente demo"
-          icon="sparkles"
-          title="Entre na área certa para o seu perfil"
-          description="Este é um ambiente de demonstração com dados mockados no localStorage. Nenhum dado é enviado para um servidor."
-        />
+    <main className="login-page">
+      {/* Left / top — hero de marca */}
+      <div className="login-hero">
+        <div className="login-hero-inner">
+          <div className="login-brand">
+            <img src={APP_BRAND.iconPath} alt={APP_BRAND.markDescription} className="login-brand-icon" />
+            <span className="login-brand-name">{APP_BRAND.name}</span>
+          </div>
 
-        <Card title="Continuar" subtitle="Escolha seu perfil e entre em segundos." variant="accentCorner">
-          <div className="login-banner">
-            <div className="stack" style={{ gap: '0.45rem' }}>
-              <strong>Fluxos separados por perfil</strong>
-              <p>Cada área foi organizada para uma experiência clara e focada.</p>
-            </div>
-            <Icon name="sparkles" className="icon-md" />
+          <h1 className="login-hero-title">{APP_BRAND.slogan}</h1>
+          <p className="login-hero-desc">
+            Crie uma vitrine digital, receba pedidos e mantenha seus clientes por perto — sem virar marketplace aberto.
+          </p>
+
+          <ul className="login-value-list">
+            {valueProps.map((vp) => (
+              <li key={vp.title} className="login-value-item">
+                <span className="login-value-icon">
+                  <Icon name={vp.icon} className="icon-md" />
+                </span>
+                <div>
+                  <strong>{vp.title}</strong>
+                  <p className="login-value-desc">{vp.description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Right / bottom — card de entrada */}
+      <div className="login-form-area">
+        <div className="login-form-card">
+          <div className="login-form-head">
+            <h2 className="login-form-title">Bem-vindo</h2>
+            <p className="login-form-subtitle">Escolha o perfil e continue.</p>
+          </div>
+
+          {/* Seleção de perfil */}
+          <div className="login-role-list">
+            {roleOptions.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                className={`login-role-card${selectedRole === opt.key ? ' login-role-card-active' : ''}`}
+                onClick={() => setSelectedRole(opt.key)}
+              >
+                <span className="login-role-icon">
+                  <Icon name={opt.icon} className="icon-md" />
+                </span>
+                <div className="login-role-text">
+                  <strong>{opt.title}</strong>
+                  <p>{opt.description}</p>
+                </div>
+                {selectedRole === opt.key && (
+                  <span className="login-role-check">
+                    <Icon name="check" className="icon-sm" />
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
 
           <form className="stack" onSubmit={handleSubmit}>
-            <Tabs
-              items={roleTabs}
-              activeKey={selectedRole}
-              onChange={(role) => setSelectedRole(role as UserRole)}
-            />
-
             <Input id="email" type="email" label="E-mail" placeholder="voce@empresa.com" required />
             <Input id="password" type="password" label="Senha" placeholder="••••••••" required />
 
-            <Select
-              id="role"
-              label="Perfil"
-              value={selectedRole}
-              onChange={(event) => setSelectedRole(event.target.value as UserRole)}
-            >
-              <option value="customer">Cliente</option>
-              <option value="store_admin">Lojista</option>
-              <option value="super_admin">Super Admin</option>
-            </Select>
-
             <Button type="submit" variant="accent" size="lg">
               <Icon name="arrowRight" className="icon-sm" />
-              Entrar
+              Entrar no {APP_BRAND.name}
             </Button>
             {errorMessage && <p className="error-text">{errorMessage}</p>}
           </form>
-        </Card>
 
-        <Card
-          title="Fluxo recomendado de teste"
-          subtitle="Siga este roteiro para testar o fluxo real por convite"
-          variant="layered"
-        >
-          <ol className="stack" style={{ gap: '0.4rem', paddingLeft: '1.2rem', margin: 0 }}>
-            <li>Entre como <strong>Lojista</strong></li>
-            <li>Crie uma loja em <em>Criar loja</em></li>
-            <li>Vá em <em>Minha Vitrine</em> e copie o link público</li>
-            <li>Volte ao login (sair pelo menu)</li>
-            <li>Entre como <strong>Cliente</strong></li>
-            <li>Cole o link da loja no campo de entrada</li>
-            <li>Acesse e siga a loja</li>
-          </ol>
-          <p className="muted" style={{ marginTop: '0.6rem', fontSize: '0.8rem' }}>
-            Clientes sem convite não veem lojas automaticamente — precisam do link do lojista.
-          </p>
-        </Card>
+          {/* Ferramentas de teste — discretas */}
+          <div className="login-demo-tools">
+            <button
+              type="button"
+              className="login-demo-toggle"
+              onClick={() => setShowDemoTools((v) => !v)}
+            >
+              {showDemoTools ? 'Ocultar ferramentas de teste' : 'Mostrar ferramentas de teste'}
+            </button>
 
-        <Card
-          title="Utilitários demo"
-          subtitle="Ferramentas para resetar o estado do ambiente de testes"
-          variant="default"
-        >
-          <div className="stack" style={{ gap: '0.6rem' }}>
-            <div className="inline-info">
-              <Button variant="secondary" size="md" onClick={() => handleClearSession('customer')}>
-                Limpar sessão cliente
-              </Button>
-              <Button variant="secondary" size="md" onClick={() => handleClearSession('store_admin')}>
-                Limpar sessão lojista
-              </Button>
-              <Button variant="ghost" size="md" onClick={handleResetDemo}>
-                Resetar todos os dados demo
-              </Button>
-            </div>
-            {utilityMessage && <p className="muted" style={{ fontSize: '0.85rem' }}>{utilityMessage}</p>}
-            <p className="muted" style={{ fontSize: '0.8rem' }}>
-              "Resetar" apaga lojas criadas, produtos, pedidos e sessões. Use para iniciar testes limpos.
-            </p>
+            {showDemoTools && (
+              <div className="login-demo-panel stack" style={{ gap: '0.8rem' }}>
+                <p className="login-demo-section-title">Fluxo recomendado de teste</p>
+                <ol style={{ gap: '0.35rem', paddingLeft: '1.2rem', margin: 0, display: 'flex', flexDirection: 'column' }}>
+                  <li>Entre como <strong>Lojista</strong></li>
+                  <li>Crie uma loja em <em>Criar loja</em></li>
+                  <li>Vá em <em>Minha Vitrine</em> e copie o link público</li>
+                  <li>Volte ao login (sair pelo menu)</li>
+                  <li>Entre como <strong>Cliente</strong></li>
+                  <li>Cole o link da loja no campo de entrada</li>
+                  <li>Acesse e siga a loja</li>
+                </ol>
+                <p className="muted" style={{ fontSize: '0.78rem' }}>
+                  Clientes sem convite não veem lojas automaticamente — precisam do link do lojista.
+                </p>
+
+                <p className="login-demo-section-title" style={{ marginTop: '0.4rem' }}>Utilitários</p>
+                <div className="inline-info">
+                  <Button variant="secondary" size="md" onClick={() => handleClearSession('customer')}>
+                    Limpar sessão cliente
+                  </Button>
+                  <Button variant="secondary" size="md" onClick={() => handleClearSession('store_admin')}>
+                    Limpar sessão lojista
+                  </Button>
+                  <Button variant="ghost" size="md" onClick={handleResetDemo}>
+                    Resetar dados demo
+                  </Button>
+                </div>
+                {utilityMessage && <p className="muted" style={{ fontSize: '0.82rem' }}>{utilityMessage}</p>}
+                <p className="muted" style={{ fontSize: '0.78rem' }}>
+                  "Resetar" apaga lojas, produtos, pedidos e sessões. Use para testes limpos.
+                </p>
+              </div>
+            )}
           </div>
-        </Card>
-      </section>
+        </div>
+      </div>
     </main>
   )
 }
