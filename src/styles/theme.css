@@ -957,6 +957,30 @@ img {
   object-fit: cover;
 }
 
+/* ── Customer home helpers ── */
+.ch-link-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.ch-link-row .input {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.ch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.ch-row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .product-image {
   border-radius: var(--radius-md);
   height: 164px;
