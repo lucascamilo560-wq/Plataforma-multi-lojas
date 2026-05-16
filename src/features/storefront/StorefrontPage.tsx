@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -23,7 +23,7 @@ import { buildPublicUrl } from '../../utils/publicUrl'
 import { shareOrCopy } from '../../utils/share'
 import type { Product, Store } from '../../types'
 
-const FOLLOW_SUCCESS_MESSAGE = 'Loja salva! Agora você acompanha pedidos e novidades.'
+const FOLLOW_SUCCESS_MESSAGE = 'Loja salva!'
 const WHATSAPP_COLOR = '#25D366'
 
 type ShareFeedback = 'shared' | 'copied' | 'cancelled' | 'failed' | null
@@ -33,9 +33,9 @@ type StoreNavTab = 'inicio' | 'produtos' | 'promocoes' | 'pedidos' | 'sobre'
 const STORE_NAV_ITEMS: { id: StoreNavTab; label: string; icon: string }[] = [
   { id: 'inicio', label: 'Início', icon: 'storefront' },
   { id: 'produtos', label: 'Produtos', icon: 'package' },
-  { id: 'promocoes', label: 'Promoções', icon: 'tag' },
-  { id: 'pedidos', label: 'Meus pedidos', icon: 'cart' },
-  { id: 'sobre', label: 'Sobre', icon: 'sparkles' },
+  { id: 'promocoes', label: 'Ofertas', icon: 'tag' },
+  { id: 'pedidos', label: 'Pedidos', icon: 'clock' },
+  { id: 'sobre', label: 'Sobre', icon: 'hub' },
 ]
 
 const SHARE_FEEDBACK_MESSAGES: Record<NonNullable<ShareFeedback>, string> = {
@@ -59,6 +59,8 @@ export function StorefrontPage() {
   const [reviewSummary, setReviewSummary] = useState<StoreReviewSummary | undefined>()
   const [storeFeedback, setStoreFeedback] = useState<ShareFeedback>(null)
   const [productFeedback, setProductFeedback] = useState<Record<string, ShareFeedback>>({})
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const highlightedProductId = searchParams.get('produto')
   const highlightRef = useRef<HTMLDivElement | null>(null)
 
@@ -109,6 +111,35 @@ export function StorefrontPage() {
     }, 300)
     return () => clearTimeout(timer)
   }, [highlightedProductId, products])
+
+  // Unique categories from active products
+  const categories = useMemo(() => {
+    const cats = products.filter((p) => p.isActive).map((p) => p.category).filter(Boolean)
+    return Array.from(new Set(cats))
+  }, [products])
+
+  // Products filtered by search query and selected category
+  const filteredProducts = useMemo(() => {
+    let list = products
+    if (selectedCategory !== 'all') {
+      list = list.filter((p) => p.category === selectedCategory)
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q),
+      )
+    }
+    return list
+  }, [products, selectedCategory, searchQuery])
+
+  // Highlighted/featured products (sponsored)
+  const featuredProducts = useMemo(() => products.filter((p) => p.sponsoredLabel && p.isActive), [products])
+
+  const isSearchActive = searchQuery.trim().length > 0 || selectedCategory !== 'all'
 
   const showStoreFeedback = useCallback((result: NonNullable<ShareFeedback>) => {
     setStoreFeedback(result)
@@ -207,13 +238,14 @@ export function StorefrontPage() {
     : null
 
   const activePromos = promotions.filter((p) => p.active)
+  const hasPhysicalProducts = products.some((p) => p.productType === 'physical')
+  const hasPromoProducts = products.some((p) => p.productType === 'external_link' || p.productType === 'affiliate')
 
+  // Products to display based on active tab + search/category filters
   const productsToDisplay =
     activeTab === 'promocoes'
-      ? products.filter((p) => p.productType === 'external_link' || p.productType === 'affiliate')
-      : products
-
-  const hasPhysicalProducts = products.some((p) => p.productType === 'physical')
+      ? filteredProducts.filter((p) => p.productType === 'external_link' || p.productType === 'affiliate')
+      : filteredProducts
 
   // Grid class based on productLayout
   const productGridClass =
@@ -222,6 +254,56 @@ export function StorefrontPage() {
       : storeTheme.productLayout === 'cards-wide'
         ? 'store-product-wide'
         : 'store-product-grid-2'
+
+  function getProductActionLabel(product: Product): string {
+    if (product.productType === 'physical') return product.ctaLabel ?? 'Comprar'
+    if (product.productType === 'service') return product.ctaLabel ?? 'Solicitar'
+    return product.ctaLabel ?? 'Ver oferta'
+  }
+
+  function renderProduct(product: Product) {
+    const isHighlighted = product.id === highlightedProductId
+    const pFeedback = productFeedback[product.id]
+    return (
+      <div
+        key={product.id}
+        ref={isHighlighted ? highlightRef : null}
+        style={
+          isHighlighted
+            ? {
+                outline: `2px solid ${storeTheme.primaryColor}`,
+                borderRadius: storeTheme.borderRadius,
+                boxShadow: `0 0 0 4px ${storeTheme.primaryColor}22`,
+              }
+            : undefined
+        }
+      >
+        {isHighlighted && (
+          <div
+            style={{
+              background: storeTheme.primaryColor,
+              color: '#fff',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              padding: '0.2rem 0.6rem',
+              borderRadius: `${storeTheme.borderRadius} ${storeTheme.borderRadius} 0 0`,
+              textAlign: 'center',
+            }}
+          >
+            Produto compartilhado
+          </div>
+        )}
+        <ProductCard
+          product={product}
+          store={store}
+          actionLabel={getProductActionLabel(product)}
+          onAction={() => handleProductAction(product)}
+          onShare={() => handleShareProduct(product)}
+          shareFeedback={pFeedback ?? null}
+        />
+      </div>
+    )
+  }
 
   return (
     <div
@@ -234,6 +316,39 @@ export function StorefrontPage() {
         '--store-card-radius': storeTheme.borderRadius,
       } as React.CSSProperties}
     >
+      {/* Compact sticky top bar */}
+      <div
+        className="store-topbar"
+        style={{ '--topbar-primary': storeTheme.primaryColor } as React.CSSProperties}
+      >
+        <div className="store-topbar-identity">
+          {storeTheme.logoUrl && (
+            <img src={storeTheme.logoUrl} alt={store.name} className="store-topbar-logo" />
+          )}
+          <span className="store-topbar-name">{store.name}</span>
+        </div>
+        <div className="store-topbar-actions">
+          {hasPhysicalProducts && (
+            <Link to={`/loja/${slug}/carrinho`} aria-label="Carrinho" className="store-topbar-btn">
+              <Icon name="cart" className="icon-sm" />
+            </Link>
+          )}
+          {whatsappUrl && (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="WhatsApp"
+              className="store-topbar-btn store-topbar-btn--wa"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
+            </a>
+          )}
+        </div>
+      </div>
+
       {/* Hero */}
       {storeTheme.showHero && (
         <div
@@ -341,6 +456,54 @@ export function StorefrontPage() {
         )
       })()}
 
+      {/* Search + Category Chips */}
+      <div className="store-search-area store-vitrine-content">
+        <div className="store-search-bar">
+          <Icon name="search" className="icon-sm store-search-icon" />
+          <input
+            type="search"
+            className="store-search-input"
+            placeholder="O que você procura?"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            aria-label="Buscar produto"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              className="store-search-clear"
+              onClick={() => setSearchQuery('')}
+              aria-label="Limpar busca"
+            >
+              <Icon name="close" className="icon-sm" />
+            </button>
+          )}
+        </div>
+        {categories.length > 1 && (
+          <div className="store-category-chips" role="group" aria-label="Filtrar por categoria">
+            <button
+              type="button"
+              className={`store-category-chip${selectedCategory === 'all' ? ' store-category-chip--active' : ''}`}
+              style={selectedCategory === 'all' ? ({ '--chip-bg': storeTheme.primaryColor } as React.CSSProperties) : undefined}
+              onClick={() => setSelectedCategory('all')}
+            >
+              Todos
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                className={`store-category-chip${selectedCategory === cat ? ' store-category-chip--active' : ''}`}
+                style={selectedCategory === cat ? ({ '--chip-bg': storeTheme.primaryColor } as React.CSSProperties) : undefined}
+                onClick={() => setSelectedCategory(cat)}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Store Navigation */}
       <div
         className={`store-vitrine-nav store-vitrine-nav--${storeTheme.navigationStyle}`}
@@ -370,122 +533,178 @@ export function StorefrontPage() {
         })}
       </div>
 
-      <div className="stack-xl store-vitrine-content" style={{ padding: '0 0 9rem' }}>
-        {/* Promotions section */}
-        {storeTheme.showPromotionsSection && activePromos.length > 0 && (
-          <div className="stack" style={{ gap: '0.5rem' }}>
-            {activePromos.map((promo) => (
+      <div className="stack-xl store-vitrine-content" style={{ padding: '0 0 6rem' }}>
+
+        {/* ── Início tab ── */}
+        {activeTab === 'inicio' && (
+          <>
+            {/* Campaign / Promo Banner */}
+            {storeTheme.showPromotionsSection && activePromos.length > 0 ? (
               <div
-                key={promo.id}
+                className="store-campaign-banner store-campaign-banner--promo"
                 style={{
-                  background: `linear-gradient(135deg, ${promo.highlightColor ?? storeTheme.primaryColor} 0%, ${storeTheme.accentColor} 100%)`,
-                  color: '#fff',
-                  padding: '0.85rem 1.1rem',
-                  borderRadius: storeTheme.borderRadius,
-                  fontWeight: 600,
-                  fontSize: '0.95rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
+                  background: `linear-gradient(135deg, ${activePromos[0].highlightColor ?? storeTheme.primaryColor} 0%, ${storeTheme.accentColor} 100%)`,
                 }}
               >
-                🎉 {promo.bannerText ?? `${promo.title} — ${promo.description}`}
+                <div className="store-campaign-inner">
+                  <span className="store-campaign-tag">🎉 Oferta ativa</span>
+                  <p className="store-campaign-title">{activePromos[0].bannerText ?? activePromos[0].title}</p>
+                  {activePromos[0].description && (
+                    <p className="store-campaign-sub">{activePromos[0].description}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveTab('promocoes')}
+                    style={{ color: '#fff', border: '1.5px solid rgba(255,255,255,0.6)', borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
+                  >
+                    Ver ofertas <Icon name="arrowRight" className="icon-sm" />
+                  </Button>
+                </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Loyalty block */}
-        {storeTheme.showLoyaltyBlock && activeTab === 'inicio' && (
-          <div
-            style={{
-              background: `linear-gradient(135deg, ${storeTheme.primaryColor}12 0%, ${storeTheme.accentColor}0a 100%)`,
-              border: `1px solid ${storeTheme.primaryColor}22`,
-              borderRadius: storeTheme.borderRadius,
-              padding: '1.1rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.8rem',
-            }}
-            translate="no"
-          >
-            <div>
-              <h3 style={{ margin: '0 0 0.2rem', fontSize: '0.98rem' }}>
-                {isFollowed ? 'Loja salva' : 'Gostou desta loja?'}
-              </h3>
-              <p style={{ margin: 0, fontSize: '0.86rem', color: 'var(--text-secondary)' }}>
-                {isFollowed
-                  ? 'Você poderá acompanhar pedidos e novidades desta loja por aqui.'
-                  : 'Salve para acompanhar pedidos, promoções e novidades.'}
-              </p>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '0.6rem',
-              }}
-            >
-              {isFollowed ? (
-                <Link to="/cliente/pedidos" style={{ flexShrink: 0 }}>
-                  <Button
-                    variant="store"
-                    size="sm"
-                    storeColor={storeTheme.primaryColor}
-                    style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-                  >
-                    Meus pedidos
-                  </Button>
-                </Link>
-              ) : (
-                <Button
-                  variant="store"
-                  size="sm"
-                  storeColor={storeTheme.primaryColor}
-                  onClick={() => handleFollowStore()}
-                  style={{ borderRadius: storeTheme.buttonRadius, flexShrink: 0 } as React.CSSProperties}
-                >
-                  Salvar loja
-                </Button>
-              )}
-              {whatsappUrl && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-                  >
-                    Falar com a loja
-                  </Button>
-                </a>
-              )}
-            </div>
-            {infoMessage && <p className="muted" style={{ margin: 0 }}>{infoMessage}</p>}
-            <div style={{ borderTop: `1px solid ${storeTheme.primaryColor}22`, paddingTop: '0.6rem' }}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleShareStore}
-                style={{ borderRadius: storeTheme.buttonRadius, color: 'var(--text-secondary)', fontSize: '0.84rem' } as React.CSSProperties}
+            ) : (
+              <div
+                className="store-campaign-banner store-campaign-banner--default"
+                style={{
+                  background:
+                    storeTheme.heroStyle !== 'minimal'
+                      ? `linear-gradient(135deg, ${storeTheme.primaryColor}e8 0%, ${storeTheme.primaryColor}b0 100%), url(${storeTheme.coverUrl}) center/cover no-repeat`
+                      : `linear-gradient(135deg, ${storeTheme.primaryColor} 0%, ${storeTheme.primaryColor}cc 100%)`,
+                }}
               >
-                🔗 Compartilhar loja
-              </Button>
-              {storeFeedback && (
-                <p style={{ margin: '0.3rem 0 0', fontSize: '0.82rem', color: storeFeedback === 'failed' ? 'var(--color-error, #dc2626)' : 'var(--text-secondary)' }}>
-                  {SHARE_FEEDBACK_MESSAGES[storeFeedback]}
+                <div className="store-campaign-inner">
+                  {storeTheme.logoUrl && (
+                    <img src={storeTheme.logoUrl} alt={store.name} className="store-campaign-logo" />
+                  )}
+                  <p className="store-campaign-title">{store.name}</p>
+                  {(store.slogan ?? store.shortDescription) && (
+                    <p className="store-campaign-sub">{store.slogan ?? store.shortDescription}</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setActiveTab('produtos')}
+                    style={{ color: '#fff', border: '1.5px solid rgba(255,255,255,0.6)', borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
+                  >
+                    Ver produtos <Icon name="arrowRight" className="icon-sm" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* If search/filter active, show filtered results */}
+            {isSearchActive ? (
+              <div className="stack">
+                <p className="store-search-label">
+                  {filteredProducts.length === 0
+                    ? 'Nenhum produto encontrado.'
+                    : `${filteredProducts.length} produto${filteredProducts.length > 1 ? 's' : ''} encontrado${filteredProducts.length > 1 ? 's' : ''}`}
                 </p>
-              )}
-            </div>
-          </div>
+                {errorMessage && <p className="error-text">{errorMessage}</p>}
+                {filteredProducts.length > 0 && (
+                  <div className={productGridClass}>{filteredProducts.map(renderProduct)}</div>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Compact follow / share bar */}
+                {storeTheme.showLoyaltyBlock && (
+                  <div className="store-follow-bar" translate="no">
+                    {isFollowed ? (
+                      <span className="store-follow-label">✅ Loja salva</span>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="store"
+                        size="sm"
+                        storeColor={storeTheme.primaryColor}
+                        onClick={() => handleFollowStore()}
+                        style={{ borderRadius: storeTheme.buttonRadius, flexShrink: 0 } as React.CSSProperties}
+                      >
+                        Salvar loja
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleShareStore}
+                      style={{ color: 'var(--text-secondary)', fontSize: '0.84rem' } as React.CSSProperties}
+                    >
+                      🔗 Compartilhar
+                    </Button>
+                    {whatsappUrl && (
+                      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                        <Button variant="secondary" size="sm" style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}>
+                          Falar
+                        </Button>
+                      </a>
+                    )}
+                    {infoMessage && <span className="store-follow-label">{infoMessage}</span>}
+                    {storeFeedback && (
+                      <span style={{ fontSize: '0.8rem', color: storeFeedback === 'failed' ? 'var(--color-error, #dc2626)' : 'var(--text-secondary)' }}>
+                        {SHARE_FEEDBACK_MESSAGES[storeFeedback]}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Destaques section */}
+                {featuredProducts.length > 0 && (
+                  <div className="stack">
+                    <div className="store-section-row">
+                      <span className="store-section-label">⭐ Destaques</span>
+                    </div>
+                    <div className={productGridClass}>
+                      {featuredProducts.slice(0, 4).map(renderProduct)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Produtos section */}
+                {products.length > 0 ? (
+                  <div className="stack">
+                    <div className="store-section-row">
+                      <span className="store-section-label">
+                        {featuredProducts.length > 0 ? '🛍️ Todos' : '🛍️ Produtos'}
+                      </span>
+                      {products.length > 6 && (
+                        <button type="button" className="store-section-link" onClick={() => setActiveTab('produtos')}>
+                          Ver todos ({products.length}) <Icon name="arrowRight" className="icon-sm" />
+                        </button>
+                      )}
+                    </div>
+                    {errorMessage && <p className="error-text">{errorMessage}</p>}
+                    <div className={productGridClass}>{products.slice(0, 6).map(renderProduct)}</div>
+                    {products.length > 6 && (
+                      <Button
+                        type="button"
+                        variant="store"
+                        storeColor={storeTheme.primaryColor}
+                        onClick={() => setActiveTab('produtos')}
+                        style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
+                      >
+                        Ver todos os produtos <Icon name="arrowRight" className="icon-sm" />
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="store-empty-state">
+                    <p className="empty-state">Nenhum produto ativo no momento. Volte em breve.</p>
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
 
-        {/* Products tab */}
-        {(activeTab === 'inicio' || activeTab === 'produtos' || activeTab === 'promocoes') && (
+        {/* ── Produtos tab ── */}
+        {activeTab === 'produtos' && (
           <div className="stack">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-              <h2 style={{ margin: 0, fontSize: '1.15rem' }}>
-                {activeTab === 'promocoes' ? 'Ofertas da loja' : 'Produtos da loja'}
-              </h2>
+            <div className="store-section-row">
+              <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Produtos</h2>
               {hasPhysicalProducts && (
                 <Link to={`/loja/${slug}/carrinho`}>
                   <Button
@@ -499,61 +718,57 @@ export function StorefrontPage() {
                 </Link>
               )}
             </div>
-
             {errorMessage && <p className="error-text">{errorMessage}</p>}
-
             {productsToDisplay.length === 0 ? (
               <div className="store-empty-state">
                 <p className="empty-state">
-                {activeTab === 'promocoes'
-                  ? 'Esta loja ainda não publicou ofertas. Volte em breve.'
-                  : 'Nenhum produto ativo no momento. Volte em breve.'}
-              </p>
+                  {isSearchActive ? 'Nenhum produto encontrado.' : 'Nenhum produto ativo no momento. Volte em breve.'}
+                </p>
               </div>
             ) : (
-              <div className={productGridClass}>
-                {productsToDisplay.map((product) => {
-                  const isHighlighted = product.id === highlightedProductId
-                  const pFeedback = productFeedback[product.id]
-                  return (
-                    <div
-                      key={product.id}
-                      ref={isHighlighted ? highlightRef : null}
-                      style={isHighlighted ? {
-                        outline: `2px solid ${storeTheme.primaryColor}`,
-                        borderRadius: storeTheme.borderRadius,
-                        boxShadow: `0 0 0 4px ${storeTheme.primaryColor}22`,
-                      } : undefined}
-                    >
-                      {isHighlighted && (
-                        <div style={{
-                          background: storeTheme.primaryColor,
-                          color: '#fff',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          padding: '0.2rem 0.6rem',
-                          borderRadius: `${storeTheme.borderRadius} ${storeTheme.borderRadius} 0 0`,
-                          textAlign: 'center',
-                        }}>
-                          Produto compartilhado
-                        </div>
-                      )}
-                      <ProductCard
-                        product={product}
-                        store={store}
-                        onAction={() => handleProductAction(product)}
-                        onShare={() => handleShareProduct(product)}
-                        shareFeedback={pFeedback ?? null}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
+              <div className={productGridClass}>{productsToDisplay.map(renderProduct)}</div>
             )}
           </div>
         )}
 
-        {/* Orders tab */}
+        {/* ── Ofertas tab ── */}
+        {activeTab === 'promocoes' && (
+          <div className="stack">
+            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Ofertas</h2>
+            {storeTheme.showPromotionsSection && activePromos.length > 0 && (
+              <div className="stack" style={{ gap: '0.5rem' }}>
+                {activePromos.map((promo) => (
+                  <div
+                    key={promo.id}
+                    style={{
+                      background: `linear-gradient(135deg, ${promo.highlightColor ?? storeTheme.primaryColor} 0%, ${storeTheme.accentColor} 100%)`,
+                      color: '#fff',
+                      padding: '0.85rem 1.1rem',
+                      borderRadius: storeTheme.borderRadius,
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    🎉 {promo.bannerText ?? `${promo.title} — ${promo.description}`}
+                  </div>
+                ))}
+              </div>
+            )}
+            {errorMessage && <p className="error-text">{errorMessage}</p>}
+            {productsToDisplay.length === 0 ? (
+              <div className="store-empty-state">
+                <p className="empty-state">Esta loja ainda não publicou ofertas. Volte em breve.</p>
+              </div>
+            ) : (
+              <div className={productGridClass}>{productsToDisplay.map(renderProduct)}</div>
+            )}
+          </div>
+        )}
+
+        {/* ── Pedidos tab ── */}
         {activeTab === 'pedidos' && (
           <div className="store-empty-state" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
             <p style={{ fontSize: '2rem', margin: '0 0 0.5rem' }}>📦</p>
@@ -573,10 +788,10 @@ export function StorefrontPage() {
           </div>
         )}
 
-        {/* About tab */}
+        {/* ── Sobre tab ── */}
         {activeTab === 'sobre' && (
           <div className="stack">
-            <h2 style={{ margin: 0, fontSize: '1.15rem' }}>Sobre a loja</h2>
+            <h2 style={{ margin: 0, fontSize: '1.1rem' }}>Sobre a loja</h2>
             <div
               className="store-about-card"
               style={{
@@ -613,29 +828,70 @@ export function StorefrontPage() {
                   </Badge>
                 )}
               </div>
-              {whatsappUrl && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" style={{ alignSelf: 'flex-start' }}>
-                  <Button
-                    variant="store"
-                    storeColor={storeTheme.primaryColor}
-                    style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
-                  >
-                    Falar com a loja
-                  </Button>
-                </a>
-              )}
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                {whatsappUrl && (
+                  <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+                    <Button
+                      variant="store"
+                      size="sm"
+                      storeColor={storeTheme.primaryColor}
+                      style={{ borderRadius: storeTheme.buttonRadius } as React.CSSProperties}
+                    >
+                      Falar com a loja
+                    </Button>
+                  </a>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleShareStore}
+                  style={{ color: 'var(--text-secondary)', fontSize: '0.84rem' } as React.CSSProperties}
+                >
+                  🔗 Compartilhar
+                </Button>
+                {storeFeedback && (
+                  <span style={{ fontSize: '0.8rem', color: storeFeedback === 'failed' ? 'var(--color-error, #dc2626)' : 'var(--text-secondary)' }}>
+                    {SHARE_FEEDBACK_MESSAGES[storeFeedback]}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         )}
 
       </div>
 
-              {hasPhysicalProducts && (
-                <Link to={`/loja/${slug}/carrinho`} className="store-floating-cart" style={{ '--store-cart-color': storeTheme.primaryColor } as React.CSSProperties}>
-                  <Icon name="cart" className="icon-md" />
-                  <span>Carrinho</span>
-                </Link>
-              )}
+      {/* Fixed bottom navigation */}
+      <nav
+        className="store-bottom-nav"
+        style={{ '--bottom-primary': storeTheme.primaryColor } as React.CSSProperties}
+        aria-label="Navegação da loja"
+      >
+        {STORE_NAV_ITEMS.filter((item) => {
+          if (item.id === 'promocoes' && activePromos.length === 0 && !hasPromoProducts) return false
+          return true
+        }).map((item) => {
+          const isActive = activeTab === item.id
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveTab(item.id)}
+              className={`store-bottom-nav-item${isActive ? ' store-bottom-nav-item--active' : ''}`}
+            >
+              <Icon name={item.icon as Parameters<typeof Icon>[0]['name']} className="icon-sm" />
+              <span>{item.label}</span>
+            </button>
+          )
+        })}
+        {hasPhysicalProducts && (
+          <Link to={`/loja/${slug}/carrinho`} className="store-bottom-nav-item store-bottom-nav-item--cart">
+            <Icon name="cart" className="icon-sm" />
+            <span>Sacola</span>
+          </Link>
+        )}
+      </nav>
 
       {/* Floating WhatsApp button */}
       {storeTheme.showWhatsappFloat && whatsappUrl && (
