@@ -251,6 +251,87 @@ Interrompa implementação e peça revisão humana quando houver necessidade de:
 - exigir política de privacidade/termos legais novos;
 - resolver conflito entre README e comportamento real do código sem decisão explícita.
 
+
+## Fluxo oficial cliente-first por convite
+
+O fluxo principal do HubMascate para cliente final é por convite de loja.
+
+Regras obrigatórias:
+
+- Cliente entra no HubMascate principalmente porque recebeu link/QR Code de uma loja.
+- O link da loja deve carregar contexto da loja convidante.
+- O login/cadastro deve preservar esse contexto até a autenticação.
+- Após autenticar, o cliente deve ver a loja convidante como ação principal.
+- Quando houver backend real, o app baixado deve reconhecer o usuário autenticado e suas lojas vinculadas.
+- Cliente sem convite continua sem ver lojas fake e sem catálogo global.
+- Lojista não é fluxo principal do app baixado; deve entrar por caminho secundário.
+
+Referência detalhada de decisão de produto: `docs/PRODUCT_FLOW.md`.
+
+## Perfil completo do cliente (obrigatório antes da compra)
+
+Objetivo: reduzir atrito no checkout e reaproveitar dados salvos.
+
+Campos futuros de perfil:
+
+- nome completo
+- telefone/WhatsApp
+- endereço principal
+- complemento
+- bairro
+- cidade
+- estado
+- CEP
+- referência de entrega (quando necessário)
+
+Regras:
+
+- Não exigir dados desnecessários no primeiro contato.
+- Exigir perfil completo antes da primeira compra.
+- Checkout deve reaproveitar dados salvos.
+- Cliente pode editar dados antes de confirmar pedido.
+
+## Vínculo cliente ↔ loja convidante (conceito futuro)
+
+Estrutura de referência para evolução futura:
+
+`customer_store_links`
+
+- `customer_id`
+- `store_id`
+- `source`: `invite_link | qr_code | manual`
+- `invited_at`
+- `accepted_at`
+- `last_accessed_at`
+- `is_active`
+
+Regras:
+
+- Cliente comum vê apenas lojas acessadas/aceitas/salvas.
+- Loja convidante deve ser priorizada após login.
+- Não listar todas as lojas do sistema para cliente comum.
+- Super Admin continua sendo o único perfil com visão global padrão.
+
+## Autenticação real futura (navegador → app)
+
+Registrar explicitamente:
+
+- Fluxo navegador → app baixado não é confiável apenas com localStorage.
+- localStorage do navegador não equivale a reconhecimento confiável entre app/dispositivos.
+- Para reconhecimento entre navegador/app/dispositivos será necessário backend/auth real.
+- Candidato futuro: Supabase Auth + tabelas `profiles`, `customer_addresses` e `customer_store_links`.
+- Não implementar Supabase/Auth real sem PR específica.
+
+## Comportamento mock atual (localStorage)
+
+Enquanto o produto está em mock/localStorage:
+
+- PRs podem simular convite e perfil localmente.
+- Simulação não deve fingir segurança/autenticação real.
+- Sempre deixar claro que backend real virá em fase própria.
+
 ## Frase guia
 
 > O produto não vende “mais uma loja em um shopping”. Ele vende “sua própria vitrine/app para compartilhar com seus clientes”.
+>
+> O HubMascate começa pela loja que convidou o cliente, não por uma vitrine global de lojas.
