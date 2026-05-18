@@ -1,47 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Outlet } from 'react-router-dom'
 import { APP_BRAND } from '../../config/brand'
-import { getActiveStore } from '../../services/mockData'
-import type { Store } from '../../types'
 import { AppHeader } from '../ui/AppHeader'
 
 export function CustomerLayout() {
-  const [activeStore, setActiveStore] = useState<Store | null>(null)
-
-  useEffect(() => {
-    getActiveStore().then(setActiveStore)
-  }, [])
-
-  const customerNavigation = useMemo(() => {
-    if (activeStore) {
-      return [
-        { to: `/loja/${activeStore.slug}`, label: 'Loja', icon: 'storefront' as const },
-        { to: `/loja/${activeStore.slug}?tab=ofertas`, label: 'Ofertas', icon: 'tag' as const },
-        { to: `/loja/${activeStore.slug}/carrinho`, label: 'Carrinho', icon: 'cart' as const },
-        { to: '/cliente/pedidos', label: 'Pedidos', icon: 'clock' as const },
-        { to: '/cliente/perfil', label: 'Perfil', icon: 'user' as const },
-      ]
-    }
-
-    return [
-      { to: '/cliente', label: 'Início', icon: 'sparkles' as const },
-      { to: '/cliente/minhas-lojas', label: 'Minhas lojas', icon: 'storefront' as const },
-      { to: '/cliente/pedidos', label: 'Pedidos', icon: 'clock' as const },
-      { to: '/cliente/perfil', label: 'Perfil', icon: 'user' as const },
-    ]
-  }, [activeStore])
+  const customerNavigation = useMemo(() => [
+    { to: '/cliente', label: 'Início', icon: 'hub' as const },
+    { to: '/cliente/minhas-lojas', label: 'Minhas lojas', icon: 'storefront' as const },
+    { to: '/cliente/pedidos', label: 'Pedidos', icon: 'clock' as const },
+    { to: '/cliente/perfil', label: 'Perfil', icon: 'user' as const },
+  ], [])
 
   return (
     <div className="app-shell">
       <AppHeader
         navigation={customerNavigation}
-        brandKicker={activeStore ? APP_BRAND.customerKicker : APP_BRAND.customerKicker}
-        brandTitle={
-          activeStore
-            ? `Você está comprando em ${activeStore.name}`
-            : 'Suas lojas salvas, pedidos e vitrines em um só lugar.'
-        }
-        brandLogoUrl={activeStore?.logoUrl}
+        brandKicker={APP_BRAND.customerKicker}
+        brandTitle="Suas lojas por convite, pedidos e vitrines em um só lugar."
       />
       <main className="container app-main">
         <Outlet />
