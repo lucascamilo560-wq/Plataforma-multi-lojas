@@ -18,23 +18,6 @@ import { APP_BRAND } from '../../config/brand'
 import type { PendingStoreInvite } from '../../services/mockData'
 import type { UserRole } from '../../types'
 
-const roleOptions: { key: UserRole; title: string; titleWithInvite: string; description: string; icon: 'cart' | 'storefront' }[] = [
-  {
-    key: 'customer',
-    title: 'Comprar em uma loja',
-    titleWithInvite: 'Entrar para ver a loja',
-    description: 'Acesse vitrines que você recebeu por link e acompanhe seus pedidos.',
-    icon: 'cart',
-  },
-  {
-    key: 'store_admin',
-    title: 'Gerenciar minha loja',
-    titleWithInvite: 'Tenho uma loja',
-    description: 'Cadastre produtos, receba pedidos, compartilhe sua vitrine e fidelize clientes.',
-    icon: 'storefront',
-  },
-]
-
 const valueProps = [
   {
     icon: 'storefront' as const,
@@ -216,37 +199,20 @@ export function LoginPage() {
           )}
 
           <div className="login-form-head">
-            <h2 className="login-form-title">{pendingInvite ? `Bem-vindo à ${pendingInvite.storeName}` : 'Bem-vindo'}</h2>
+            <h2 className="login-form-title">
+              {selectedRole === 'store_admin'
+                ? 'Área do lojista'
+                : pendingInvite
+                  ? 'Acesse a loja'
+                  : 'Entrar como cliente'}
+            </h2>
             <p className="login-form-subtitle">
-              {pendingInvite
-                ? 'Entre para acessar a loja ou gerencie sua própria vitrine.'
-                : 'Escolha como quer continuar. Acesse uma loja por convite ou gerencie sua vitrine.'}
+              {selectedRole === 'store_admin'
+                ? 'Gerencie sua vitrine, produtos e pedidos.'
+                : pendingInvite
+                  ? `Entre para continuar com ${pendingInvite.storeName}.`
+                  : 'Use o link da loja para comprar e acompanhar pedidos.'}
             </p>
-          </div>
-
-          {/* Seleção de perfil */}
-          <div className="login-role-list">
-            {roleOptions.map((opt) => (
-              <button
-                key={opt.key}
-                type="button"
-                className={`login-role-card${selectedRole === opt.key ? ' login-role-card-active' : ''}`}
-                onClick={() => setSelectedRole(opt.key)}
-              >
-                <span className="login-role-icon">
-                  <Icon name={opt.icon} className="icon-md" />
-                </span>
-                <div className="login-role-text">
-                  <strong>{pendingInvite ? opt.titleWithInvite : opt.title}</strong>
-                  <p>{opt.description}</p>
-                </div>
-                {selectedRole === opt.key && (
-                  <span className="login-role-check">
-                    <Icon name="check" className="icon-sm" />
-                  </span>
-                )}
-              </button>
-            ))}
           </div>
 
           <form className="stack" onSubmit={handleSubmit}>
@@ -255,10 +221,38 @@ export function LoginPage() {
 
             <Button type="submit" variant="accent" size="lg">
               <Icon name="arrowRight" className="icon-sm" />
-              {pendingInvite && selectedRole === 'customer' ? `Entrar e ver ${pendingInvite.storeName}` : `Entrar no ${APP_BRAND.name}`}
+              {selectedRole === 'store_admin'
+                ? 'Entrar como lojista'
+                : pendingInvite
+                  ? `Entrar e ver ${pendingInvite.storeName}`
+                  : 'Entrar como cliente'}
             </Button>
             {errorMessage && <p className="error-text">{errorMessage}</p>}
           </form>
+
+          {/* Entrada secundária — lojista */}
+          {selectedRole === 'customer' ? (
+            <div className="login-seller-cta">
+              <span className="login-seller-cta-label">Tem uma loja?</span>
+              <button
+                type="button"
+                className="login-seller-cta-btn"
+                onClick={() => setSelectedRole('store_admin')}
+              >
+                Tenho uma loja
+              </button>
+            </div>
+          ) : (
+            <div className="login-seller-cta">
+              <button
+                type="button"
+                className="login-seller-cta-btn"
+                onClick={() => setSelectedRole('customer')}
+              >
+                ← Voltar para cliente
+              </button>
+            </div>
+          )}
 
           {pendingInvite && (
             <button type="button" className="login-invite-dismiss" onClick={handleClearInvite}>
@@ -280,13 +274,12 @@ export function LoginPage() {
               <div className="login-demo-panel stack" style={{ gap: '0.8rem' }}>
                 <p className="login-demo-section-title">Fluxo recomendado de teste</p>
                 <ol style={{ gap: '0.35rem', paddingLeft: '1.2rem', margin: 0, display: 'flex', flexDirection: 'column' }}>
-                  <li>Entre como <strong>Lojista</strong></li>
+                  <li>Entre como lojista pelo link <strong>"Tenho uma loja"</strong></li>
                   <li>Crie uma loja em <em>Criar loja</em></li>
                   <li>Vá em <em>Minha Vitrine</em> e copie o link público</li>
                   <li>Volte ao login (sair pelo menu)</li>
-                  <li>Entre como <strong>Cliente</strong></li>
-                  <li>Cole o link da loja no campo de entrada</li>
-                  <li>Acesse e siga a loja</li>
+                  <li><strong>Cliente é o fluxo principal</strong> — use o link da loja para entrar</li>
+                  <li>Acesse e siga a loja pelo convite</li>
                 </ol>
                 <p className="muted" style={{ fontSize: '0.78rem' }}>
                   Clientes sem convite não veem lojas automaticamente — precisam do link do lojista.
@@ -306,6 +299,9 @@ export function LoginPage() {
                 </div>
 
                 <p className="login-demo-section-title" style={{ marginTop: '0.4rem' }}>Acesso interno</p>
+                <p className="muted" style={{ fontSize: '0.78rem' }}>
+                  Super Admin permanece em acesso interno — não é fluxo público.
+                </p>
                 <Button
                   variant="ghost"
                   size="md"
