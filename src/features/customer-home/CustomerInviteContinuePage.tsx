@@ -8,6 +8,7 @@ import {
   getCustomerProfile,
   getPendingStoreInvite,
   isCustomerProfileComplete,
+  linkCustomerToStoreFromInvite,
 } from '../../services/mockData'
 import type { PendingStoreInvite } from '../../services/mockData'
 
@@ -92,7 +93,10 @@ export function CustomerInviteContinuePage() {
         <Button
           variant="accent"
           size="lg"
-          onClick={() => navigate(`/loja/${invite.slug}`)}
+          onClick={() => {
+            linkCustomerToStoreFromInvite(invite)
+            navigate(`/loja/${invite.slug}`)
+          }}
         >
           <Icon name="arrowRight" className="icon-sm" />
           {`Ver loja ${invite.storeName}`}

@@ -97,6 +97,22 @@ export interface CustomerProfile {
   updatedAt: string
 }
 
+/**
+ * Vínculo mock entre o cliente e uma loja.
+ * Persistido em localStorage sob a chave hubmascate:customer:store-links.
+ */
+export interface CustomerStoreLink {
+  storeId: string
+  slug: string
+  storeName: string
+  logoUrl?: string
+  source: 'invite_link' | 'qr_code' | 'manual' | 'follow'
+  invitedAt?: string
+  acceptedAt?: string
+  lastAccessedAt: string
+  isActive: boolean
+}
+
 const STORAGE_KEYS = {
   // Dados compartilhados (lojas, produtos, pedidos…)
   stores: 'marketplace:stores',
@@ -116,6 +132,7 @@ const STORAGE_KEYS = {
   activeStoreSlug: 'marketplace:customer:active-slug',
   pendingStoreInvite: 'hubmascate:customer:pending-store-invite',
   customerProfile: 'hubmascate:customer:profile',
+  customerStoreLinks: 'hubmascate:customer:store-links',
 
   // Dados do lojista
   sellerStoreId: 'marketplace:seller:store-id',
@@ -706,6 +723,75 @@ export function getPendingStoreInvite(): PendingStoreInvite | null {
 export function clearPendingStoreInvite(): void {
   window.localStorage.removeItem(STORAGE_KEYS.pendingStoreInvite)
 }
+
+// ---------------------------------------------------------------------------
+// Customer ↔ Store links (vínculo mock cliente-loja)
+// ---------------------------------------------------------------------------
+
+function getCustomerStoreLinksRaw(): CustomerStoreLink[] {
+  const raw = window.localStorage.getItem(STORAGE_KEYS.customerStoreLinks)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed as CustomerStoreLink[]
+  } catch {
+    return []
+  }
+}
+
+function setCustomerStoreLinksRaw(links: CustomerStoreLink[]): void {
+  window.localStorage.setItem(STORAGE_KEYS.customerStoreLinks, JSON.stringify(links))
+}
+
+/** Retorna todos os vínculos ativos do cliente. */
+export function getCustomerStoreLinks(): CustomerStoreLink[] {
+  return getCustomerStoreLinksRaw()
+}
+
+/** Cria ou atualiza um vínculo cliente-loja. */
+export function upsertCustomerStoreLink(link: CustomerStoreLink): void {
+  const links = getCustomerStoreLinksRaw()
+  const index = links.findIndex((l) => l.storeId === link.storeId)
+  if (index >= 0) {
+    links[index] = { ...links[index], ...link }
+  } else {
+    links.push(link)
+  }
+  setCustomerStoreLinksRaw(links)
+}
+
+/** Cria vínculo a partir de um convite pendente aceito. */
+export function linkCustomerToStoreFromInvite(invite: PendingStoreInvite): void {
+  const now = new Date().toISOString()
+  upsertCustomerStoreLink({
+    storeId: invite.storeId,
+    slug: invite.slug,
+    storeName: invite.storeName,
+    logoUrl: invite.logoUrl,
+    source: invite.source === 'qr_code' ? 'qr_code' : 'invite_link',
+    invitedAt: invite.capturedAt,
+    acceptedAt: now,
+    lastAccessedAt: now,
+    isActive: true,
+  })
+}
+
+/** Atualiza o lastAccessedAt de um vínculo existente. Não cria novo vínculo. */
+export function updateCustomerStoreLastAccess(storeId: string): void {
+  const links = getCustomerStoreLinksRaw()
+  const index = links.findIndex((l) => l.storeId === storeId)
+  if (index < 0) return
+  links[index] = { ...links[index], lastAccessedAt: new Date().toISOString() }
+  setCustomerStoreLinksRaw(links)
+}
+
+/** Remove (desativa) um vínculo cliente-loja. */
+export function removeCustomerStoreLink(storeId: string): void {
+  const links = getCustomerStoreLinksRaw().filter((l) => l.storeId !== storeId)
+  setCustomerStoreLinksRaw(links)
+}
+
 
 export async function getActiveStore(): Promise<Store | null> {
   const activeStoreSlug = readStoredSlug(STORAGE_KEYS.activeStoreSlug)
@@ -1540,6 +1626,7 @@ export function clearCustomerSession(): void {
   window.localStorage.removeItem(STORAGE_KEYS.followedStores)
   window.localStorage.removeItem(STORAGE_KEYS.cartItems)
   window.localStorage.removeItem(STORAGE_KEYS.pendingStoreInvite)
+  window.localStorage.removeItem(STORAGE_KEYS.customerStoreLinks)
 }
 
 /** Limpa somente os dados de sessão do lojista (loja vinculada). */

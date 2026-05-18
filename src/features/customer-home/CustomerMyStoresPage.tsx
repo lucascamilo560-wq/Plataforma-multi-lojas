@@ -1,158 +1,164 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
 import {
-  followStore,
+  clearPendingStoreInvite,
+  getCustomerStoreLinks,
   getFollowedStores,
-  getInvitedStoreSlug,
-  getLastVisitedStoreSlug,
   getOrdersByStoreForCustomer,
+  getPendingStoreInvite,
   getStoreById,
-  getStoreBySlug,
+  linkCustomerToStoreFromInvite,
+  removeCustomerStoreLink,
   unfollowStore,
+  upsertCustomerStoreLink,
 } from '../../services/mockData'
-import type { Store } from '../../types'
+import type { CustomerStoreLink, PendingStoreInvite } from '../../services/mockData'
+
+const SOURCE_LABEL: Record<CustomerStoreLink['source'], string> = {
+  invite_link: 'Convite',
+  qr_code: 'QR Code',
+  manual: 'Manual',
+  follow: 'Salva',
+}
+
+function formatDate(iso: string) {
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso))
+}
 
 export function CustomerMyStoresPage() {
-  const [followedStores, setFollowedStores] = useState<Store[]>([])
-  const [followedStoreIds, setFollowedStoreIds] = useState<string[]>([])
-  const [lastVisitedStore, setLastVisitedStore] = useState<Store | undefined>()
-  const [invitedStore, setInvitedStore] = useState<Store | undefined>()
+  const navigate = useNavigate()
+  const [links, setLinks] = useState<CustomerStoreLink[]>([])
+  const [pendingInvite, setPendingInvite] = useState<PendingStoreInvite | null>(null)
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({})
   const [infoMessage, setInfoMessage] = useState('')
 
+  function reloadLinks() {
+    const storedLinks = getCustomerStoreLinks()
+    setLinks(storedLinks)
+    return storedLinks
+  }
+
   useEffect(() => {
-    async function loadStores() {
-      const [followedIds, lastVisitedSlug, invitedSlug] = await Promise.all([
-        getFollowedStores(),
-        getLastVisitedStoreSlug(),
-        getInvitedStoreSlug(),
-      ])
+    const invite = getPendingStoreInvite()
+    setPendingInvite(invite)
 
-      const [stores, lastStore, invited] = await Promise.all([
-        Promise.all(followedIds.map((storeId) => getStoreById(storeId))),
-        lastVisitedSlug ? getStoreBySlug(lastVisitedSlug) : Promise.resolve(undefined),
-        invitedSlug ? getStoreBySlug(invitedSlug) : Promise.resolve(undefined),
-      ])
+    const storedLinks = reloadLinks()
 
-      const validStores = stores.filter((store): store is Store => Boolean(store))
-      setFollowedStores(validStores)
-      setFollowedStoreIds(followedIds)
-      setLastVisitedStore(lastStore)
-      setInvitedStore(invited)
+    // Merge followed stores into links (compatibility)
+    void (async () => {
+      const followedIds = await getFollowedStores()
+      const missingIds = followedIds.filter((id) => !storedLinks.some((l) => l.storeId === id))
+      if (missingIds.length > 0) {
+        const stores = await Promise.all(missingIds.map((id) => getStoreById(id)))
+        const now = new Date().toISOString()
+        for (const store of stores) {
+          if (!store) continue
+          upsertCustomerStoreLink({
+            storeId: store.id,
+            slug: store.slug,
+            storeName: store.name,
+            logoUrl: store.logoUrl,
+            source: 'follow',
+            lastAccessedAt: now,
+            isActive: true,
+          })
+        }
+        reloadLinks()
+      }
 
-      // Carregar contagem de pedidos para cada loja
-      const allStoreIds = Array.from(
-        new Set([
-          ...followedIds,
-          ...(lastStore ? [lastStore.id] : []),
-          ...(invited ? [invited.id] : []),
-        ]),
-      )
+      // Load order counts
+      const allLinks = getCustomerStoreLinks()
       const counts: Record<string, number> = {}
       await Promise.all(
-        allStoreIds.map(async (storeId) => {
-          const orders = await getOrdersByStoreForCustomer(storeId)
-          counts[storeId] = orders.length
+        allLinks.map(async (link) => {
+          const orders = await getOrdersByStoreForCustomer(link.storeId)
+          counts[link.storeId] = orders.length
         }),
       )
       setOrderCounts(counts)
-    }
-
-    loadStores()
+    })()
   }, [])
 
-  const hasStores = followedStores.length > 0 || Boolean(lastVisitedStore) || Boolean(invitedStore)
-  const showInvitedStoreCard = invitedStore && invitedStore.slug !== lastVisitedStore?.slug
-  const followedStoreIdsSet = useMemo(() => new Set(followedStoreIds), [followedStoreIds])
-
-  const handleFollowStore = async (store: Store) => {
-    await followStore(store.id)
-    setFollowedStoreIds((currentIds) => (currentIds.includes(store.id) ? currentIds : [...currentIds, store.id]))
-    setFollowedStores((currentStores) => (currentStores.some((item) => item.id === store.id) ? currentStores : [...currentStores, store]))
-    setInfoMessage(`Agora você segue a loja ${store.name}.`)
+  const handleAcceptInvite = () => {
+    if (!pendingInvite) return
+    linkCustomerToStoreFromInvite(pendingInvite)
+    clearPendingStoreInvite()
+    setPendingInvite(null)
+    reloadLinks()
+    navigate(`/loja/${pendingInvite.slug}`)
   }
 
-  const handleUnfollowStore = async (store: Store) => {
-    await unfollowStore(store.id)
-    setFollowedStoreIds((currentIds) => currentIds.filter((id) => id !== store.id))
-    setFollowedStores((currentStores) => currentStores.filter((s) => s.id !== store.id))
-    setInfoMessage(`Você deixou de seguir ${store.name}.`)
+  const handleRemoveInvite = () => {
+    clearPendingStoreInvite()
+    setPendingInvite(null)
   }
+
+  const handleRemoveLink = async (link: CustomerStoreLink) => {
+    removeCustomerStoreLink(link.storeId)
+    if (link.source === 'follow') {
+      await unfollowStore(link.storeId)
+    }
+    reloadLinks()
+    setInfoMessage(`Loja ${link.storeName} removida.`)
+  }
+
+  const sortedLinks = [...links].sort(
+    (a, b) => new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime(),
+  )
+
+  const hasPendingInvite = Boolean(pendingInvite)
+  const hasLinks = sortedLinks.length > 0
+  const isEmpty = !hasPendingInvite && !hasLinks
 
   return (
     <section className="stack-xl">
       <PageHeader
         kicker="Minhas lojas"
         icon="storefront"
-        title="Lojas visitadas e salvas"
-        description="As lojas acessadas por /loja/:slug aparecem aqui mesmo antes de você clicar em seguir."
+        title="Minhas lojas"
+        description="Lojas que você recebeu, salvou ou acessou pelo HubMascate."
       />
 
-      {lastVisitedStore && (
-        <Card title="Última loja acessada" subtitle={lastVisitedStore.name} variant="layered">
-          <p className="muted">{lastVisitedStore.description}</p>
+      {/* Convite pendente */}
+      {hasPendingInvite && pendingInvite && (
+        <Card title="Convite pendente" subtitle={pendingInvite.storeName} variant="layered">
+          <p className="muted">Você recebeu um convite para esta loja. Aceite para adicioná-la às suas lojas.</p>
           <div className="inline-info">
-            <Link to={`/loja/${lastVisitedStore.slug}`}>
-              <Button variant="accent">Abrir loja</Button>
-            </Link>
-            <Link to={`/cliente/pedidos?loja=${lastVisitedStore.id}`}>
-              <Button variant="secondary">
-                Ver pedidos{orderCounts[lastVisitedStore.id] ? ` (${orderCounts[lastVisitedStore.id]})` : ''}
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              onClick={() => { void handleFollowStore(lastVisitedStore) }}
-              disabled={followedStoreIdsSet.has(lastVisitedStore.id)}
-            >
-              {followedStoreIdsSet.has(lastVisitedStore.id) ? 'Loja seguida' : 'Seguir loja'}
+            <Button variant="accent" onClick={handleAcceptInvite}>
+              Aceitar e abrir
+            </Button>
+            <Button variant="ghost" onClick={handleRemoveInvite}>
+              Remover convite
             </Button>
           </div>
         </Card>
       )}
 
-      {showInvitedStoreCard && invitedStore && (
-        <Card title="Loja convidada por link" subtitle={invitedStore.name} variant="layered">
-          <p className="muted">{invitedStore.description}</p>
-          <div className="inline-info">
-            <Link to={`/loja/${invitedStore.slug}`}>
-              <Button variant="accent">Abrir loja</Button>
-            </Link>
-            <Link to={`/cliente/pedidos?loja=${invitedStore.id}`}>
-              <Button variant="secondary">
-                Ver pedidos{orderCounts[invitedStore.id] ? ` (${orderCounts[invitedStore.id]})` : ''}
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              onClick={() => { void handleFollowStore(invitedStore) }}
-              disabled={followedStoreIdsSet.has(invitedStore.id)}
-            >
-              {followedStoreIdsSet.has(invitedStore.id) ? 'Loja seguida' : 'Seguir loja'}
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {followedStores.length > 0 && (
+      {/* Lojas vinculadas */}
+      {hasLinks && (
         <div className="grid">
-          {followedStores.map((store) => (
-            <Card key={store.id} title={store.name} subtitle={`${store.category} · ${store.city}`} variant="accentCorner">
-              <p className="muted">{store.description}</p>
+          {sortedLinks.map((link) => (
+            <Card
+              key={link.storeId}
+              title={link.storeName}
+              subtitle={SOURCE_LABEL[link.source]}
+              variant="accentCorner"
+            >
+              <p className="muted">Último acesso: {formatDate(link.lastAccessedAt)}</p>
               <div className="inline-info">
-                <Link to={`/loja/${store.slug}`}>
-                  <Button variant="store">Abrir loja</Button>
+                <Link to={`/loja/${link.slug}`}>
+                  <Button variant="accent">Abrir</Button>
                 </Link>
-                <Link to={`/cliente/pedidos?loja=${store.id}`}>
-                  <Button variant="ghost">
-                    Ver pedidos{orderCounts[store.id] ? ` (${orderCounts[store.id]})` : ''}
+                <Link to={`/cliente/pedidos?loja=${link.storeId}`}>
+                  <Button variant="secondary">
+                    Pedidos{orderCounts[link.storeId] ? ` (${orderCounts[link.storeId]})` : ''}
                   </Button>
                 </Link>
-                <Button variant="ghost" onClick={() => { void handleUnfollowStore(store) }}>
-                  Deixar de seguir
+                <Button variant="ghost" onClick={() => { void handleRemoveLink(link) }}>
+                  Remover
                 </Button>
               </div>
             </Card>
@@ -160,13 +166,18 @@ export function CustomerMyStoresPage() {
         </div>
       )}
 
-      {!hasStores && (
+      {/* Empty state */}
+      {isEmpty && (
         <Card
-          title="Nenhuma loja por aqui ainda"
-          subtitle="Acesse o link de um lojista em /loja/:slug para salvar uma loja e começar sua experiência."
+          title="Nenhuma loja salva"
+          subtitle="Abra o link ou QR Code enviado por uma loja."
           variant="default"
         >
-          <p className="muted">Você verá a última loja acessada e o convite mais recente mesmo antes de seguir uma loja.</p>
+          <div className="inline-info">
+            <Button variant="primary" onClick={() => navigate('/cliente')}>
+              Início
+            </Button>
+          </div>
         </Card>
       )}
 
