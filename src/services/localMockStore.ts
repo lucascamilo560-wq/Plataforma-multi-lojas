@@ -74,6 +74,15 @@ export interface DeliverySettings {
  */
 export const ENABLE_DEMO_STORES = false
 
+export interface PendingStoreInvite {
+  slug: string
+  storeId: string
+  storeName: string
+  logoUrl?: string
+  capturedAt: string
+  source: 'invite_link' | 'qr_code' | 'manual'
+}
+
 const STORAGE_KEYS = {
   // Dados compartilhados (lojas, produtos, pedidos…)
   stores: 'marketplace:stores',
@@ -91,6 +100,7 @@ const STORAGE_KEYS = {
   lastVisitedStoreSlug: 'marketplace:customer:last-visited-slug',
   invitedStoreSlug: 'marketplace:customer:invited-slug',
   activeStoreSlug: 'marketplace:customer:active-slug',
+  pendingStoreInvite: 'hubmascate:customer:pending-store-invite',
 
   // Dados do lojista
   sellerStoreId: 'marketplace:seller:store-id',
@@ -658,6 +668,28 @@ export async function getActiveStoreSlug(): Promise<string | null> {
 export async function clearActiveStoreSlug(): Promise<void> {
   setStoredSlug(STORAGE_KEYS.activeStoreSlug, null)
   return Promise.resolve()
+}
+
+// ---------------------------------------------------------------------------
+// Pending store invite (convite pendente de loja)
+// ---------------------------------------------------------------------------
+
+export function setPendingStoreInvite(invite: PendingStoreInvite): void {
+  window.localStorage.setItem(STORAGE_KEYS.pendingStoreInvite, JSON.stringify(invite))
+}
+
+export function getPendingStoreInvite(): PendingStoreInvite | null {
+  const raw = window.localStorage.getItem(STORAGE_KEYS.pendingStoreInvite)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as PendingStoreInvite
+  } catch {
+    return null
+  }
+}
+
+export function clearPendingStoreInvite(): void {
+  window.localStorage.removeItem(STORAGE_KEYS.pendingStoreInvite)
 }
 
 export async function getActiveStore(): Promise<Store | null> {
@@ -1456,6 +1488,7 @@ export function clearCustomerSession(): void {
   window.localStorage.removeItem(STORAGE_KEYS.lastVisitedStoreSlug)
   window.localStorage.removeItem(STORAGE_KEYS.followedStores)
   window.localStorage.removeItem(STORAGE_KEYS.cartItems)
+  window.localStorage.removeItem(STORAGE_KEYS.pendingStoreInvite)
 }
 
 /** Limpa somente os dados de sessão do lojista (loja vinculada). */

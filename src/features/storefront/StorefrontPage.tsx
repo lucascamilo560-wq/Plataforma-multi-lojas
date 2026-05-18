@@ -14,6 +14,7 @@ import {
   getStoreReviewSummary,
   isStoreFollowed,
   registerStoreVisit,
+  setPendingStoreInvite,
 } from '../../services/mockData'
 import type { Promotion } from '../../services/localMockStore'
 import type { StoreReviewSummary } from '../../services/mockData'
@@ -77,6 +78,17 @@ export function StorefrontPage() {
         setPromotions([])
         return
       }
+
+      // Capture the store invite context in localStorage so the login page can
+      // show which store invited the customer when they navigate to /login.
+      setPendingStoreInvite({
+        slug: nextStore.slug,
+        storeId: nextStore.id,
+        storeName: nextStore.name,
+        logoUrl: nextStore.logoUrl,
+        capturedAt: new Date().toISOString(),
+        source: 'invite_link',
+      })
 
       await registerStoreVisit(nextStore.slug)
       const [nextProducts, followed, activePromos] = await Promise.all([

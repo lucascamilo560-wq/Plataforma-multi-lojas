@@ -5,6 +5,7 @@ export {
   clearAllDemoData,
   clearCartByStore,
   clearCustomerSession,
+  clearPendingStoreInvite,
   clearSellerSession,
   createCoupon,
   createOrderFromCart,
@@ -37,6 +38,7 @@ export {
   getOrdersByStoreForCustomer,
   getOrderWithStore,
   getPaymentSettings,
+  getPendingStoreInvite,
   getProductsByStore,
   getPromotionsByStore,
   getPublicStorefront,
@@ -57,6 +59,7 @@ export {
   repeatOrder,
   setActiveStoreSlug,
   setCurrentSellerStoreId,
+  setPendingStoreInvite,
   toggleCouponActive,
   toggleProductActive,
   togglePromotionActive,
@@ -78,7 +81,7 @@ export {
   updateAdminPlan,
   validateCoupon,
 } from './localMockStore'
-export type { CreateStorePayload, CreateOrUpdateReviewPayload, CustomerRelationship, CustomerSummary, RepeatOrderResult, StoreReviewSummary, ValidateCouponResult, ReportPeriod, StoreReportSummary, TopProduct, CouponPerformance, PaymentStatusEntry, OrderStatusEntry, OnboardingStep, SellerOnboardingStatus } from './localMockStore'
+export type { CreateStorePayload, CreateOrUpdateReviewPayload, CustomerRelationship, CustomerSummary, PendingStoreInvite, RepeatOrderResult, StoreReviewSummary, ValidateCouponResult, ReportPeriod, StoreReportSummary, TopProduct, CouponPerformance, PaymentStatusEntry, OrderStatusEntry, OnboardingStep, SellerOnboardingStatus } from './localMockStore'
 
 export {
   getCouponPerformanceByStore,
