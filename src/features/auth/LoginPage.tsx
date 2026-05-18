@@ -122,7 +122,7 @@ export function LoginPage() {
 
       if (selectedRole === 'customer') {
         if (pendingInvite) {
-          navigate(`/loja/${pendingInvite.slug}`)
+          navigate('/cliente/convite')
         } else {
           navigate('/cliente')
         }
