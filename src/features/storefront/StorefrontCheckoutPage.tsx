@@ -8,12 +8,14 @@ import { SectionHeader } from '../../components/ui/SectionHeader'
 import {
   createOrderFromCart,
   getCartItemsByStore,
+  getCustomerProfile,
   getDeliverySettings,
   getPaymentSettings,
   getStoreBySlug,
+  isCustomerProfileComplete,
   validateCoupon,
 } from '../../services/mockData'
-import type { ValidateCouponResult } from '../../services/mockData'
+import type { CustomerProfile, ValidateCouponResult } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
 import { getStoreOpenStatus } from '../../utils/storeStatus'
 import type { CartItem, Store } from '../../types'
@@ -174,8 +176,8 @@ export function StorefrontCheckoutPage() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [deliverySettings, setDeliverySettings] = useState<DeliverySettings | undefined>()
 
-  const [customerName, setCustomerName] = useState('')
-  const [customerPhone, setCustomerPhone] = useState('')
+  const [customerName, setCustomerName] = useState(() => getCustomerProfile()?.fullName ?? '')
+  const [customerPhone, setCustomerPhone] = useState(() => getCustomerProfile()?.phone ?? '')
   const [address, setAddress] = useState('')
   const [notes, setNotes] = useState('')
   const [deliveryMode, setDeliveryMode] = useState<DeliveryMode>('pickup')
@@ -186,6 +188,9 @@ export function StorefrontCheckoutPage() {
   const [couponInput, setCouponInput] = useState('')
   const [couponResult, setCouponResult] = useState<ValidateCouponResult | null>(null)
   const [couponApplied, setCouponApplied] = useState(false)
+
+  const [savedProfile] = useState<CustomerProfile | null>(() => getCustomerProfile())
+  const [editingData, setEditingData] = useState(false)
 
   useEffect(() => {
     getStoreBySlug(slug).then((nextStore) => {
@@ -242,6 +247,17 @@ export function StorefrontCheckoutPage() {
     deliverySettings?.deliveryEnabled ||
     deliverySettings?.combineDelivery
 
+  const profileComplete = isCustomerProfileComplete(savedProfile)
+
+  const formattedProfileAddress = savedProfile
+    ? [
+        `${savedProfile.street}, ${savedProfile.number}${savedProfile.complement ? ` - ${savedProfile.complement}` : ''}`,
+        savedProfile.neighborhood,
+        `${savedProfile.city} - ${savedProfile.state}`,
+        `CEP ${savedProfile.zipCode}`,
+      ].join(', ')
+    : ''
+
   const handleApplyCoupon = async () => {
     if (!store || !couponInput.trim()) return
     const result = await validateCoupon(store.id, couponInput.trim(), subtotal)
@@ -262,6 +278,10 @@ export function StorefrontCheckoutPage() {
       setErrorMessage('Esta loja está fechada no momento e não aceita pedidos fora do horário.')
       return
     }
+    if (!profileComplete) {
+      setErrorMessage('Complete seu perfil para confirmar o pedido.')
+      return
+    }
     if (!customerName.trim()) {
       setErrorMessage('Informe seu nome para continuar.')
       return
@@ -270,7 +290,10 @@ export function StorefrontCheckoutPage() {
       setErrorMessage('Selecione uma forma de pagamento.')
       return
     }
-    if (deliveryMode === 'delivery' && !address.trim()) {
+    const resolvedAddress = deliveryMode === 'delivery'
+      ? (address.trim() || formattedProfileAddress)
+      : undefined
+    if (deliveryMode === 'delivery' && !resolvedAddress) {
       setErrorMessage('Informe o endereço de entrega.')
       return
     }
@@ -292,7 +315,7 @@ export function StorefrontCheckoutPage() {
         storeId: store.id,
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim() || undefined,
-        address: deliveryMode === 'delivery' ? address.trim() : undefined,
+        address: resolvedAddress,
         notes: notes.trim() || undefined,
         deliveryType: deliveryMode,
         paymentMethod: selectedMethod.name,
@@ -539,38 +562,107 @@ export function StorefrontCheckoutPage() {
         )}
 
         <Card title="Seus dados" subtitle="Para o lojista entrar em contato" variant="accentCorner">
-          <div className="stack" style={{ gap: '0.75rem' }}>
-            <Input
-              label="Nome completo"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Seu nome"
-            />
-            <Input
-              label="Telefone / WhatsApp"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              placeholder="(11) 99999-0000"
-            />
-            {deliveryMode === 'delivery' && (
+          {profileComplete && !editingData ? (
+            <div className="stack" style={{ gap: '0.6rem' }}>
+              <div>
+                <p style={{ fontWeight: 600, margin: 0 }}>{savedProfile?.fullName}</p>
+                <p className="muted" style={{ margin: '0.1rem 0 0', fontSize: '0.875rem' }}>{savedProfile?.phone}</p>
+                {deliveryMode === 'delivery' && (
+                  <p className="muted" style={{ margin: '0.25rem 0 0', fontSize: '0.82rem' }}>{formattedProfileAddress}</p>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <Button variant="ghost" onClick={() => setEditingData(true)}>
+                  Editar dados
+                </Button>
+                <Button variant="ghost" onClick={() => navigate('/cliente/perfil')}>
+                  Ir ao perfil
+                </Button>
+              </div>
+              {deliveryMode === 'delivery' && (
+                <Input
+                  label="Observação (opcional)"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ex: sem cebola, portão azul..."
+                />
+              )}
+              {deliveryMode !== 'delivery' && (
+                <Input
+                  label="Observação (opcional)"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Ex: sem cebola..."
+                />
+              )}
+            </div>
+          ) : (
+            <div className="stack" style={{ gap: '0.75rem' }}>
+              {!profileComplete && (
+                <div style={{
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '0.4rem',
+                  background: 'var(--color-warning-subtle, #fffbeb)',
+                  border: '1px solid var(--color-warning, #d97706)',
+                  fontSize: '0.875rem',
+                  color: 'var(--color-warning, #d97706)',
+                }}>
+                  ⚠️ Complete seu perfil para confirmar o pedido.{' '}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/cliente/perfil')}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontWeight: 600, textDecoration: 'underline', padding: 0 }}
+                  >
+                    Completar perfil
+                  </button>
+                </div>
+              )}
               <Input
-                label="Endereço de entrega"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Rua, número, bairro"
+                label="Nome completo"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Seu nome"
               />
-            )}
-            <Input
-              label="Observação (opcional)"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ex: sem cebola, portão azul..."
-            />
-          </div>
+              <Input
+                label="Telefone / WhatsApp"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                placeholder="(11) 99999-0000"
+              />
+              {deliveryMode === 'delivery' && (
+                <Input
+                  label="Endereço de entrega"
+                  value={address || formattedProfileAddress}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="Rua, número, bairro"
+                />
+              )}
+              <Input
+                label="Observação (opcional)"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex: sem cebola, portão azul..."
+              />
+              {editingData && (
+                <Button variant="ghost" onClick={() => setEditingData(false)}>
+                  Usar dados do perfil
+                </Button>
+              )}
+            </div>
+          )}
         </Card>
       </div>
 
-      {errorMessage && <p className="error-text">{errorMessage}</p>}
+      {errorMessage && (
+        <div>
+          <p className="error-text">{errorMessage}</p>
+          {!profileComplete && (
+            <Button variant="secondary" onClick={() => navigate('/cliente/perfil')} style={{ marginTop: '0.5rem' }}>
+              Completar perfil
+            </Button>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button

@@ -83,6 +83,20 @@ export interface PendingStoreInvite {
   source: 'invite_link' | 'qr_code' | 'manual'
 }
 
+export interface CustomerProfile {
+  fullName: string
+  phone: string
+  street: string
+  number: string
+  complement?: string
+  neighborhood: string
+  city: string
+  state: string
+  zipCode: string
+  deliveryReference?: string
+  updatedAt: string
+}
+
 const STORAGE_KEYS = {
   // Dados compartilhados (lojas, produtos, pedidos…)
   stores: 'marketplace:stores',
@@ -101,6 +115,7 @@ const STORAGE_KEYS = {
   invitedStoreSlug: 'marketplace:customer:invited-slug',
   activeStoreSlug: 'marketplace:customer:active-slug',
   pendingStoreInvite: 'hubmascate:customer:pending-store-invite',
+  customerProfile: 'hubmascate:customer:profile',
 
   // Dados do lojista
   sellerStoreId: 'marketplace:seller:store-id',
@@ -1475,6 +1490,42 @@ export async function getSellerOnboardingStatus(storeId: string): Promise<Seller
     progressPercent,
     isReadyToShare: storefrontDone,
   })
+}
+
+// ---------------------------------------------------------------------------
+// Customer profile (mock/localStorage)
+// ---------------------------------------------------------------------------
+
+export function getCustomerProfile(): CustomerProfile | null {
+  const raw = window.localStorage.getItem(STORAGE_KEYS.customerProfile)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as CustomerProfile
+  } catch {
+    return null
+  }
+}
+
+export function updateCustomerProfile(profile: CustomerProfile): void {
+  window.localStorage.setItem(STORAGE_KEYS.customerProfile, JSON.stringify(profile))
+}
+
+export function clearCustomerProfile(): void {
+  window.localStorage.removeItem(STORAGE_KEYS.customerProfile)
+}
+
+export function isCustomerProfileComplete(profile: CustomerProfile | null): boolean {
+  if (!profile) return false
+  return Boolean(
+    profile.fullName?.trim() &&
+      profile.phone?.trim() &&
+      profile.street?.trim() &&
+      profile.number?.trim() &&
+      profile.neighborhood?.trim() &&
+      profile.city?.trim() &&
+      profile.state?.trim() &&
+      profile.zipCode?.trim(),
+  )
 }
 
 // ---------------------------------------------------------------------------
