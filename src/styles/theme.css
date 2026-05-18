@@ -914,6 +914,36 @@ img {
   color: var(--text-secondary);
 }
 
+/* Secondary seller CTA */
+.login-seller-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0;
+}
+
+.login-seller-cta-label {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.login-seller-cta-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+.login-seller-cta-btn:hover {
+  color: var(--text-primary);
+}
+
 /* Demo tools */
 .login-demo-tools {
   border-top: 1px solid var(--border-soft);
