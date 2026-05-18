@@ -1,23 +1,35 @@
-import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon'
 import { Input } from '../../components/ui/Input'
 import { useMockSession } from '../../hooks/useMockSession'
-import { clearAllDemoData, clearCustomerSession, clearSellerSession, getCurrentSellerStoreId } from '../../services/mockData'
+import {
+  clearAllDemoData,
+  clearCustomerSession,
+  clearPendingStoreInvite,
+  clearSellerSession,
+  getCurrentSellerStoreId,
+  getPendingStoreInvite,
+  getStoreBySlug,
+  setPendingStoreInvite,
+} from '../../services/mockData'
 import { APP_BRAND } from '../../config/brand'
+import type { PendingStoreInvite } from '../../services/mockData'
 import type { UserRole } from '../../types'
 
-const roleOptions: { key: UserRole; title: string; description: string; icon: 'cart' | 'storefront' }[] = [
+const roleOptions: { key: UserRole; title: string; titleWithInvite: string; description: string; icon: 'cart' | 'storefront' }[] = [
   {
     key: 'customer',
     title: 'Comprar em uma loja',
+    titleWithInvite: 'Entrar para ver a loja',
     description: 'Acesse vitrines que você recebeu por link e acompanhe seus pedidos.',
     icon: 'cart',
   },
   {
     key: 'store_admin',
     title: 'Gerenciar minha loja',
+    titleWithInvite: 'Tenho uma loja',
     description: 'Cadastre produtos, receba pedidos, compartilhe sua vitrine e fidelize clientes.',
     icon: 'storefront',
   },
@@ -43,11 +55,57 @@ const valueProps = [
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { setRole } = useMockSession()
   const [selectedRole, setSelectedRole] = useState<UserRole>('customer')
   const [errorMessage, setErrorMessage] = useState('')
   const [utilityMessage, setUtilityMessage] = useState('')
   const [showDemoTools, setShowDemoTools] = useState(false)
+  const [pendingInvite, setPendingInvite] = useState<PendingStoreInvite | null>(null)
+
+  // Resolve pending invite from query params or localStorage
+  useEffect(() => {
+    async function resolveInvite() {
+      // Extract slug from query params: ?invite=slug, ?loja=slug, or ?from=/loja/slug
+      const inviteParam = searchParams.get('invite') ?? searchParams.get('loja')
+      let slugFromParam: string | null = inviteParam
+
+      if (!slugFromParam) {
+        const fromParam = searchParams.get('from')
+        if (fromParam) {
+          const match = fromParam.match(/^\/loja\/([^/?]+)/)
+          slugFromParam = match ? match[1] : null
+        }
+      }
+
+      if (slugFromParam) {
+        const store = await getStoreBySlug(slugFromParam)
+        if (store) {
+          const invite: PendingStoreInvite = {
+            slug: store.slug,
+            storeId: store.id,
+            storeName: store.name,
+            logoUrl: store.logoUrl,
+            capturedAt: new Date().toISOString(),
+            source: 'invite_link',
+          }
+          setPendingStoreInvite(invite)
+          setPendingInvite(invite)
+          setSelectedRole('customer')
+          return
+        }
+      }
+
+      // Fallback to localStorage
+      const saved = getPendingStoreInvite()
+      if (saved) {
+        setPendingInvite(saved)
+        setSelectedRole('customer')
+      }
+    }
+
+    void resolveInvite()
+  }, [searchParams])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -63,7 +121,11 @@ export function LoginPage() {
       }
 
       if (selectedRole === 'customer') {
-        navigate('/cliente')
+        if (pendingInvite) {
+          navigate(`/loja/${pendingInvite.slug}`)
+        } else {
+          navigate('/cliente')
+        }
         return
       }
 
@@ -74,6 +136,12 @@ export function LoginPage() {
     }
   }
 
+  const handleClearInvite = () => {
+    clearPendingStoreInvite()
+    setPendingInvite(null)
+    setSelectedRole('customer')
+  }
+
   const handleClearSession = (role: UserRole) => {
     if (role === 'customer') clearCustomerSession()
     else if (role === 'store_admin') clearSellerSession()
@@ -82,6 +150,7 @@ export function LoginPage() {
 
   const handleResetDemo = () => {
     clearAllDemoData()
+    setPendingInvite(null)
     setUtilityMessage('Todos os dados demo foram apagados. Recarregue a página para começar do zero.')
   }
 
@@ -119,9 +188,40 @@ export function LoginPage() {
       {/* Right / bottom — card de entrada */}
       <div className="login-form-area">
         <div className="login-form-card">
+          {/* Invite context banner */}
+          {pendingInvite && (
+            <div className="login-invite-banner">
+              {pendingInvite.logoUrl && (
+                <img
+                  src={pendingInvite.logoUrl}
+                  alt={pendingInvite.storeName}
+                  className="login-invite-logo"
+                />
+              )}
+              <div className="login-invite-text">
+                <p className="login-invite-label">Você foi convidado para acessar</p>
+                <strong className="login-invite-store">{pendingInvite.storeName}</strong>
+                <p className="login-invite-sub">Uma loja HubMascate</p>
+              </div>
+              <button
+                type="button"
+                className="login-invite-clear"
+                onClick={handleClearInvite}
+                title="Limpar convite"
+                aria-label="Limpar convite"
+              >
+                <Icon name="close" className="icon-sm" />
+              </button>
+            </div>
+          )}
+
           <div className="login-form-head">
-            <h2 className="login-form-title">Bem-vindo</h2>
-            <p className="login-form-subtitle">Escolha como quer continuar. Acesse uma loja por convite ou gerencie sua vitrine.</p>
+            <h2 className="login-form-title">{pendingInvite ? `Bem-vindo à ${pendingInvite.storeName}` : 'Bem-vindo'}</h2>
+            <p className="login-form-subtitle">
+              {pendingInvite
+                ? 'Entre para acessar a loja ou gerencie sua própria vitrine.'
+                : 'Escolha como quer continuar. Acesse uma loja por convite ou gerencie sua vitrine.'}
+            </p>
           </div>
 
           {/* Seleção de perfil */}
@@ -137,7 +237,7 @@ export function LoginPage() {
                   <Icon name={opt.icon} className="icon-md" />
                 </span>
                 <div className="login-role-text">
-                  <strong>{opt.title}</strong>
+                  <strong>{pendingInvite ? opt.titleWithInvite : opt.title}</strong>
                   <p>{opt.description}</p>
                 </div>
                 {selectedRole === opt.key && (
@@ -155,10 +255,16 @@ export function LoginPage() {
 
             <Button type="submit" variant="accent" size="lg">
               <Icon name="arrowRight" className="icon-sm" />
-              Entrar no {APP_BRAND.name}
+              {pendingInvite && selectedRole === 'customer' ? `Entrar e ver ${pendingInvite.storeName}` : `Entrar no ${APP_BRAND.name}`}
             </Button>
             {errorMessage && <p className="error-text">{errorMessage}</p>}
           </form>
+
+          {pendingInvite && (
+            <button type="button" className="login-invite-dismiss" onClick={handleClearInvite}>
+              Continuar sem convite
+            </button>
+          )}
 
           {/* Ferramentas de teste — discretas */}
           <div className="login-demo-tools">
