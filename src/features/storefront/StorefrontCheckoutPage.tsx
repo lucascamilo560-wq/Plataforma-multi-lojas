@@ -258,6 +258,15 @@ export function StorefrontCheckoutPage() {
       ].join(', ')
     : ''
 
+  const restoreProfileData = () => {
+    if (savedProfile) {
+      setCustomerName(savedProfile.fullName)
+      setCustomerPhone(savedProfile.phone)
+      setAddress('')
+    }
+    setEditingData(false)
+  }
+
   const handleApplyCoupon = async () => {
     if (!store || !couponInput.trim()) return
     const result = await validateCoupon(store.id, couponInput.trim(), subtotal)
@@ -282,7 +291,19 @@ export function StorefrontCheckoutPage() {
       setErrorMessage('Complete seu perfil para confirmar o pedido.')
       return
     }
-    if (!customerName.trim()) {
+    const resolvedCustomerName = profileComplete && !editingData && savedProfile
+      ? savedProfile.fullName
+      : customerName.trim()
+    const resolvedCustomerPhone = profileComplete && !editingData && savedProfile
+      ? savedProfile.phone
+      : customerPhone.trim()
+    const resolvedAddress = deliveryMode === 'delivery'
+      ? profileComplete && !editingData
+        ? formattedProfileAddress
+        : address.trim()
+      : undefined
+
+    if (!resolvedCustomerName) {
       setErrorMessage('Informe seu nome para continuar.')
       return
     }
@@ -290,9 +311,6 @@ export function StorefrontCheckoutPage() {
       setErrorMessage('Selecione uma forma de pagamento.')
       return
     }
-    const resolvedAddress = deliveryMode === 'delivery'
-      ? (address.trim() || formattedProfileAddress)
-      : undefined
     if (deliveryMode === 'delivery' && !resolvedAddress) {
       setErrorMessage('Informe o endereço de entrega.')
       return
@@ -313,8 +331,8 @@ export function StorefrontCheckoutPage() {
       setSubmitting(true)
       const order = await createOrderFromCart({
         storeId: store.id,
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim() || undefined,
+        customerName: resolvedCustomerName,
+        customerPhone: resolvedCustomerPhone || undefined,
         address: resolvedAddress,
         notes: notes.trim() || undefined,
         deliveryType: deliveryMode,
@@ -644,7 +662,7 @@ export function StorefrontCheckoutPage() {
                 placeholder="Ex: sem cebola, portão azul..."
               />
               {editingData && (
-                <Button variant="ghost" onClick={() => setEditingData(false)}>
+                <Button variant="ghost" onClick={restoreProfileData}>
                   Usar dados do perfil
                 </Button>
               )}
