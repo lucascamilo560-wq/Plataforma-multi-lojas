@@ -30,8 +30,8 @@ function formatDate(iso: string) {
 
 export function CustomerMyStoresPage() {
   const navigate = useNavigate()
-  const [links, setLinks] = useState<CustomerStoreLink[]>([])
-  const [pendingInvite, setPendingInvite] = useState<PendingStoreInvite | null>(null)
+  const [links, setLinks] = useState<CustomerStoreLink[]>(() => getCustomerStoreLinks())
+  const [pendingInvite, setPendingInvite] = useState<PendingStoreInvite | null>(() => getPendingStoreInvite())
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({})
   const [infoMessage, setInfoMessage] = useState('')
 
@@ -42,15 +42,11 @@ export function CustomerMyStoresPage() {
   }
 
   useEffect(() => {
-    const invite = getPendingStoreInvite()
-    setPendingInvite(invite)
-
-    const storedLinks = reloadLinks()
-
-    // Merge followed stores into links (compatibility)
+    // Merge followed stores into links (compatibility) and load order counts
     void (async () => {
+      const initialLinks = getCustomerStoreLinks()
       const followedIds = await getFollowedStores()
-      const missingIds = followedIds.filter((id) => !storedLinks.some((l) => l.storeId === id))
+      const missingIds = followedIds.filter((id) => !initialLinks.some((l) => l.storeId === id))
       if (missingIds.length > 0) {
         const stores = await Promise.all(missingIds.map((id) => getStoreById(id)))
         const now = new Date().toISOString()
@@ -66,7 +62,7 @@ export function CustomerMyStoresPage() {
             isActive: true,
           })
         }
-        reloadLinks()
+        setLinks(getCustomerStoreLinks())
       }
 
       // Load order counts
