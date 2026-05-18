@@ -969,6 +969,204 @@ img {
   }
 }
 
+/* ── Invite Continue Page ── */
+.invite-continue-shell {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.2rem;
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(58, 134, 255, 0.10) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 100%, rgba(108, 99, 255, 0.09) 0%, transparent 50%),
+    var(--bg-page);
+}
+
+.invite-continue-card {
+  width: min(480px, 100%);
+  padding: 2rem 1.6rem;
+  gap: 1.3rem;
+}
+
+.invite-continue-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.invite-continue-brand-icon {
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--primary-soft);
+  padding: 0.15rem;
+}
+
+.invite-continue-brand-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 0.01em;
+}
+
+.invite-continue-store-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  background: linear-gradient(135deg, rgba(58, 134, 255, 0.07) 0%, rgba(108, 99, 255, 0.07) 100%);
+  border: 1.5px solid rgba(58, 134, 255, 0.22);
+  border-radius: var(--radius-md);
+}
+
+.invite-continue-store-logo {
+  flex: 0 0 auto;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+}
+
+.invite-continue-store-logo-placeholder {
+  flex: 0 0 auto;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-soft);
+}
+
+.invite-continue-store-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.invite-continue-store-label {
+  margin: 0 0 0.15rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.invite-continue-store-name {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.invite-continue-store-sub {
+  margin: 0.12rem 0 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.invite-continue-profile-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+}
+
+.invite-continue-profile-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.invite-continue-profile-warn {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.invite-continue-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.invite-continue-app-section {
+  border-top: 1px solid var(--border-soft);
+  padding-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.invite-continue-app-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 0.52rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  align-self: flex-start;
+  transition: 0.15s ease;
+}
+
+.invite-continue-app-btn:hover {
+  color: var(--text-primary);
+  background: var(--surface-alt);
+}
+
+.invite-continue-app-info {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  padding: 0.65rem 0.85rem;
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft);
+}
+
+.invite-continue-app-info p {
+  margin: 0;
+}
+
+.invite-continue-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 0;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  align-self: center;
+}
+
+.invite-continue-remove:hover {
+  color: var(--text-secondary);
+}
+
+.invite-continue-empty {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.invite-continue-empty-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.96rem;
+}
+
 .store-media {
   border-radius: var(--radius-md);
   height: 128px;

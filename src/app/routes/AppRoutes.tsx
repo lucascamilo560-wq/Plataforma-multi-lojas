@@ -7,6 +7,7 @@ import { LoginPage } from '../../features/auth/LoginPage'
 import { CartPage } from '../../features/cart/CartPage'
 import { CheckoutPage } from '../../features/checkout/CheckoutPage'
 import { CustomerHomePage } from '../../features/customer-home/CustomerHomePage'
+import { CustomerInviteContinuePage } from '../../features/customer-home/CustomerInviteContinuePage'
 import { CustomerMyStoresPage } from '../../features/customer-home/CustomerMyStoresPage'
 import { CustomerOrderDetailPage } from '../../features/customer-home/CustomerOrderDetailPage'
 import { CustomerOrdersPage } from '../../features/customer-home/CustomerOrdersPage'
@@ -85,6 +86,7 @@ export function AppRoutes() {
         }
       >
         <Route index element={<CustomerHomePage />} />
+        <Route path="convite" element={<CustomerInviteContinuePage />} />
         <Route path="minhas-lojas" element={<CustomerMyStoresPage />} />
         <Route path="explorar" element={<ExploreStoresPage />} />
         <Route path="carrinho" element={<CartPage />} />
