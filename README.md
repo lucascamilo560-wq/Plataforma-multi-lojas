@@ -4,6 +4,14 @@ HubMascate é uma plataforma de vitrines digitais para vendedores locais criarem
 
 > Direção atual do produto: este app **não** deve ser tratado como marketplace aberto, shopping público, Mercado Livre, Shopee ou catálogo global de todas as lojas. O cliente entra principalmente pelo convite/link de um lojista e vê somente aquela loja.
 
+## Ambiente publicado
+
+| Ambiente | URL                                          | Status                |
+| -------- | -------------------------------------------- | --------------------- |
+| Vercel   | https://hubmascate.vercel.app                | ✅ Publicado (mock)   |
+
+> O app está em modo **mock/localStorage**. Os dados não sincronizam entre dispositivos nem entre sessões diferentes. A sincronização real virá com a integração Supabase/Auth em fase futura.
+
 ## Objetivo
 
 Permitir que cada lojista crie sua própria vitrine digital, personalize sua marca, cadastre produtos, compartilhe um link/QR Code com clientes, receba pedidos, configure formas próprias de pagamento/entrega e fidelize clientes dentro do app.
