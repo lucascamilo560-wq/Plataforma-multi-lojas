@@ -244,8 +244,10 @@ Esse método deve futuramente resolver apenas:
 - formas de pagamento/entrega daquela loja;
 - promoções/ofertas daquela loja.
 
-## Deploy SPA (evitar 404 em refresh)
+## Deploy
 
 Este repositório inclui `vercel.json` com rewrite para `index.html`, evitando erro 404 ao atualizar rotas como `/admin` e `/lojista`.
 
 No GitHub Pages, o projeto usa `VITE_BASE_PATH=/Plataforma-multi-lojas/`. Links públicos copiados pelo app devem usar `src/utils/publicUrl.ts` para respeitar esse base path.
+
+Consulte [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) para instruções completas de deploy na Vercel e no GitHub Pages.
