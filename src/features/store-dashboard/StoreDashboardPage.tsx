@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ActionTile } from '../../components/ui/ActionTile'
 import { Badge } from '../../components/ui/Badge'
 import { Button } from '../../components/ui/Button'
@@ -18,7 +18,7 @@ import {
 } from '../../services/mockData'
 import type { CustomerSummary, SellerOnboardingStatus, StoreReviewSummary } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
-import type { Order, Product, Store } from '../../types'
+import type { Order, OrderStatus, PaymentStatus, Product, Store } from '../../types'
 import { formatCurrency } from '../../utils/currency'
 import { buildPublicUrl } from '../../utils/publicUrl'
 import { shareOrCopy } from '../../utils/share'
@@ -33,9 +33,46 @@ interface Recommendation {
   label: string
 }
 
+interface AttentionAlert {
+  id: string
+  icon: Parameters<typeof Icon>[0]['name']
+  title: string
+  description: string
+  actionLabel: string
+  actionTo: string
+  variant: 'warning' | 'danger' | 'positive'
+}
+
+function formatOrderTime(dateStr: string): string {
+  const d = new Date(dateStr)
+  const now = new Date()
+  const todayStr = now.toDateString()
+  if (d.toDateString() === todayStr) {
+    return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  }
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: 'Aguardando',
+  paid: 'Pago',
+  preparing: 'Preparando',
+  delivered: 'Entregue',
+  cancelled: 'Cancelado',
+}
+
+const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {
+  awaiting_payment: 'Ag. pagamento',
+  to_be_arranged: 'A combinar',
+  paid: 'Pago',
+  failed: 'Falhou',
+  refunded: 'Reembolsado',
+}
+
 export function StoreDashboardPage() {
   const { storeId } = useMockSession()
   const location = useLocation()
+  const navigate = useNavigate()
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [store, setStore] = useState<Store | undefined>()
@@ -93,6 +130,83 @@ export function StoreDashboardPage() {
   }, [customers])
 
   const activeProducts = useMemo(() => products.filter((p) => p.isActive).length, [products])
+
+  const preparingOrders = useMemo(() => orders.filter((o) => o.status === 'preparing').length, [orders])
+
+  const recentOrders = useMemo(
+    () =>
+      [...orders]
+        .filter((o) => o.status !== 'cancelled')
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 4),
+    [orders],
+  )
+
+  const attentionAlerts = useMemo<AttentionAlert[]>(() => {
+    const alerts: AttentionAlert[] = []
+
+    if (store && !store.isActive) {
+      alerts.push({
+        id: 'store-paused',
+        icon: 'storefront',
+        title: 'Loja pausada',
+        description: 'Sua loja está inativa. Clientes não conseguem comprar.',
+        actionLabel: 'Ativar loja',
+        actionTo: '/lojista/minha-loja',
+        variant: 'danger',
+      })
+    }
+
+    if (activeProducts === 0) {
+      alerts.push({
+        id: 'no-products',
+        icon: 'package',
+        title: 'Sem produtos ativos',
+        description: 'Sua vitrine está vazia. Adicione produtos para vender.',
+        actionLabel: 'Adicionar produto',
+        actionTo: '/lojista/produtos/novo',
+        variant: 'warning',
+      })
+    }
+
+    if (pendingOrders > 0) {
+      alerts.push({
+        id: 'pending-orders',
+        icon: 'cart',
+        title: `${pendingOrders} pedido${pendingOrders > 1 ? 's' : ''} aguardando confirmação`,
+        description: 'Responda rapidamente para não perder vendas.',
+        actionLabel: 'Ver pedidos',
+        actionTo: '/lojista/pedidos',
+        variant: 'warning',
+      })
+    }
+
+    if (toBeArrangedPayments > 0) {
+      alerts.push({
+        id: 'payments-to-arrange',
+        icon: 'wallet',
+        title: `${toBeArrangedPayments} pagamento${toBeArrangedPayments > 1 ? 's' : ''} a combinar`,
+        description: 'Combine a forma de pagamento com o cliente.',
+        actionLabel: 'Resolver',
+        actionTo: '/lojista/pedidos',
+        variant: 'warning',
+      })
+    }
+
+    if (preparingOrders > 0) {
+      alerts.push({
+        id: 'preparing-orders',
+        icon: 'clock',
+        title: `${preparingOrders} pedido${preparingOrders > 1 ? 's' : ''} em preparo`,
+        description: 'Atualize o status assim que estiver pronto.',
+        actionLabel: 'Atender',
+        actionTo: '/lojista/pedidos',
+        variant: 'warning',
+      })
+    }
+
+    return alerts.slice(0, 3)
+  }, [store, activeProducts, pendingOrders, toBeArrangedPayments, preparingOrders])
 
   const storeTheme = getStoreTheme(store)
   const storefrontPath = store?.slug ? `/loja/${store.slug}` : '/cliente/explorar'
@@ -305,11 +419,13 @@ export function StoreDashboardPage() {
           Hoje na loja
         </p>
         <div className="seller-today-strip">
-          <div className="seller-today-item">
-            <span className="seller-today-value">{ordersToday.length}</span>
+          <div className={`seller-today-item${pendingOrders > 0 ? ' seller-today-item--alert' : ''}`}>
+            <span className={`seller-today-value${pendingOrders > 0 ? ' seller-today-value--alert' : ''}`}>
+              {ordersToday.length}
+            </span>
             <span className="seller-today-label">Pedidos hoje</span>
           </div>
-          <div className="seller-today-item">
+          <div className={`seller-today-item${pendingOrders > 0 ? ' seller-today-item--alert' : ''}`}>
             <span className={`seller-today-value${pendingOrders > 0 ? ' seller-today-value--alert' : ''}`}>
               {pendingOrders}
             </span>
@@ -319,7 +435,7 @@ export function StoreDashboardPage() {
             <span className="seller-today-value">{formatCurrency(pendingRevenue)}</span>
             <span className="seller-today-label">A receber</span>
           </div>
-          <div className="seller-today-item">
+          <div className={`seller-today-item${toBeArrangedPayments > 0 ? ' seller-today-item--alert' : ''}`}>
             <span className={`seller-today-value${toBeArrangedPayments > 0 ? ' seller-today-value--alert' : ''}`}>
               {toBeArrangedPayments}
             </span>
@@ -327,6 +443,130 @@ export function StoreDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── Atalhos do dia ─── */}
+      <div className="seller-shortcuts-strip">
+        <Link to="/lojista/produtos/novo" className="seller-shortcut-pill">
+          <Icon name="package" className="icon-sm" />
+          Novo produto
+        </Link>
+        <Link to="/lojista/pedidos" className="seller-shortcut-pill">
+          <Icon name="cart" className="icon-sm" />
+          Ver pedidos
+          {pendingOrders > 0 && (
+            <span className="seller-shortcut-badge">{pendingOrders}</span>
+          )}
+        </Link>
+        <button type="button" className="seller-shortcut-pill" onClick={handleShareStore}>
+          <Icon name="hub" className="icon-sm" />
+          Compartilhar
+        </button>
+        <Link to="/lojista/pagamentos" className="seller-shortcut-pill">
+          <Icon name="wallet" className="icon-sm" />
+          Pagamentos
+        </Link>
+      </div>
+
+      {/* ─── Agora precisa de atenção ─── */}
+      <div className="stack">
+        <p className="seller-section-label">
+          <Icon name="shield" className="icon-sm" />
+          Agora precisa de atenção
+        </p>
+        {attentionAlerts.length === 0 ? (
+          <div className="seller-alert-card seller-alert-card--positive">
+            <span className="seller-alert-icon">
+              <Icon name="check" className="icon-md" />
+            </span>
+            <div className="seller-alert-content">
+              <p className="seller-alert-title">Tudo certo por agora</p>
+              <p className="seller-alert-description">Você não tem pendências urgentes.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="seller-alerts-list">
+            {attentionAlerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={`seller-alert-card seller-alert-card--${alert.variant}`}
+              >
+                <span className="seller-alert-icon">
+                  <Icon name={alert.icon} className="icon-md" />
+                </span>
+                <div className="seller-alert-content">
+                  <p className="seller-alert-title">{alert.title}</p>
+                  <p className="seller-alert-description">{alert.description}</p>
+                </div>
+                <Link to={alert.actionTo} style={{ flexShrink: 0 }}>
+                  <Button variant="accent" size="sm">
+                    {alert.actionLabel}
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── Pedidos recentes ─── */}
+      {recentOrders.length > 0 && (
+        <div className="stack">
+          <div className="seller-section-header">
+            <p className="seller-section-label">
+              <Icon name="cart" className="icon-sm" />
+              Pedidos recentes
+            </p>
+            <Link to="/lojista/pedidos" className="seller-section-link">
+              Ver todos
+              <Icon name="arrowRight" className="icon-sm" />
+            </Link>
+          </div>
+          <div className="seller-orders-list">
+            {recentOrders.map((order) => {
+              const isPending = order.status === 'pending'
+              const hasPaymentPending =
+                order.paymentStatus === 'awaiting_payment' ||
+                order.paymentStatus === 'to_be_arranged'
+              const shortId = order.id.slice(-6).toUpperCase()
+              return (
+                <div
+                  key={order.id}
+                  className={`seller-order-item${isPending ? ' seller-order-item--pending' : ''}`}
+                >
+                  <div className="seller-order-main">
+                    <div className="seller-order-top">
+                      <span className="seller-order-id">#{shortId}</span>
+                      <span className="seller-order-time">{formatOrderTime(order.createdAt)}</span>
+                    </div>
+                    <p className="seller-order-customer">{order.customerName}</p>
+                    <div className="seller-order-badges">
+                      <Badge variant={isPending ? 'danger' : order.status === 'delivered' ? 'success' : 'muted'}>
+                        {ORDER_STATUS_LABEL[order.status]}
+                      </Badge>
+                      {hasPaymentPending && (
+                        <Badge variant="danger">
+                          {PAYMENT_STATUS_LABEL[order.paymentStatus]}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="seller-order-right">
+                    <span className="seller-order-total">{formatCurrency(order.total)}</span>
+                    <button
+                      type="button"
+                      className="seller-order-action"
+                      onClick={() => navigate('/lojista/pedidos')}
+                    >
+                      {isPending ? 'Atender' : 'Ver'}
+                      <Icon name="arrowRight" className="icon-sm" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ─── Próximas ações recomendadas ─── */}
       <div className="stack">

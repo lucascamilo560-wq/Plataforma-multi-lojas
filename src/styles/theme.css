@@ -2686,7 +2686,275 @@ img {
   }
 }
 
-/* ===== PR #68 — Checkout premium mobile-first ===== */
+/* ===== PR #70 — Seller Dashboard Operational Center ===== */
+
+/* Today strip — alert state */
+.seller-today-item--alert {
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  background: color-mix(in srgb, var(--warning) 6%, var(--surface));
+}
+
+/* Section header row (label + "ver todos" link) */
+.seller-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.seller-section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-violet);
+  text-decoration: none;
+}
+
+.seller-section-link:hover {
+  text-decoration: underline;
+}
+
+/* Shortcuts strip */
+.seller-shortcuts-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.seller-shortcuts-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.seller-shortcut-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 100px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: var(--shadow-soft);
+  transition: background 0.15s, border-color 0.15s;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.seller-shortcut-pill:hover {
+  background: color-mix(in srgb, var(--accent-violet) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-violet) 35%, transparent);
+}
+
+.seller-shortcut-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  border-radius: 100px;
+  background: var(--warning);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Attention alerts */
+.seller-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.seller-alert-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.seller-alert-card--warning {
+  background: color-mix(in srgb, var(--warning) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+}
+
+.seller-alert-card--danger {
+  background: color-mix(in srgb, #ef4444 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, #ef4444 30%, transparent);
+}
+
+.seller-alert-card--positive {
+  background: color-mix(in srgb, var(--success) 8%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
+}
+
+.seller-alert-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.seller-alert-card--warning .seller-alert-icon {
+  background: color-mix(in srgb, var(--warning) 18%, var(--surface));
+  color: var(--warning);
+}
+
+.seller-alert-card--danger .seller-alert-icon {
+  background: color-mix(in srgb, #ef4444 18%, var(--surface));
+  color: #ef4444;
+}
+
+.seller-alert-card--positive .seller-alert-icon {
+  background: color-mix(in srgb, var(--success) 18%, var(--surface));
+  color: var(--success);
+}
+
+.seller-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.seller-alert-title {
+  margin: 0 0 0.15rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.seller-alert-description {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Recent orders list */
+.seller-orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.seller-order-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.seller-order-item--pending {
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  background: color-mix(in srgb, var(--warning) 5%, var(--surface));
+}
+
+.seller-order-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
+.seller-order-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.seller-order-id {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+}
+
+.seller-order-time {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.seller-order-customer {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seller-order-badges {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.seller-order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.seller-order-total {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.seller-order-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--accent-violet);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.seller-order-action:hover {
+  text-decoration: underline;
+}
+
+@media (min-width: 740px) {
+  .seller-shortcuts-strip {
+    gap: 0.65rem;
+  }
+
+  .seller-alert-card {
+    padding: 1rem 1.2rem;
+  }
+
+  .seller-order-item {
+    padding: 1rem 1.2rem;
+  }
+}
+
+
 
 /* Checkout header */
 .checkout-header {
