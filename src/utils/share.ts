@@ -2,6 +2,11 @@ export interface ShareOptions {
   title: string
   text: string
   url: string
+  /**
+   * Texto copiado no fallback. Se omitido, copia `${text} ${url}`.
+   * Útil para incluir mensagem completa quando o navigator.share não está disponível.
+   */
+  copyText?: string
 }
 
 export type ShareResult = 'shared' | 'copied' | 'cancelled' | 'failed'
@@ -19,8 +24,10 @@ export async function shareOrCopy(options: ShareOptions): Promise<ShareResult> {
     }
   }
 
+  const textToCopy = options.copyText ?? `${options.text} ${options.url}`
+
   try {
-    await navigator.clipboard.writeText(options.url)
+    await navigator.clipboard.writeText(textToCopy)
     return 'copied'
   } catch {
     if (shareError?.name === 'AbortError') {
