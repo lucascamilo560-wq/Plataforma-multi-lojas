@@ -47,7 +47,7 @@ const SHARE_FEEDBACK_LABELS: Record<NonNullable<ProductCardProps['shareFeedback'
 
 export function ProductCard({ product, store, actionLabel, onAction, onShare, shareFeedback }: ProductCardProps) {
   const theme = getStoreTheme(store)
-  const actionButtonLabel = actionLabel ?? product.ctaLabel ?? 'Adicionar ao carrinho'
+  const actionButtonLabel = actionLabel ?? product.ctaLabel ?? 'Ver detalhes'
   const isPhysical = product.productType === 'physical'
   const hasExternalNotice = product.productType === 'external_link' || product.productType === 'affiliate'
   const externalNotice = getExternalNotice(product.productType)
