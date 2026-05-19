@@ -375,7 +375,7 @@ export function StorefrontCheckoutPage() {
         kicker="Checkout"
         icon="check"
         title={`Finalizar pedido — ${store.name}`}
-        description="Preencha seus dados e confirme o pedido."
+        description={profileComplete ? 'Revise seus dados e confirme o pedido.' : 'Complete seu perfil para confirmar a primeira compra.'}
       />
 
       {/* Store closed notice */}
@@ -580,7 +580,36 @@ export function StorefrontCheckoutPage() {
         )}
 
         <Card title="Seus dados" subtitle="Para o lojista entrar em contato" variant="accentCorner">
-          {profileComplete && !editingData ? (
+          {!profileComplete ? (
+            <div className="stack" style={{ gap: '0.85rem' }}>
+              <div style={{
+                padding: '1rem',
+                borderRadius: '0.6rem',
+                background: 'var(--color-warning-subtle, #fffbeb)',
+                border: '1px solid var(--color-warning, #d97706)',
+              }}>
+                <p style={{ margin: '0 0 0.35rem', fontWeight: 600, color: 'var(--color-warning, #d97706)' }}>
+                  ⚠️ Complete seu perfil para confirmar o pedido
+                </p>
+                <p style={{ margin: '0 0 0.65rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  Esses dados serão usados nesta e nas próximas compras.
+                </p>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: '0.65rem' }}>
+                  {!savedProfile?.fullName && <p style={{ margin: '0.1rem 0' }}>• Nome completo</p>}
+                  {!savedProfile?.phone && <p style={{ margin: '0.1rem 0' }}>• Telefone / WhatsApp</p>}
+                  {(!savedProfile?.street || !savedProfile?.number || !savedProfile?.neighborhood || !savedProfile?.city || !savedProfile?.state || !savedProfile?.zipCode) && (
+                    <p style={{ margin: '0.1rem 0' }}>• Endereço</p>
+                  )}
+                </div>
+                <Button
+                  variant="primary"
+                  onClick={() => navigate(`/cliente/perfil?returnTo=${encodeURIComponent(`/loja/${slug}/checkout`)}`)}
+                >
+                  Completar perfil
+                </Button>
+              </div>
+            </div>
+          ) : !editingData ? (
             <div className="stack" style={{ gap: '0.6rem' }}>
               <div>
                 <p style={{ fontWeight: 600, margin: 0 }}>{savedProfile?.fullName}</p>
@@ -593,7 +622,7 @@ export function StorefrontCheckoutPage() {
                 <Button variant="ghost" onClick={() => setEditingData(true)}>
                   Editar dados
                 </Button>
-                <Button variant="ghost" onClick={() => navigate('/cliente/perfil')}>
+                <Button variant="ghost" onClick={() => navigate(`/cliente/perfil?returnTo=${encodeURIComponent(`/loja/${slug}/checkout`)}`)}>
                   Ir ao perfil
                 </Button>
               </div>
@@ -616,25 +645,6 @@ export function StorefrontCheckoutPage() {
             </div>
           ) : (
             <div className="stack" style={{ gap: '0.75rem' }}>
-              {!profileComplete && (
-                <div style={{
-                  padding: '0.65rem 0.85rem',
-                  borderRadius: '0.4rem',
-                  background: 'var(--color-warning-subtle, #fffbeb)',
-                  border: '1px solid var(--color-warning, #d97706)',
-                  fontSize: '0.875rem',
-                  color: 'var(--color-warning, #d97706)',
-                }}>
-                  ⚠️ Complete seu perfil para confirmar o pedido.{' '}
-                  <button
-                    type="button"
-                    onClick={() => navigate('/cliente/perfil')}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', fontWeight: 600, textDecoration: 'underline', padding: 0 }}
-                  >
-                    Completar perfil
-                  </button>
-                </div>
-              )}
               <Input
                 label="Nome completo"
                 value={customerName}
@@ -661,11 +671,9 @@ export function StorefrontCheckoutPage() {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Ex: sem cebola, portão azul..."
               />
-              {editingData && (
-                <Button variant="ghost" onClick={restoreProfileData}>
-                  Usar dados do perfil
-                </Button>
-              )}
+              <Button variant="ghost" onClick={restoreProfileData}>
+                Usar dados do perfil
+              </Button>
             </div>
           )}
         </Card>
@@ -674,25 +682,30 @@ export function StorefrontCheckoutPage() {
       {errorMessage && (
         <div>
           <p className="error-text">{errorMessage}</p>
-          {!profileComplete && (
-            <Button variant="secondary" onClick={() => navigate('/cliente/perfil')} style={{ marginTop: '0.5rem' }}>
-              Completar perfil
-            </Button>
-          )}
         </div>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button
-          variant="store"
-          size="lg"
-          storeColor={storeTheme.primaryColor}
-          onClick={handleConfirm}
-          disabled={submitting || deliveryBlockedByMinOrder || (storeOpenStatus !== null && !storeOpenStatus.canAcceptOrders)}
-        >
-          <Icon name="check" className="icon-sm" />
-          {submitting ? 'Confirmando…' : 'Confirmar pedido'}
-        </Button>
+        {!profileComplete ? (
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={() => navigate(`/cliente/perfil?returnTo=${encodeURIComponent(`/loja/${slug}/checkout`)}`)}
+          >
+            Completar perfil
+          </Button>
+        ) : (
+          <Button
+            variant="store"
+            size="lg"
+            storeColor={storeTheme.primaryColor}
+            onClick={handleConfirm}
+            disabled={submitting || deliveryBlockedByMinOrder || (storeOpenStatus !== null && !storeOpenStatus.canAcceptOrders)}
+          >
+            <Icon name="check" className="icon-sm" />
+            {submitting ? 'Confirmando…' : 'Confirmar pedido'}
+          </Button>
+        )}
       </div>
     </section>
   )

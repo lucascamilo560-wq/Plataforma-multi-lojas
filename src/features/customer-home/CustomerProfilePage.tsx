@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
@@ -30,8 +30,13 @@ function emptyProfile(): CustomerProfile {
 
 export function CustomerProfilePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const savedProfile = getCustomerProfile()
   const pendingInvite = getPendingStoreInvite()
+
+  // Only accept internal returnTo (starting with "/") to prevent open redirect
+  const rawReturnTo = searchParams.get('returnTo') ?? ''
+  const returnTo = rawReturnTo.startsWith('/') ? rawReturnTo : ''
 
   const [form, setForm] = useState<CustomerProfile>(() => ({
     ...emptyProfile(),
@@ -205,7 +210,22 @@ export function CustomerProfilePage() {
       )}
 
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-        {pendingInvite && (
+        {saved && returnTo && (
+          <Button variant="primary" onClick={() => navigate(returnTo)}>
+            Continuar compra
+          </Button>
+        )}
+        {saved && !returnTo && pendingInvite && (
+          <Button variant="secondary" onClick={() => navigate(`/loja/${pendingInvite.slug}`)}>
+            Ver loja {pendingInvite.storeName}
+          </Button>
+        )}
+        {saved && !returnTo && !pendingInvite && (
+          <Button variant="secondary" onClick={() => navigate('/cliente/minhas-lojas')}>
+            Ir para minhas lojas
+          </Button>
+        )}
+        {!saved && pendingInvite && !returnTo && (
           <Button variant="secondary" onClick={() => navigate(`/loja/${pendingInvite.slug}`)}>
             Ver loja {pendingInvite.storeName}
           </Button>

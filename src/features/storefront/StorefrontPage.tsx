@@ -307,6 +307,15 @@ export function StorefrontPage() {
           <span className="store-topbar-name">{store.name}</span>
         </div>
         <div className="store-topbar-actions">
+          <button
+            type="button"
+            className="store-topbar-btn"
+            aria-label="Meu perfil"
+            onClick={() => navigate(`/cliente/perfil?returnTo=${encodeURIComponent(`/loja/${slug}`)}`)}
+            title="Meu perfil"
+          >
+            <Icon name="user" className="icon-sm" />
+          </button>
           {hasPhysicalProducts && (
             <Link to={`/loja/${slug}/carrinho`} aria-label="Carrinho" className="store-topbar-btn">
               <Icon name="cart" className="icon-sm" />
