@@ -33,6 +33,7 @@ import { StorefrontCartPage } from '../../features/storefront/StorefrontCartPage
 import { StorefrontCheckoutPage } from '../../features/storefront/StorefrontCheckoutPage'
 import { StorefrontOrderPage } from '../../features/storefront/StorefrontOrderPage'
 import { StorefrontPage } from '../../features/storefront/StorefrontPage'
+import { StorefrontProductPage } from '../../features/storefront/StorefrontProductPage'
 import { AdminCustomersPage } from '../../features/super-admin/AdminCustomersPage'
 import { AdminDashboardPage } from '../../features/super-admin/AdminDashboardPage'
 import { AdminOrdersPage } from '../../features/super-admin/AdminOrdersPage'
@@ -101,6 +102,7 @@ export function AppRoutes() {
 
       <Route path="/loja/:slug" element={<StorefrontLayout />}>
         <Route index element={<StorefrontPage />} />
+        <Route path="produto/:productId" element={<StorefrontProductPage />} />
         <Route path="carrinho" element={<StorefrontCartPage />} />
         <Route path="checkout" element={<StorefrontCheckoutPage />} />
         <Route path="pedido/:orderId" element={<StorefrontOrderPage />} />

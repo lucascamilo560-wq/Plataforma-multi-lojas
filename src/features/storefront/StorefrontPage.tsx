@@ -6,7 +6,6 @@ import { Button } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon'
 import { ProductCard } from '../../components/ui/ProductCard'
 import {
-  addProductToCart,
   followStore,
   getActivePromotionsByStore,
   getProductsByStore,
@@ -171,7 +170,7 @@ export function StorefrontPage() {
 
   const handleShareProduct = useCallback(async (product: Product) => {
     if (!store) return
-    const url = buildPublicUrl(`/loja/${store.slug}?produto=${product.id}`)
+    const url = buildPublicUrl(`/loja/${store.slug}/produto/${product.id}`)
     const result = await shareOrCopy({
       title: product.name,
       text: `Olha esse produto da ${store.name}: ${product.name} —`,
@@ -182,17 +181,6 @@ export function StorefrontPage() {
       setProductFeedback((prev) => ({ ...prev, [product.id]: null }))
     }, 3000)
   }, [store])
-
-  const handleAddToCart = async (product: Product) => {
-    try {
-      setErrorMessage('')
-      await addProductToCart(product)
-      navigate(`/loja/${slug}/carrinho`)
-    } catch (error) {
-      console.error('Falha ao adicionar item no carrinho:', error)
-      setErrorMessage('Não foi possível adicionar o produto ao carrinho. Tente novamente.')
-    }
-  }
 
   const handleFollowStore = async (successMessage = FOLLOW_SUCCESS_MESSAGE) => {
     if (!store) return
@@ -207,27 +195,8 @@ export function StorefrontPage() {
     }
   }
 
-  const handleProductAction = async (product: Product) => {
-    if (product.productType === 'physical') {
-      await handleAddToCart(product)
-      return
-    }
-
-    if (product.productType === 'service') {
-      if (whatsappUrl) {
-        window.open(whatsappUrl, '_blank', 'noopener,noreferrer')
-        return
-      }
-      setErrorMessage('Esta loja ainda não configurou WhatsApp. Tente novamente mais tarde.')
-      return
-    }
-
-    if (!product.externalUrl) {
-      setErrorMessage('Este produto ainda não possui link externo disponível.')
-      return
-    }
-
-    window.open(product.externalUrl, '_blank', 'noopener,noreferrer')
+  const handleProductAction = (product: Product) => {
+    navigate(`/loja/${slug}/produto/${product.id}`)
   }
 
   if (!store) {
@@ -267,10 +236,8 @@ export function StorefrontPage() {
         ? 'store-product-wide'
         : 'store-product-grid-2'
 
-  function getProductActionLabel(product: Product): string {
-    if (product.productType === 'physical') return product.ctaLabel ?? 'Comprar'
-    if (product.productType === 'service') return product.ctaLabel ?? 'Solicitar'
-    return product.ctaLabel ?? 'Ver oferta'
+  function getProductActionLabel(): string {
+    return 'Ver detalhes'
   }
 
   function renderProduct(product: Product) {
@@ -308,7 +275,7 @@ export function StorefrontPage() {
         <ProductCard
           product={product}
           store={store}
-          actionLabel={getProductActionLabel(product)}
+          actionLabel={getProductActionLabel()}
           onAction={() => handleProductAction(product)}
           onShare={() => handleShareProduct(product)}
           shareFeedback={pFeedback ?? null}
