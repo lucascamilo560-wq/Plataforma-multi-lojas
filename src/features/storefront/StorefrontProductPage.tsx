@@ -11,7 +11,7 @@ import {
   setPendingStoreInvite,
 } from '../../services/mockData'
 import { getStoreTheme } from '../../styles/storeTheme'
-import { buildPublicUrl } from '../../utils/publicUrl'
+import { buildProductSharePayload } from '../../utils/productShare'
 import { shareOrCopy } from '../../utils/share'
 import { formatCurrency } from '../../utils/currency'
 import type { Product, Store } from '../../types'
@@ -33,8 +33,8 @@ function getProductPriceLabel(product: Product) {
 }
 
 const SHARE_FEEDBACK_MESSAGES: Record<NonNullable<ShareFeedback>, string> = {
-  shared: '🔗 Compartilhamento aberto',
-  copied: '✅ Link copiado!',
+  shared: 'Compartilhamento aberto',
+  copied: '✅ Mensagem e link copiados',
   cancelled: 'Compartilhamento cancelado',
   failed: 'Não foi possível compartilhar',
 }
@@ -95,12 +95,7 @@ export function StorefrontProductPage() {
 
   const handleShare = useCallback(async () => {
     if (!store || !product) return
-    const url = buildPublicUrl(`/loja/${store.slug}/produto/${product.id}`)
-    const result = await shareOrCopy({
-      title: product.name,
-      text: `Olha esse produto da ${store.name}: ${product.name} —`,
-      url,
-    })
+    const result = await shareOrCopy(buildProductSharePayload(product, store))
     setShareFeedback(result)
     setTimeout(() => setShareFeedback(null), 3000)
   }, [store, product])

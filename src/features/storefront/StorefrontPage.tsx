@@ -21,6 +21,7 @@ import { getStoreTheme } from '../../styles/storeTheme'
 import { getStoreOpenStatus } from '../../utils/storeStatus'
 import { buildPublicUrl } from '../../utils/publicUrl'
 import { shareOrCopy } from '../../utils/share'
+import { buildProductSharePayload } from '../../utils/productShare'
 import type { Product, Store } from '../../types'
 
 const FOLLOW_SUCCESS_MESSAGE = 'Loja salva!'
@@ -39,8 +40,8 @@ const STORE_NAV_ITEMS: { id: StoreNavTab; label: string; icon: string }[] = [
 ]
 
 const SHARE_FEEDBACK_MESSAGES: Record<NonNullable<ShareFeedback>, string> = {
-  shared: '🔗 Compartilhamento aberto',
-  copied: '✅ Link copiado!',
+  shared: 'Compartilhamento aberto',
+  copied: '✅ Mensagem e link copiados',
   cancelled: 'Compartilhamento cancelado',
   failed: 'Não foi possível compartilhar',
 }
@@ -170,12 +171,7 @@ export function StorefrontPage() {
 
   const handleShareProduct = useCallback(async (product: Product) => {
     if (!store) return
-    const url = buildPublicUrl(`/loja/${store.slug}/produto/${product.id}`)
-    const result = await shareOrCopy({
-      title: product.name,
-      text: `Olha esse produto da ${store.name}: ${product.name} —`,
-      url,
-    })
+    const result = await shareOrCopy(buildProductSharePayload(product, store))
     setProductFeedback((prev) => ({ ...prev, [product.id]: result }))
     setTimeout(() => {
       setProductFeedback((prev) => ({ ...prev, [product.id]: null }))
